@@ -294,27 +294,6 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	// ============================================================
-	// Data Admin (数据管理：缓存/数据库/历史/阈值) — requires admin
-	// ============================================================
-	dataAdmin := NewDataAdminHandler()
-	dataAdminGroup := api.Group("/admin/storage")
-	dataAdminGroup.Use(middleware.AdminRequired())
-	{
-		dataAdminGroup.GET("", dataAdmin.GetStorageOverview)
-		dataAdminGroup.GET("/cache", dataAdmin.GetCacheStats)
-		dataAdminGroup.GET("/database", dataAdmin.GetDatabaseStats)
-		dataAdminGroup.POST("/cache/clear", dataAdmin.ClearCacheAdvanced)
-		dataAdminGroup.POST("/db/vacuum", dataAdmin.VacuumDB)
-		dataAdminGroup.POST("/db/analyze", dataAdmin.AnalyzeDB)
-		dataAdminGroup.POST("/db/checkpoint", dataAdmin.CheckpointDB)
-		dataAdminGroup.POST("/db/integrity", dataAdmin.IntegrityCheckDB)
-		dataAdminGroup.POST("/db/reindex", dataAdmin.ReindexDB)
-		dataAdminGroup.GET("/history", dataAdmin.GetStorageHistory)
-		dataAdminGroup.GET("/threshold", dataAdmin.GetThreshold)
-		dataAdminGroup.PUT("/threshold", dataAdmin.UpdateThreshold)
-	}
-
-	// ============================================================
 	// Thumbnail management (Phase 3) — requires admin
 	// ============================================================
 	thumb := NewThumbnailHandler()

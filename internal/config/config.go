@@ -33,6 +33,17 @@ type SiteConfig struct {
 	//   3. 多路径：用 ; (Windows) 或 : (Linux) 分隔，逐个尝试
 	// 留空时回退到系统 PATH 查找。
 	PdfRendererPath string `json:"pdfRendererPath,omitempty"`
+
+	// StorageThreshold 存储用量预警阈值（数据管理模块）。
+	// 任一字段为 0 表示不启用对应阈值。
+	StorageThreshold *StorageThresholdConfig `json:"storageThreshold,omitempty"`
+}
+
+// StorageThresholdConfig 存储用量阈值（单位 MB）
+type StorageThresholdConfig struct {
+	CacheMaxMB    int64 `json:"cacheMaxMB,omitempty"`    // 缓存上限
+	DBMaxMB       int64 `json:"dbMaxMB,omitempty"`       // 数据库上限
+	DiskFreeMinMB int64 `json:"diskFreeMinMB,omitempty"` // 磁盘剩余下限
 }
 
 // ScanRulesConfig 描述扫描入库后自动执行的"规则流水线"。
