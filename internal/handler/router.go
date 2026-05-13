@@ -203,6 +203,22 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	// ============================================================
+	// Scan Rules (扫描期统一规则引擎) — 全部需要管理员
+	// ============================================================
+	scanRules := NewScanRulesHandler()
+	scanRulesGroup := api.Group("/scan-rules")
+	scanRulesGroup.Use(middleware.AdminRequired())
+	{
+		scanRulesGroup.GET("", scanRules.Get)
+		scanRulesGroup.PUT("", scanRules.Update)
+		scanRulesGroup.POST("/apply", scanRules.Apply)
+		scanRulesGroup.POST("/preview", scanRules.Preview)
+		scanRulesGroup.POST("/restore-titles", scanRules.RestoreTitles)
+		scanRulesGroup.GET("/logs", scanRules.Logs)
+		scanRulesGroup.GET("/progress", scanRules.Progress)
+	}
+
+	// ============================================================
 	// Directory Browser (文件夹浏览) — requires admin
 	// ============================================================
 	browse := NewBrowseHandler()
@@ -241,6 +257,10 @@ func SetupRoutes(r *gin.Engine) {
 
 	// EPUB resource (images, etc.): /api/comics/:id/epub-resource/*resourcePath
 	api.GET("/comics/:id/epub-resource/*resourcePath", img.GetEpubResource)
+
+	// 小说内嵌图片（用于"从内页选择封面"等）
+	api.GET("/comics/:id/embedded-images", img.GetEmbeddedImages)
+	api.GET("/comics/:id/embedded-image/:index", img.GetEmbeddedImage)
 
 	// 页面预热 API（减少阅读时冷启动延迟）
 	api.POST("/comics/:id/warmup", img.WarmupPages)
@@ -370,6 +390,8 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		comicByIDAI.POST("/ai-summary", ai.GenerateSummary)
 		comicByIDAI.POST("/ai-parse-filename", ai.ParseFilename)
+		// 目录级智能标题推断（结合父目录名 + 同伴文件名样本）
+		comicByIDAI.POST("/ai-infer-title", ai.InferTitle)
 		comicByIDAI.POST("/ai-suggest-tags", ai.SuggestTags)
 		// Phase 2
 		comicByIDAI.POST("/ai-analyze-cover", ai.AnalyzeCover)

@@ -911,6 +911,8 @@ const en: Translations = {
     emptyTitle: "Start fetching metadata for your library",
     emptyDesc: "Choose a scrape mode and scope, then click \"Start Scraping\" to auto-fetch covers, descriptions, tags from online sources. AI mode recognizes comic content from cover and pages for better matching.",
     navEntry: "Metadata Scraper",
+    navDisabledBadge: "Disabled",
+    navDisabledTip: "Content scraping is currently disabled. Click to open settings and enable it.",
     updateTitleLabel: "Also update book title",
     updateTitleDesc: "When enabled, replaces the current title (e.g. filename) with the title from metadata source",
     skipCoverLabel: "Don't replace book cover",

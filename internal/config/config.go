@@ -11,19 +11,92 @@ import (
 
 // SiteConfig represents the site-config.json file structure.
 type SiteConfig struct {
-	SiteName         string         `json:"siteName,omitempty"`
-	ComicsDir        string         `json:"comicsDir,omitempty"`
-	ExtraComicsDirs  []string       `json:"extraComicsDirs,omitempty"`
-	NovelsDir        string         `json:"novelsDir,omitempty"`       // 电子书主目录
-	ExtraNovelsDirs  []string       `json:"extraNovelsDirs,omitempty"` // 额外电子书目录
-	ThumbnailWidth   int            `json:"thumbnailWidth,omitempty"`
-	ThumbnailHeight  int            `json:"thumbnailHeight,omitempty"`
-	PageSize         int            `json:"pageSize,omitempty"`
-	Language         string         `json:"language,omitempty"`
-	Theme            string         `json:"theme,omitempty"`
-	ScannerConfig    *ScannerConfig `json:"scannerConfig,omitempty"`
-	RegistrationMode string         `json:"registrationMode,omitempty"` // "open" | "invite" | "closed"，默认 "open"
-	ScraperEnabled   *bool          `json:"scraperEnabled,omitempty"`   // 是否启用内容刮削功能，默认 false
+	SiteName         string           `json:"siteName,omitempty"`
+	ComicsDir        string           `json:"comicsDir,omitempty"`
+	ExtraComicsDirs  []string         `json:"extraComicsDirs,omitempty"`
+	NovelsDir        string           `json:"novelsDir,omitempty"`       // 电子书主目录
+	ExtraNovelsDirs  []string         `json:"extraNovelsDirs,omitempty"` // 额外电子书目录
+	ThumbnailWidth   int              `json:"thumbnailWidth,omitempty"`
+	ThumbnailHeight  int              `json:"thumbnailHeight,omitempty"`
+	PageSize         int              `json:"pageSize,omitempty"`
+	Language         string           `json:"language,omitempty"`
+	Theme            string           `json:"theme,omitempty"`
+	ScannerConfig    *ScannerConfig   `json:"scannerConfig,omitempty"`
+	RegistrationMode string           `json:"registrationMode,omitempty"` // "open" | "invite" | "closed"，默认 "open"
+	ScraperEnabled   *bool            `json:"scraperEnabled,omitempty"`   // 是否启用内容刮削功能，默认 false
+	ScanRules        *ScanRulesConfig `json:"scanRules,omitempty"`        // 扫描期统一规则（AI 识别 + 自动归类等）
+}
+
+// ScanRulesConfig 描述扫描入库后自动执行的"规则流水线"。
+// 设计原则：默认全关，用户主动启用；不动磁盘文件（A1 阶段）。
+type ScanRulesConfig struct {
+	Enabled     bool   `json:"enabled,omitempty"`     // 总开关
+	ApplyOn     string `json:"applyOn,omitempty"`     // newOnly | all | manual（默认 newOnly）
+	Concurrency int    `json:"concurrency,omitempty"` // 并发数，默认 2
+
+	// AI 标题/作者/扫图组等结构化推断
+	AIInfer *AIInferRule `json:"aiInfer,omitempty"`
+	// 虚拟归类（仅创建/合并 ComicGroup，不动磁盘）
+	Organize *OrganizeRule `json:"organize,omitempty"`
+
+	// 过滤器（决定哪些 Comic 走规则引擎）
+	Filters *ScanRuleFilters `json:"filters,omitempty"`
+}
+
+// AIInferRule 控制扫描时的 AI 智能识别动作。
+type AIInferRule struct {
+	Enabled        bool   `json:"enabled,omitempty"`
+	Scope          string `json:"scope,omitempty"`          // file | folderGroup（默认 folderGroup，按目录去重）
+	MinConfidence  string `json:"minConfidence,omitempty"`  // low | medium | high（默认 medium）
+	ApplyToComic   bool   `json:"applyToComic,omitempty"`   // 是否写回单卷字段（默认 true）
+	ApplyToGroup   bool   `json:"applyToGroup,omitempty"`   // 是否同步到分组（默认 true）
+	OverwriteTitle bool   `json:"overwriteTitle,omitempty"` // 是否覆盖已有 title（默认 false，仅在为空时填充）
+	FallbackToRule bool   `json:"fallbackToRule,omitempty"` // AI 失败时回退规则清洗（默认 true）
+}
+
+// OrganizeRule 控制虚拟归类（仅 DB 层面，不动磁盘）。
+type OrganizeRule struct {
+	Enabled        bool `json:"enabled,omitempty"`
+	AutoGroupByDir bool `json:"autoGroupByDir,omitempty"` // 入库后自动按目录创建/合并分组（默认 true）
+	InheritMeta    bool `json:"inheritMeta,omitempty"`    // 创建分组后从首卷继承元数据（默认 true）
+}
+
+// ScanRuleFilters 决定哪些 Comic 受规则引擎影响。
+type ScanRuleFilters struct {
+	IncludeExt       []string `json:"includeExt,omitempty"` // 空=全部
+	ExcludeExt       []string `json:"excludeExt,omitempty"`
+	IncludePathRegex string   `json:"includePathRegex,omitempty"`
+	ExcludePathRegex string   `json:"excludePathRegex,omitempty"`
+}
+
+// ResolvedScanRules 返回 ScanRules 的可用副本（缺省字段填充默认值）。
+func (c *SiteConfig) ResolvedScanRules() *ScanRulesConfig {
+	r := c.ScanRules
+	if r == nil {
+		r = &ScanRulesConfig{}
+	}
+	if r.ApplyOn == "" {
+		r.ApplyOn = "newOnly"
+	}
+	if r.Concurrency <= 0 {
+		r.Concurrency = 2
+	}
+	if r.AIInfer == nil {
+		r.AIInfer = &AIInferRule{}
+	}
+	if r.AIInfer.Scope == "" {
+		r.AIInfer.Scope = "folderGroup"
+	}
+	if r.AIInfer.MinConfidence == "" {
+		r.AIInfer.MinConfidence = "medium"
+	}
+	if r.Organize == nil {
+		r.Organize = &OrganizeRule{}
+	}
+	if r.Filters == nil {
+		r.Filters = &ScanRuleFilters{}
+	}
+	return r
 }
 
 // ScannerConfig 保存可配置化的扫描参数。

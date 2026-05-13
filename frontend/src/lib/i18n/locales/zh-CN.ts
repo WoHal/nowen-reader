@@ -908,6 +908,8 @@ autoDetect: "智能分组",
     emptyTitle: "开始为你的书库获取元数据",
     emptyDesc: "选择刮削模式和范围后，点击「开始刮削」自动从在线数据源获取封面、简介、标签等信息。AI 模式可智能识别漫画内容提高匹配率。",
     navEntry: "元数据刮削",
+    navDisabledBadge: "未启用",
+    navDisabledTip: "内容刮削功能当前已关闭，点击前往设置页开启",
     updateTitleLabel: "同时更新书名",
     updateTitleDesc: "开启后会用元数据源中的标题替换当前书名（如文件名等）",
     skipCoverLabel: "不替换书籍封面",
@@ -1984,6 +1986,8 @@ export interface Translations {
     emptyTitle: string;
     emptyDesc: string;
     navEntry: string;
+    navDisabledBadge?: string;
+    navDisabledTip?: string;
     updateTitleLabel: string;
     updateTitleDesc: string;
     skipCoverLabel?: string;
