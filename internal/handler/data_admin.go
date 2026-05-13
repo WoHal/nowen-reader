@@ -776,3 +776,21 @@ func humanBytes(n int64) string {
 	}
 	return fmt.Sprintf("%.2f %s", x, units[idx])
 }
+
+// SampleStorageUsage 返回当前缓存大小、数据库大小、磁盘剩余空间，
+// 供 service.StartStorageSampler 周期性采样写入历史趋势。
+func SampleStorageUsage() (cacheBytes int64, dbBytes int64, diskFree uint64) {
+	// 缓存：复用 scanCacheBuckets 的统计
+	for _, b := range scanCacheBuckets() {
+		cacheBytes += b.SizeBytes
+	}
+	// 数据库：collectDBInfo(false) 不做表级展开，开销小
+	dbInfo := collectDBInfo(false)
+	dbBytes = dbInfo.TotalBytes
+	// 磁盘剩余空间
+	disk := collectDiskInfo(config.DataDir())
+	if disk.Available && disk.FreeBytes > 0 {
+		diskFree = uint64(disk.FreeBytes)
+	}
+	return
+}
