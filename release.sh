@@ -83,6 +83,9 @@ DO_GH_RELEASE=1       # 是否把 APK 上传到 GitHub Release（仅 DO_ANDROID=
 ANDROID_SPLIT_ABI=1   # 是否按 ABI 拆分 APK（armeabi-v7a / arm64-v8a / x86_64）
 ANDROID_BUILD_AAB=0   # 是否同时构建 AAB（Google Play 上架用）
 
+# 跳过 Docker 构建+推送（仅 Android 套餐使用，默认 0）
+SKIP_DOCKER=0
+
 usage() {
     cat <<EOF
 用法: $0 [选项]
@@ -364,6 +367,48 @@ fi
 if [ "$ASSUME_YES" != "1" ]; then
     step "发布选项（回车使用默认值）"
 
+    # 0) 发布套餐（一键选择发布范围，避免逐项问近十个问题）
+    PRESET=""
+    if [ "$EXPLICIT_ANDROID" = "0" ] && [ "$EXPLICIT_GH_RELEASE" = "0" ]; then
+        echo "  请选择发布范围套餐："
+        echo "    ${C_GREEN}1)${C_RESET} 全平台一键发布  ${C_BOLD}[推荐]${C_RESET}  Docker 多架构 + Android APK + GitHub Release + Git tag"
+        echo "    2) 仅 Docker 镜像            只推 Docker Hub + Git tag（不打安卓 APK）"
+        echo "    3) 仅 Android APK            只打 APK 并传 GitHub Release（跳过 Docker）"
+        echo "    4) 自定义                    逐项询问每个选项"
+        read -r -p "  选择 [1/2/3/4]（默认 1）: " preset_ans
+        case "${preset_ans:-1}" in
+            1|"")
+                PRESET="all"
+                DO_ANDROID=1; EXPLICIT_ANDROID=1
+                DO_GH_RELEASE=1; EXPLICIT_GH_RELEASE=1
+                info "套餐：全平台一键发布（Docker + Android + GitHub Release）"
+                ;;
+            2)
+                PRESET="docker"
+                DO_ANDROID=0; EXPLICIT_ANDROID=1
+                info "套餐：仅 Docker 镜像"
+                ;;
+            3)
+                PRESET="android"
+                DO_ANDROID=1; EXPLICIT_ANDROID=1
+                DO_GH_RELEASE=1; EXPLICIT_GH_RELEASE=1
+                # 仅 Android 套餐：跳过 Docker 构建
+                MULTIARCH=0; EXPLICIT_MULTIARCH=1
+                PLATFORMS=""
+                SKIP_DOCKER=1
+                info "套餐：仅 Android APK + GitHub Release（跳过 Docker 构建）"
+                ;;
+            4)
+                PRESET="custom"
+                info "套餐：自定义，将逐项询问"
+                ;;
+            *)
+                die "无效选择：$preset_ans"
+                ;;
+        esac
+        echo
+    fi
+
     # 1) 构建模式（傻瓜式菜单：直接按数字选，不用懂 linux/amd64 这种平台串）
     if [ "$EXPLICIT_MULTIARCH" = "0" ] && [ "$EXPLICIT_PLATFORM" = "0" ]; then
         echo "  请选择要发布的架构："
@@ -434,14 +479,37 @@ if [ "$ASSUME_YES" != "1" ]; then
         echo
     fi
 
-    # 4) 是否同时打 Android APK
+    # 4) 是否同时打 Android APK（无条件询问，询问后再校验环境）
     if [ "$EXPLICIT_ANDROID" = "0" ]; then
-        # 只在检测到 flutter 命令 + Flutter 项目目录存在时才默认提示，避免在未装 Flutter 环境上走错分支
-        if [ -d "$REPO_ROOT/$FLUTTER_APP_DIR" ] && command -v flutter >/dev/null 2>&1; then
-            read -r -p "  同时构建 Android APK 并上传到 GitHub Release？[y/N]（默认 N）: " apk_ans
-            case "${apk_ans:-n}" in
-                [yY]|[yY][eE][sS]) DO_ANDROID=1 ;;
-                *)                 DO_ANDROID=0 ;;
+        read -r -p "  同时构建 Android APK 并上传到 GitHub Release？[y/N]（默认 N）: " apk_ans
+        case "${apk_ans:-n}" in
+            [yY]|[yY][eE][sS]) DO_ANDROID=1 ;;
+            *)                 DO_ANDROID=0 ;;
+        esac
+        echo
+    fi
+
+    # 用户选了打 APK 但环境缺依赖 → 明确报错（不再静默跳过）
+    if [ "$DO_ANDROID" = "1" ]; then
+        APK_ENV_OK=1
+        if [ ! -d "$REPO_ROOT/$FLUTTER_APP_DIR" ]; then
+            warn "未找到 Flutter 项目目录：$REPO_ROOT/$FLUTTER_APP_DIR"
+            APK_ENV_OK=0
+        fi
+        if ! command -v flutter >/dev/null 2>&1; then
+            warn "未检测到 flutter 命令，请先安装 Flutter SDK：https://docs.flutter.dev/get-started/install/linux"
+            APK_ENV_OK=0
+        fi
+        if [ "$APK_ENV_OK" = "0" ]; then
+            echo
+            echo "    在当前机器上不能打 Android APK。可选："
+            echo "      a) 在本机安装 Flutter SDK（推荐参考 Linux 官方文档）"
+            echo "      b) 在含 Flutter 环境的开发机上运行本脚本"
+            echo "      c) 本次跳过 Android，仅发 Docker"
+            read -r -p "  是否本次跳过 Android，仅发 Docker？[Y/n]（默认 Y）: " skip_ans
+            case "${skip_ans:-y}" in
+                [nN]|[nN][oO]) die "已取消：请准备好 Flutter 环境后重试" ;;
+                *) DO_ANDROID=0; warn "已跳过 Android 构建，仅发布 Docker" ;;
             esac
             echo
         fi
@@ -537,7 +605,7 @@ OCI_LABELS=(
 )
 
 # Docker Hub 登录预检：避免最后 push 阶段才失败
-if [ "$DRY_RUN" != "1" ]; then
+if [ "$DRY_RUN" != "1" ] && [ "$SKIP_DOCKER" != "1" ]; then
     if ! docker system info 2>/dev/null | grep -qE '^\s*Username:'; then
         warn "未检测到 Docker Hub 登录态（docker info 未发现 Username）"
         warn "若推送到 ${IMAGE_NAME} 需要认证，请先执行：docker login"
@@ -558,7 +626,11 @@ fi
 # ============================================================================
 step "阶段 1/2：本地构建"
 
-if [ "$MULTIARCH" = "1" ]; then
+if [ "$SKIP_DOCKER" = "1" ]; then
+    info "跳过 Docker 构建（套餐选择：仅 Android APK）"
+    BUILD_DURATION=0
+    PUSH_DURATION=0
+elif [ "$MULTIARCH" = "1" ]; then
     # ========== 多架构路径 ==========
     info "准备 buildx builder（多架构构建必须使用 docker-container 驱动）"
     NEED_BUILDER=1
@@ -745,7 +817,9 @@ fi
 
 # 阶段 1 全部成功 → 进入阶段 2 统一发布
 step "阶段 1/2 完成 ✅  所有产物已在本地就绪"
-echo "  • Docker 镜像   : ${IMAGE_NAME}:${VERSION_TAG}$([ "$DO_LATEST" = "1" ] && echo " + :latest")（本地缓存）"
+if [ "$SKIP_DOCKER" != "1" ]; then
+    echo "  • Docker 镜像   : ${IMAGE_NAME}:${VERSION_TAG}$([ "$DO_LATEST" = "1" ] && echo " + :latest")（本地缓存）"
+fi
 if [ "$DO_ANDROID" = "1" ]; then
     echo "  • Android 产物  : ${#ANDROID_OUT_FILES[@]} 个（$REPO_ROOT/dist/${VERSION_TAG}/）"
 fi
@@ -762,7 +836,9 @@ step "阶段 2/2：统一发布到远端"
 
 # --- 2.1 Docker 镜像推送 ---
 PUSH_START=$(date +%s)
-if [ "$MULTIARCH" = "1" ]; then
+if [ "$SKIP_DOCKER" = "1" ]; then
+    info "跳过 Docker 推送（套餐选择：仅 Android APK）"
+elif [ "$MULTIARCH" = "1" ]; then
     info "推送多架构镜像到 Docker Hub（${PLATFORMS}）"
     # 第二次 buildx build：直接命中阶段 1 的缓存，仅产生 push 流量
     PUSH_CMD=(
@@ -798,11 +874,13 @@ else
 fi
 PUSH_END=$(date +%s)
 PUSH_DURATION=$((PUSH_END - PUSH_START))
-ok "Docker 镜像推送完成，用时 ${PUSH_DURATION}s"
+if [ "$SKIP_DOCKER" != "1" ]; then
+    ok "Docker 镜像推送完成，用时 ${PUSH_DURATION}s"
+fi
 
 # 尝试获取 digest
 DIGEST=""
-if [ "$DRY_RUN" != "1" ]; then
+if [ "$DRY_RUN" != "1" ] && [ "$SKIP_DOCKER" != "1" ]; then
     if [ "$MULTIARCH" = "1" ]; then
         DIGEST="$(docker buildx imagetools inspect "${IMAGE_NAME}:${VERSION_TAG}" --format '{{.Manifest.Digest}}' 2>/dev/null || echo "")"
         [ -n "$DIGEST" ] && DIGEST="${IMAGE_NAME}@${DIGEST}"
@@ -918,8 +996,10 @@ END_TS=$(date +%s)
 TOTAL=$((END_TS - START_TS))
 
 step "发布完成"
-echo "  ${C_GREEN}${IMAGE_NAME}:${VERSION_TAG}${C_RESET}  ←  已推送"
-[ "$DO_LATEST" = "1" ] && echo "  ${C_GREEN}${IMAGE_NAME}:latest${C_RESET}  ←  已推送"
+if [ "$SKIP_DOCKER" != "1" ]; then
+    echo "  ${C_GREEN}${IMAGE_NAME}:${VERSION_TAG}${C_RESET}  ←  已推送"
+    [ "$DO_LATEST" = "1" ] && echo "  ${C_GREEN}${IMAGE_NAME}:latest${C_RESET}  ←  已推送"
+fi
 [ "$DO_GIT_TAG" = "1" ] && echo "  ${C_GREEN}git tag ${VERSION_TAG}${C_RESET}  ←  已推送到 GitHub"
 if [ "$DO_ANDROID" = "1" ]; then
     if [ "${#ANDROID_OUT_FILES[@]}" -gt 0 ]; then
