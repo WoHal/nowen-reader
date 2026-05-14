@@ -41,6 +41,10 @@ frontend/node_modules/
 build-output.txt
 err*.txt
 
+# Release artifacts (APK / SHA256SUMS / 镜像 tar 等都通过 gh release upload 发布,
+# 不进入 git 仓库)
+dist/
+
 # IDE
 .idea/
 .vscode/
