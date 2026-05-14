@@ -137,7 +137,7 @@ export function DataAdminPanel() {
           icon={<HardDrive className="h-4 w-4" />}
           label="缓存总大小"
           value={humanBytes(overview.cacheTotal)}
-          sub={`${overview.cache.reduce((s, b) => s + b.fileCount, 0)} 文件`}
+          sub={`${overview.cache.buckets.reduce((s, b) => s + b.fileCount, 0)} 文件`}
         />
         <OverviewCard
           icon={<Database className="h-4 w-4" />}
@@ -174,7 +174,7 @@ export function DataAdminPanel() {
       {/* 缓存管理 */}
       <Section title="缓存管理" icon={<HardDrive className="h-4 w-4" />}>
         <CacheManagementSection
-          cache={overview.cache}
+          cache={overview.cache.buckets}
           busyAction={busyAction}
           onAction={handleAction}
         />

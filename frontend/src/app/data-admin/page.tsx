@@ -94,7 +94,11 @@ export default function DataAdminPage() {
   const [orphanOnly, setOrphanOnly] = useState(false);
 
   // 阈值（本地草稿，保存时提交）
-  const [threshold, setThreshold] = useState<StorageThreshold>({});
+  const [threshold, setThreshold] = useState<StorageThreshold>({
+    cacheMaxMB: 0,
+    dbMaxMB: 0,
+    diskFreeMinMB: 0,
+  });
   const [thresholdDirty, setThresholdDirty] = useState(false);
 
   const showToast = (tone: "ok" | "err", msg: string) => {
