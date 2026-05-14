@@ -341,6 +341,8 @@ const zhCN = {
     doublePage: "双页",
     doubleCoverAlone: "封面单独显示",
     doubleCoverAloneDesc: "双页模式下首页单独显示（错页1页），用于对齐日漫见开页",
+    doublePageNoGap: "双页贴合（去除中间缝）",
+    doublePageNoGapDesc: "两页在屏幕中央贴合拼接，跨页大图观感更佳；关闭后两页各自居中、左右对称留白",
     readingDirection: "阅读方向",
     ltr: "从左到右",
     rtl: "从右到左",
@@ -1461,6 +1463,8 @@ export interface Translations {
     doublePage: string;
     doubleCoverAlone: string;
     doubleCoverAloneDesc: string;
+    doublePageNoGap: string;
+    doublePageNoGapDesc: string;
     readingDirection: string;
     ltr: string;
     rtl: string;

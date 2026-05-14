@@ -577,6 +577,7 @@ export default function ReaderPage() {
           comicId={comicId}
           onBoundaryReached={handleBoundaryReached}
           coverAlone={readerOpts.doubleCoverAlone}
+          noGap={readerOpts.doublePageNoGap}
         />
       ) : (
         <WebtoonView

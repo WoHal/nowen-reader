@@ -345,6 +345,8 @@ const en: Translations = {
     doublePage: "Double Page",
     doubleCoverAlone: "Cover as Single Page",
     doubleCoverAloneDesc: "Show the first page alone (cover), then pair the rest. Useful for manga 2-page spreads.",
+    doublePageNoGap: "Joined Spread (No Gap)",
+    doublePageNoGapDesc: "Snap both pages together at the screen center. Better for two-page artwork; turn off for symmetric letterboxing.",
     readingDirection: "Reading Direction",
     ltr: "Left to Right",
     rtl: "Right to Left",

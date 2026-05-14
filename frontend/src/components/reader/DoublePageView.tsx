@@ -23,6 +23,8 @@ interface DoublePageViewProps {
   onBoundaryReached?: (direction: "next" | "prev") => void;
   /** 封面单独显示（错页1页），日漫见开页对齐用 */
   coverAlone?: boolean;
+  /** 双页贴合（去除中间缝），两页在屏幕中央拼接 */
+  noGap?: boolean;
 }
 
 export default function DoublePageView({
@@ -39,6 +41,7 @@ export default function DoublePageView({
   comicId,
   onBoundaryReached,
   coverAlone = false,
+  noGap = true,
 }: DoublePageViewProps) {
   const [loadedLeft, setLoadedLeft] = useState(false);
   const [loadedRight, setLoadedRight] = useState(false);
@@ -246,12 +249,20 @@ export default function DoublePageView({
     error: boolean,
     setError: (v: boolean) => void,
     keyPrefix: string,
-    imgRef?: React.RefObject<HTMLImageElement | null>
+    imgRef?: React.RefObject<HTMLImageElement | null>,
+    side: "left" | "right" = "left"
   ) => {
     if (!pageUrl) return <div className="flex-1" />;
 
+    // 贴合模式：左页右对齐、右页左对齐，两页在屏幕中央拼接；否则各自居中
+    const justify = noGap
+      ? side === "left"
+        ? "justify-end"
+        : "justify-start"
+      : "justify-center";
+
     return (
-      <div className="relative h-full flex-1 max-w-[50vw] flex items-center justify-center">
+      <div className={`relative h-full flex-1 max-w-[50vw] flex items-center ${justify}`}>
         {!loaded && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className={`h-6 w-6 animate-spin rounded-full border-2 border-t-accent ${
@@ -308,12 +319,14 @@ export default function DoublePageView({
       onTouchEnd={handleTouchEnd}
     >
       <div
-        className="flex h-full items-center justify-center gap-1 p-4"
+        className={`flex h-full items-center justify-center ${noGap ? "gap-0" : "gap-1 p-4"}`}
         style={containerWidth ? { width: containerWidth, maxWidth: "100%", margin: "0 auto" } : undefined}
       >
-        {renderPage(leftPage, leftPageIndex, loadedLeft, setLoadedLeft, errorLeft, setErrorLeft, "left", leftImgRef)}
-        <div className={`h-[80%] w-px ${readerTheme === "day" ? "bg-gray-300" : "bg-white/5"}`} />
-        {renderPage(rightPage, rightPageIndex, loadedRight, setLoadedRight, errorRight, setErrorRight, "right", rightImgRef)}
+        {renderPage(leftPage, leftPageIndex, loadedLeft, setLoadedLeft, errorLeft, setErrorLeft, "left", leftImgRef, "left")}
+        {!noGap && (
+          <div className={`h-[80%] w-px ${readerTheme === "day" ? "bg-gray-300" : "bg-white/5"}`} />
+        )}
+        {renderPage(rightPage, rightPageIndex, loadedRight, setLoadedRight, errorRight, setErrorRight, "right", rightImgRef, "right")}
       </div>
 
       {/* 移动端双页模式提示 */}

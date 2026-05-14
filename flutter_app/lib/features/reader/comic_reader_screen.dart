@@ -410,12 +410,15 @@ class _ComicReaderScreenState extends ConsumerState<ComicReaderScreen> {
         final leftUrl = getImageUrl(serverUrl, widget.comicId, page: leftPage);
         final rightUrl = getImageUrl(serverUrl, widget.comicId, page: rightPage);
 
+        // 双页贴合：把左页右对齐、右页左对齐，让两张图在屏幕正中央拼合，去除中间缝
+        final noGap = _settings.doublePageNoGap;
         return Row(
           children: [
             Expanded(
               child: AuthenticatedImage(
                 imageUrl: leftUrl,
                 fit: BoxFit.contain,
+                alignment: noGap ? Alignment.centerRight : Alignment.center,
                 placeholder: const Center(child: CircularProgressIndicator()),
                 errorWidget: const Center(
                   child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
@@ -426,6 +429,7 @@ class _ComicReaderScreenState extends ConsumerState<ComicReaderScreen> {
               child: AuthenticatedImage(
                 imageUrl: rightUrl,
                 fit: BoxFit.contain,
+                alignment: noGap ? Alignment.centerLeft : Alignment.center,
                 placeholder: const Center(child: CircularProgressIndicator()),
                 errorWidget: const Center(
                   child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
