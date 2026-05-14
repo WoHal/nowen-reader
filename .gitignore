@@ -11,6 +11,9 @@ server
 *.db-wal
 *.db-shm
 data/
+# 例外：Flutter App 的数据层（providers/api/models）必须入库
+!flutter_app/lib/data/
+!flutter_app/lib/data/**
 
 # Cache
 .cache/
