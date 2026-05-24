@@ -268,10 +268,16 @@ func GetComicPagesEx(comicID string) (*PagesResult, error) {
 
 	default:
 		reader, err := getPooledReader(fp)
-		if err != nil {
+		if err \!= nil {
 			return nil, err
 		}
-		entries = archive.GetImageEntries(reader)
+		// E-book archives in comic mode: treat embedded images as pages
+		// (epub/mobi/azw3 readers return chapter entries, not image files)
+		if archive.IsEbookType(archiveType) && \!isNovel {
+			entries = archive.ListEpubEmbeddedImages(reader)
+		} else {
+			entries = archive.GetImageEntries(reader)
+		}
 	}
 
 	// Update cache
@@ -496,19 +502,39 @@ func getArchivePageImage(comicID, fp string, pageIndex int) (*PageImage, error) 
 		return nil, err
 	}
 
-	images := archive.GetImageEntries(reader)
+	// For e-book archives, use embedded image extraction
+	// (epub/mobi/azw3 readers list chapter entries, not image files)
+	var images []string
+	if archive.IsEbookType(archiveType) {
+		images = archive.ListEpubEmbeddedImages(reader)
+	} else {
+		images = archive.GetImageEntries(reader)
+	}
 	if pageIndex < 0 || pageIndex >= len(images) {
 		return nil, fmt.Errorf("page index %d out of range (0-%d)", pageIndex, len(images)-1)
 	}
 
 	entryName := images[pageIndex]
-	data, err := reader.ExtractEntry(entryName)
-	if err != nil {
-		return nil, fmt.Errorf("extract page %d: %w", pageIndex, err)
+
+	var data []byte
+	var mimeType string
+
+	if archive.IsEbookType(archiveType) {
+		imgData, imgMime, err := archive.GetEpubEmbeddedImageData(reader, entryName)
+		if err \!= nil {
+			return nil, fmt.Errorf("extract page %d: %w", pageIndex, err)
+		}
+		data = imgData
+		mimeType = imgMime
+	} else {
+		data, err = reader.ExtractEntry(entryName)
+		if err \!= nil {
+			return nil, fmt.Errorf("extract page %d: %w", pageIndex, err)
+		}
+		mimeType = archive.GetMimeType(entryName)
 	}
 
 	ext := strings.ToLower(filepath.Ext(entryName))
-	mimeType := archive.GetMimeType(entryName)
 
 	// Write to disk cache (fire-and-forget) — 图片文件夹漫画跳过缓存
 	if !isImageFolder {
