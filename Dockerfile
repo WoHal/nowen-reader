@@ -9,19 +9,16 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /frontend
 
-COPY frontend/package*.json ./
+COPY frontend/ ./
 
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm ci
-
-COPY frontend/ .
-
-RUN npm run build && \
-    echo "== Frontend build output ==" && \
-    ls -la && \
-    (ls dist && echo "[OK] dist exists") || \
-    (ls build && echo "[OK] build exists")
-
+RUN if [ -f package.json ]; then \
+      npm config set registry https://registry.npmmirror.com && \
+      npm install && \
+      npm run build; \
+    else \
+      echo "no frontend found, skipping"; \
+      mkdir -p dist; \
+    fi
 
 # ----------------------------
 # 2. Go build stage
