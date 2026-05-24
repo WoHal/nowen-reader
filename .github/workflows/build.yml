@@ -75,6 +75,7 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           GIT_COMMIT=$(git rev-parse --short HEAD)
+
           go build -ldflags="-s -w \
             -X main.Version=${VERSION} \
             -X main.BuildTime=${BUILD_TIME} \
@@ -112,7 +113,9 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -122,7 +125,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ steps.version.outputs.VERSION }}
-            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            BUILD_TIME=${{ steps.version.outputs.BUILD_TIME }}
             GIT_COMMIT=${{ github.sha }}
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}
@@ -131,7 +134,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================
-  # Create GitHub Release (on tag push)
+  # Create GitHub Release (NO third-party actions)
   # ============================================================
   release:
     needs: [build, docker]
@@ -139,6 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -147,8 +151,12 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: artifacts/**/*
+      - name: Create GitHub Release (official gh CLI)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+
+          gh release create "$VERSION" \
+            artifacts/**/* \
+            --generate-notes
