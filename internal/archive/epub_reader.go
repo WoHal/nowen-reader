@@ -210,7 +210,7 @@ func (r *epubReader) parseEpub() error {
 	}
 
 	if len(r.chapters) == 0 {
-		return fmt.Errorf("no readable chapters in EPUB")
+		log.Printf("[epub] No readable text chapters in %s (image-heavy EPUB, will use comic mode)", r.filepath)
 	}
 
 	// Step 5: Extract image paths from each XHTML page in spine order.
@@ -265,14 +265,6 @@ func (r *epubReader) parseEpub() error {
 			}
 		}
 	}
-
-	log.Printf("[epub] Step5: spineImages count=%d, first5=%v", len(r.spineImages), func() []string {
-		n := 5
-		if len(r.spineImages) < n {
-			n = len(r.spineImages)
-		}
-		return r.spineImages[:n]
-	}())
 
 	return nil
 }
@@ -969,7 +961,6 @@ func ListEpubEmbeddedImages(r Reader) []string {
 
 	// 如果有 spine 顺序的图片列表，优先使用（漫画模式）
 	if len(er.spineImages) > 0 {
-		log.Printf("[ListEpubEmbeddedImages] Using spine order: %d images, first5=%v", len(er.spineImages), er.spineImages[:min(5, len(er.spineImages))])
 		for _, img := range er.spineImages {
 			if !seen[img] {
 				seen[img] = true
@@ -998,7 +989,6 @@ func ListEpubEmbeddedImages(r Reader) []string {
 	}
 
 	// 非 spine 模式：封面优先，然后按 zip 目录顺序
-	log.Printf("[ListEpubEmbeddedImages] Falling back to zip order (spineImages=%d)", len(er.spineImages))
 	if er.coverPath != "" && config.IsImageFile(er.coverPath) {
 		images = append(images, er.coverPath)
 		seen[er.coverPath] = true

@@ -295,6 +295,9 @@ func GetComicPagesEx(comicID string) (*PagesResult, error) {
 	pageListCache[comicID] = &pageListCacheEntry{entries: entries, chapterTitles: chapterTitles, isPdf: isPdf, ts: time.Now()}
 	pageListCacheMu.Unlock()
 
+	// Invalidate disk cache if page order changed (e.g. zip→spine order fix)
+	invalidatePageImageCacheIfNeeded(comicID, entries)
+
 	return &PagesResult{
 		Entries:       entries,
 		ChapterTitles: chapterTitles,
@@ -858,4 +861,46 @@ func GetArchivePageCount(fp string, isComic ...bool) (int, error) {
 
 	images := archive.GetImageEntries(reader)
 	return len(images), nil
+}
+
+// invalidatePageImageCacheIfNeeded clears the disk-based page image cache
+// for a comic when the page list order has changed (e.g., switching from
+// zip-ordered to spine-ordered for manga EPUBs).
+func invalidatePageImageCacheIfNeeded(comicID string, entries []string) {
+	if len(entries) == 0 {
+		return
+	}
+
+	cacheDir := filepath.Join(config.GetPagesCacheDir(), comicID)
+
+	// Build a fingerprint from the first and last entry names
+	fingerprint := entries[0]
+	if len(entries) > 1 {
+		fingerprint += "|" + entries[len(entries)-1]
+	}
+
+	fpPath := filepath.Join(cacheDir, ".order-fp")
+	existing, err := os.ReadFile(fpPath)
+	if err == nil && string(existing) == fingerprint {
+		return
+	}
+
+	entriesOnDisk, err := os.ReadDir(cacheDir)
+	if err != nil {
+		_ = os.MkdirAll(cacheDir, 0755)
+		_ = os.WriteFile(fpPath, []byte(fingerprint), 0644)
+		return
+	}
+
+	for _, e := range entriesOnDisk {
+		if e.Name() == ".order-fp" {
+			continue
+		}
+		_ = os.Remove(filepath.Join(cacheDir, e.Name()))
+	}
+
+	_ = os.MkdirAll(cacheDir, 0755)
+	_ = os.WriteFile(fpPath, []byte(fingerprint), 0644)
+
+	log.Printf("[cache] Invalidated page image cache for %s (order changed)", comicID)
 }
