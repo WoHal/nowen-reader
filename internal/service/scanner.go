@@ -547,7 +547,21 @@ func fullSync() {
 							_ = store.UpdateComicPageCount(item.ID, -1)
 						}
 					}()
-					pageCount, err := GetArchivePageCount(item.Path)
+					// For ebook archives already marked as comic in DB, count images instead of chapters
+					archiveType := archive.DetectType(item.Path)
+					var pageCount int
+					if archive.IsEbookType(archiveType) {
+						// Check DB type: if comic, count embedded images; if novel, count chapters
+						comic, dbErr := store.GetComicByID(item.ID)
+						if dbErr == nil && comic != nil && comic.ComicType == "comic" {
+							pageCount, err = GetArchivePageCount(item.Path, true)
+						} else {
+							pageCount, err = GetArchivePageCount(item.Path)
+						}
+					} else {
+						pageCount, err = GetArchivePageCount(item.Path)
+					}
+
 					if err != nil || pageCount <= 0 {
 						log.Printf("[full-sync] Failed to parse %s: %v", item.Filename, err)
 						_ = store.UpdateComicPageCount(item.ID, -1)
@@ -565,7 +579,6 @@ func fullSync() {
 					// 对 epub/mobi/azw3 文件检测内容类型：如果以图片为主则标记为漫画
 					// 注意：默认仅对"漫画目录"中的电子书做该检测，避免图文混排教材
 					// 被错误识别为漫画。可通过 ScannerConfig.EbookTypeAutoDetect 调整。
-					archiveType := archive.DetectType(item.Path)
 					if archive.IsEbookType(archiveType) && shouldAutoDetectEbookType(item.Path) {
 						if archiveType == archive.TypeEpub {
 							if archive.IsImageHeavyEpub(item.Path) {
@@ -965,7 +978,46 @@ func RedetectEbookTypes() int {
 	} else {
 		log.Printf("[redetect] No files reclassified (checked %d files)", len(novelMobi))
 	}
-	return fixed + reclassified
+
+	// ---------------------------------------------------------
+	// 阶段 3：修正 EPUB 漫画的页数 —— 已标为 comic 的 EPUB 文件可能
+	// pageCount 仍然是章节数（在 fullSync 中被错误计数），需要用图片数覆盖。
+	// 同时修正 MOBI/AZW3 漫画的页数（同理）。
+	// ---------------------------------------------------------
+	comicEbookPageFix, err := store.GetEbookComicsByType("comic")
+	if err != nil {
+		log.Printf("[redetect] Error querying comic ebooks for page fix: %v", err)
+		return fixed + reclassified
+	}
+	if len(comicEbookPageFix) > 0 {
+		log.Printf("[redetect] Checking %d ebook comic(s) for correct page count...", len(comicEbookPageFix))
+	}
+	pageFixed := 0
+	for _, c := range comicEbookPageFix {
+		var foundPath string
+		for _, dir := range allDirs {
+			candidate := filepath.Join(dir, c.Filename)
+			if _, err := os.Stat(candidate); err == nil {
+				foundPath = candidate
+				break
+			}
+		}
+		if foundPath == "" {
+			continue
+		}
+		imgCount, err := GetArchivePageCount(foundPath, true)
+		if err != nil || imgCount <= 0 {
+			continue
+		}
+		// Only update if the stored pageCount differs
+		_ = store.UpdateComicPageCount(c.ID, imgCount)
+		pageFixed++
+	}
+	if pageFixed > 0 {
+		log.Printf("[redetect] Updated page count for %d ebook comic(s)", pageFixed)
+	}
+
+	return fixed + reclassified + pageFixed
 }
 
 // ============================================================
