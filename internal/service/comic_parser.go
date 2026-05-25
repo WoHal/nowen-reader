@@ -124,6 +124,7 @@ type pageListCacheEntry struct {
 	entries       []string
 	chapterTitles []string
 	isPdf         bool
+	isNovel       bool
 	ts            time.Time
 }
 
@@ -228,7 +229,7 @@ func GetComicPagesEx(comicID string) (*PagesResult, error) {
 
 	// Check cache for entries
 	pageListCacheMu.RLock()
-	if cached, ok := pageListCache[comicID]; ok && time.Since(cached.ts) < pageListCacheTTL {
+	if cached, ok := pageListCache[comicID]; ok && time.Since(cached.ts) < pageListCacheTTL && cached.isNovel == isNovel {
 		pageListCacheMu.RUnlock()
 		result := &PagesResult{Entries: cached.entries, IsNovel: isNovel, IsPdf: cached.isPdf}
 		if isNovel {
@@ -292,7 +293,7 @@ func GetComicPagesEx(comicID string) (*PagesResult, error) {
 
 	// Update cache
 	pageListCacheMu.Lock()
-	pageListCache[comicID] = &pageListCacheEntry{entries: entries, chapterTitles: chapterTitles, isPdf: isPdf, ts: time.Now()}
+	pageListCache[comicID] = &pageListCacheEntry{entries: entries, chapterTitles: chapterTitles, isPdf: isPdf, isNovel: isNovel, ts: time.Now()}
 	pageListCacheMu.Unlock()
 
 	// Invalidate disk cache if page order changed (e.g. zip→spine order fix)

@@ -182,14 +182,6 @@ func (r *epubReader) parseEpub() error {
 		}
 
 		rawHTML := string(data)
-		textContent := extractTextFromXHTML(rawHTML)
-		if len(strings.TrimSpace(textContent)) == 0 {
-			continue
-		}
-
-		// Sanitize HTML: keep formatting tags, rewrite image src to API URLs
-		chapterDir := path.Dir(href)
-		htmlContent := sanitizeEpubHTML(rawHTML, chapterDir)
 
 		title := extractXHTMLTitle(rawHTML)
 		if title == "" {
@@ -197,20 +189,34 @@ func (r *epubReader) parseEpub() error {
 		}
 
 		entryName := fmt.Sprintf("chapter-%04d.html", i+1)
-		r.chapters = append(r.chapters, epubChapter{
-			title:       title,
-			href:        href,
-			content:     textContent,
-			htmlContent: htmlContent,
-		})
 		r.entries = append(r.entries, Entry{
 			Name:        entryName,
 			IsDirectory: false,
 		})
+
+		textContent := extractTextFromXHTML(rawHTML)
+
+		// Sanitize HTML: keep formatting tags, rewrite image src to API URLs
+		chapterDir := path.Dir(href)
+		htmlContent := sanitizeEpubHTML(rawHTML, chapterDir)
+
+		r.chapters = append(r.chapters, epubChapter{
+			title:       title,
+			href:        href,
+			content:     strings.TrimSpace(textContent),
+			htmlContent: htmlContent,
+		})
 	}
 
-	if len(r.chapters) == 0 {
-		log.Printf("[epub] No readable text chapters in %s (image-heavy EPUB, will use comic mode)", r.filepath)
+	// Log if no chapters have text content (image-heavy EPUB)
+	textChapterCount := 0
+	for _, ch := range r.chapters {
+		if ch.content != "" {
+			textChapterCount++
+		}
+	}
+	if textChapterCount == 0 {
+		log.Printf("[epub] No text chapters in %s (image-heavy, will use comic mode)", r.filepath)
 	}
 
 	// Step 5: Extract image paths from each XHTML page in spine order.
