@@ -25,13 +25,15 @@ type epubChapter struct {
 }
 
 type epubReader struct {
-	filepath  string
-	comicID   string // populated later for image URL rewriting
-	rc        *zip.ReadCloser
-	chapters  []epubChapter
-	entries   []Entry
-	coverPath string // path to cover image inside the EPUB
-	resources map[string]bool
+	filepath        string
+	comicID         string // populated later for image URL rewriting
+	rc              *zip.ReadCloser
+	chapters        []epubChapter
+	entries         []Entry
+	coverPath       string // path to cover image inside the EPUB
+	resources       map[string]bool
+	spineImages     []string // image paths extracted from XHTML pages in spine order (for comic mode)
+	spineImageSet   map[string]bool
 }
 
 // OPF package document structures
@@ -209,6 +211,58 @@ func (r *epubReader) parseEpub() error {
 
 	if len(r.chapters) == 0 {
 		return fmt.Errorf("no readable chapters in EPUB")
+	}
+
+	// Step 5: Extract image paths from each XHTML page in spine order.
+	// This is used by comic mode to list embedded images in correct reading order
+	// rather than the arbitrary zip entry order.
+	r.spineImages = make([]string, 0)
+	r.spineImageSet = make(map[string]bool)
+	imgSrcRegex := regexp.MustCompile(`(?i)<img[^>]+src\s*=\s*"([^"]+)"`)
+	svgImgRegex := regexp.MustCompile(`(?i)<image[^>]+href\s*=\s*"([^"]+)"`)
+	for _, href := range chapterHrefs {
+		data, err := r.readZipFile(href)
+		if err != nil {
+			continue
+		}
+		html := string(data)
+		chapterDir := path.Dir(href)
+
+		// Extract <img src="...">
+		for _, m := range imgSrcRegex.FindAllStringSubmatch(html, -1) {
+			src := m[1]
+			if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "data:") {
+				continue
+			}
+			resolved := src
+			if !strings.HasPrefix(src, "/") && chapterDir != "" && chapterDir != "." {
+				resolved = path.Join(chapterDir, src)
+			} else if strings.HasPrefix(src, "/") {
+				resolved = strings.TrimPrefix(src, "/")
+			}
+			if !r.spineImageSet[resolved] {
+				r.spineImageSet[resolved] = true
+				r.spineImages = append(r.spineImages, resolved)
+			}
+		}
+
+		// Extract <image href="..."> (SVG)
+		for _, m := range svgImgRegex.FindAllStringSubmatch(html, -1) {
+			src := m[1]
+			if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "data:") {
+				continue
+			}
+			resolved := src
+			if !strings.HasPrefix(src, "/") && chapterDir != "" && chapterDir != "." {
+				resolved = path.Join(chapterDir, src)
+			} else if strings.HasPrefix(src, "/") {
+				resolved = strings.TrimPrefix(src, "/")
+			}
+			if !r.spineImageSet[resolved] {
+				r.spineImageSet[resolved] = true
+				r.spineImages = append(r.spineImages, resolved)
+			}
+		}
 	}
 
 	return nil
@@ -895,7 +949,7 @@ func IsImageHeavyEpub(filePath string) bool {
 }
 
 // ListEpubEmbeddedImages 返回 EPUB 内嵌的所有图片资源路径（zip 内部的相对路径）。
-// 优先把封面图（如已识别）放在第一位。用于"从内页选择封面"。
+// 对于漫画类 EPUB，使用 spine 阅读顺序排列图片；否则按 zip 目录顺序。
 func ListEpubEmbeddedImages(r Reader) []string {
 	er, ok := r.(*epubReader)
 	if !ok || er.rc == nil {
@@ -904,12 +958,40 @@ func ListEpubEmbeddedImages(r Reader) []string {
 	var images []string
 	seen := make(map[string]bool)
 
-	// 把已识别的封面放第一位
+	// 如果有 spine 顺序的图片列表，优先使用（漫画模式）
+	if len(er.spineImages) > 0 {
+		for _, img := range er.spineImages {
+			if !seen[img] {
+				seen[img] = true
+				images = append(images, img)
+			}
+		}
+		// 补充 spine 中未出现的其他图片（如封面等）
+		for _, f := range er.rc.File {
+			if f.FileInfo().IsDir() {
+				continue
+			}
+			name := f.Name
+			base := path.Base(name)
+			if strings.HasPrefix(name, "__MACOSX") || strings.HasPrefix(base, ".") {
+				continue
+			}
+			if !config.IsImageFile(name) {
+				continue
+			}
+			if !seen[name] {
+				seen[name] = true
+				images = append(images, name)
+			}
+		}
+		return images
+	}
+
+	// 非 spine 模式：封面优先，然后按 zip 目录顺序
 	if er.coverPath != "" && config.IsImageFile(er.coverPath) {
 		images = append(images, er.coverPath)
 		seen[er.coverPath] = true
 	}
-
 	for _, f := range er.rc.File {
 		if f.FileInfo().IsDir() {
 			continue
