@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -83,7 +82,7 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 			Title:    comic.Title,
 			Score:    score,
 			Reasons:  reasons,
-			CoverURL: fmt.Sprintf("/api/comics/%s/thumbnail", comic.ID),
+			CoverURL: store.BuildComicCoverURL(comic.ID),
 			Author:   comic.Author,
 			Genre:    comic.Genre,
 			Filename: comic.Filename,
@@ -213,7 +212,7 @@ func GetSimilarComics(comicID string, limit int) ([]ScoredComic, error) {
 				Title:    comic.Title,
 				Score:    score,
 				Reasons:  reasons,
-				CoverURL: fmt.Sprintf("/api/comics/%s/thumbnail", comic.ID),
+				CoverURL: store.BuildComicCoverURL(comic.ID),
 				Author:   comic.Author,
 				Genre:    comic.Genre,
 				Filename: comic.Filename,

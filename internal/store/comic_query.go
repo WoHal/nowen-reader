@@ -349,7 +349,7 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 			v := int(year.Int64)
 			c.Year = &v
 		}
-		c.CoverURL = fmt.Sprintf("/api/comics/%s/thumbnail", c.ID)
+		c.CoverURL = BuildComicCoverURL(c.ID)
 
 		// Initialize empty slices (not null in JSON)
 		c.Tags = []ComicTagInfo{}
@@ -527,7 +527,7 @@ func GetComicByID(id string) (*ComicListItem, error) {
 		v := int(year.Int64)
 		c.Year = &v
 	}
-	c.CoverURL = fmt.Sprintf("/api/comics/%s/thumbnail", c.ID)
+	c.CoverURL = BuildComicCoverURL(c.ID)
 
 	// Tags
 	c.Tags = []ComicTagInfo{}

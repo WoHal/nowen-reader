@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -184,7 +183,7 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 				WHERE gi."groupId" = ? ORDER BY gi."sortIndex" ASC LIMIT 1
 			`, g.ID).Scan(&firstComicID)
 			if err == nil {
-				g.CoverURL = fmt.Sprintf("/api/comics/%s/thumbnail", firstComicID)
+				g.CoverURL = BuildComicCoverURL(firstComicID)
 			}
 		}
 		groups = append(groups, g)
@@ -264,7 +263,7 @@ func GetGroupByID(groupID int, contentType ...string) (*ComicGroupDetail, error)
 		); err != nil {
 			continue
 		}
-		item.CoverURL = fmt.Sprintf("/api/comics/%s/thumbnail", item.ComicID)
+		item.CoverURL = BuildComicCoverURL(item.ComicID)
 		if lastReadAt.Valid {
 			s := lastReadAt.Time.UTC().Format(time.RFC3339)
 			item.LastReadAt = &s

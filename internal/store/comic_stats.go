@@ -295,7 +295,7 @@ func DetectDuplicates(comicsDir string) ([]DuplicateGroup, error) {
 			FileSize:  c.FileSize,
 			PageCount: c.PageCount,
 			AddedAt:   c.AddedAt.UTC().Format(time.RFC3339Nano),
-			CoverURL:  fmt.Sprintf("/api/comics/%s/thumbnail", c.ID),
+			CoverURL:  BuildComicCoverURL(c.ID),
 			Author:    c.Author,
 			Genre:     c.Genre,
 			Format:    fileFormat(c.Filename),
