@@ -23,7 +23,8 @@ data/
 
 #claude
 .claude/
-
+dbcheck
+migrate
 # Comics (user data)
 comics/
 
