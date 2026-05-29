@@ -65,6 +65,9 @@ func SetupRoutes(r *gin.Engine) {
 		})
 	})
 
+	// PDF 渲染工具探测（前端在打开 PDF 阅读 / 选内页封面前调用）
+	api.GET("/system/pdf-renderer", GetPdfRendererStatus)
+
 	// ============================================================
 	// Comics CRUD (Phase 2)
 	// ============================================================

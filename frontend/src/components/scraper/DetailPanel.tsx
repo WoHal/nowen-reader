@@ -29,6 +29,7 @@ import type { LibraryItem } from "@/lib/scraper-store";
 import { emitMetadataUpdated, emitTagsUpdated, emitCategoriesUpdated, emitScrapeApplied } from "@/lib/sync-event";
 import { invalidateSwCache } from "@/lib/pwa";
 import { invalidateComicsCache } from "@/hooks/useComicList";
+import PdfRendererBanner from "@/components/PdfRendererBanner";
 import { DetailInlineEditField } from "./DetailInlineEditField";
 
 export function DetailPanel({
@@ -493,6 +494,8 @@ export function DetailPanel({
 
   const handleOpenCoverPicker = async () => {
     setShowCoverMenu(false);
+    // 打开弹框前刷新 coverKey，作为页面缩略图 URL 版本号，避开可能存在的坏 SW 缓存。
+    setCoverKey(Date.now());
     const isNovel = item.contentType === "novel";
     try {
       if (isNovel) {
@@ -1427,6 +1430,11 @@ export function DetailPanel({
                 <X className="h-5 w-5" />
               </button>
             </div>
+            {coverPickerMode !== "embedded" && (
+              <div className="px-4 pt-3">
+                <PdfRendererBanner compact />
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-4">
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {coverPickerMode === "embedded"
@@ -1439,7 +1447,7 @@ export function DetailPanel({
                         className="group/page relative aspect-[5/7] overflow-hidden rounded-lg border-2 border-transparent bg-zinc-800 transition-all hover:border-accent hover:shadow-lg"
                       >
                         <img
-                          src={`/api/comics/${item.id}/embedded-image/${img.index}`}
+                          src={`/api/comics/${item.id}/embedded-image/${img.index}?v=${coverKey}`}
                           alt={`Image ${img.index + 1}`}
                           className="h-full w-full object-cover"
                           loading="lazy"
@@ -1459,7 +1467,7 @@ export function DetailPanel({
                         className="group/page relative aspect-[5/7] overflow-hidden rounded-lg border-2 border-transparent bg-zinc-800 transition-all hover:border-accent hover:shadow-lg"
                       >
                         <img
-                          src={`/api/comics/${item.id}/page/${i}`}
+                          src={`/api/comics/${item.id}/page/${i}?v=${coverKey}`}
                           alt={`Page ${i + 1}`}
                           className="h-full w-full object-cover"
                           loading="lazy"
