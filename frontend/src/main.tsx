@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { AuthGuard } from "@/components/AuthGuard";
 import { PWARegister } from "@/app/pwa-register";
 import { useAuth } from "@/lib/auth-context";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,6 +32,15 @@ import Scraper from "@/app/scraper/page";
 import Collections from "@/app/collections/page";
 import TagManager from "@/app/tag-manager/page";
 import DataAdmin from "@/app/data-admin/page";
+
+/** 动态设置浏览器标签页标题 */
+function SiteTitle() {
+  const { siteName } = useSiteSettings();
+  React.useEffect(() => {
+    document.title = `${siteName} - Comic Reader`;
+  }, [siteName]);
+  return null;
+}
 
 /** 管理员路由守卫 —— 非管理员用户重定向到首页 */
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -74,6 +84,7 @@ function App() {
             <AuthProvider>
               <ToastProvider>
                 <AuthGuard>
+                  <SiteTitle />
                   <PageProgressBar />
                   <AnimatedRoutes />
                 </AuthGuard>

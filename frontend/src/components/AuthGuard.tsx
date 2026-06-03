@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/i18n";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { User, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 function SetupPage() {
   const { register } = useAuth();
   const t = useTranslation();
+  const { siteName } = useSiteSettings();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
@@ -55,7 +57,7 @@ function SetupPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            NowenReader
+            {siteName}
           </h1>
           <p className="text-muted">{t.auth?.setupTitle || "Create Admin Account"}</p>
           <p className="text-sm text-muted/70 mt-1">
@@ -130,6 +132,7 @@ function SetupPage() {
 function LoginPage() {
   const { login, register, registrationMode } = useAuth();
   const t = useTranslation();
+  const { siteName } = useSiteSettings();
   const canRegister = registrationMode === "open";
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState("");
@@ -161,7 +164,7 @@ function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            NowenReader1
+            {siteName}
           </h1>
           <p className="text-muted">
             {isRegister

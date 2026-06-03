@@ -732,7 +732,7 @@ const zhCN = {
   comicGroup: {
     title: "漫画系列管理",
     groups: "系列",
-    createGroup: "创建系列",
+    createGroup: "创建合集",
     editGroup: "编辑系列",
     deleteGroup: "删除系列",
     groupName: "系列名称",

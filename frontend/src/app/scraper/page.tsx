@@ -980,7 +980,7 @@ export default function ScraperPage() {
                   <Loader2 className="h-6 w-6 animate-spin text-accent" />
                 </div>
               ) : scraperGroups.length === 0 ? (
-                <div className="py-12 text-center text-sm text-muted">暂无系列数据，请先在主页创建系列</div>
+                <div className="py-12 text-center text-sm text-muted">暂无合集数据，请先在主页创建合集</div>
               ) : (() => {
                 const { items: filtered, total: groupTotal, totalPages: groupTotalPages } = getFilteredSortedGroups();
                 return filtered.length === 0 ? (

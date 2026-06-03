@@ -56,7 +56,7 @@ export default function Navbar({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scraperT = (t as any).scraper || {};
   const { batchRunning } = useScraperStore();
-  const { scraperEnabled } = useSiteSettings();
+  const { siteName, scraperEnabled } = useSiteSettings();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
@@ -67,7 +67,7 @@ export default function Navbar({
             <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
           </div>
           <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground">
-            NowenReader
+            {siteName}
           </span>
         </div>
 

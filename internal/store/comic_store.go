@@ -414,9 +414,9 @@ func ClearAllTagsFromComic(comicID string) error {
 	return nil
 }
 
-// UpdateTagColor 更新标签颜色。
+// UpdateTagColor 更新标签颜色，标签不存在时自动创建。
 func UpdateTagColor(tagName, color string) error {
-	_, err := db.Exec(`UPDATE "Tag" SET "color" = ? WHERE "name" = ?`, color, tagName)
+	_, err := db.Exec(`INSERT INTO "Tag" ("name", "color") VALUES (?, ?) ON CONFLICT("name") DO UPDATE SET "color" = excluded."color"`, tagName, color)
 	return err
 }
 
