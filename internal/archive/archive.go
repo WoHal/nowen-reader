@@ -879,79 +879,30 @@ func pdfPageCountByMutool(fp string) (int, bool) {
 }
 
 // GetPdfPageSize 返回 PDF 指定页面的物理宽高（单位：pt，1pt = 1/72 inch）。
-// 使用 `mutool info` 解析 MediaBox/CropBox 获取。
+// 使用纯 Go 的 rsc.io/pdf 读取页面尺寸，无需外部工具。
 func GetPdfPageSize(fp string, pageIndex int) (widthPt, heightPt float64, err error) {
-	bin, ok := config.LookPdfTool("mutool", exec.LookPath)
-	if !ok {
-		return 0, 0, fmt.Errorf("mutool not installed")
-	}
-	cmd := exec.Command(bin, "info", fp)
-	out, err := cmd.CombinedOutput()
+	f, err := rscpdf.Open(fp)
 	if err != nil {
-		return 0, 0, fmt.Errorf("mutool info failed: %w", err)
+		return 0, 0, fmt.Errorf("open pdf: %w", err)
+	}
+	defer f.Close()
+
+	pageNum := pageIndex + 1 // rsc.io/pdf 使用 1-based 页码
+	if pageNum < 1 || pageNum > f.NumPage() {
+		return 0, 0, fmt.Errorf("page %d out of range (1-%d)", pageNum, f.NumPage())
 	}
 
-	raw := string(out)
-	pageNum := pageIndex + 1 // mutool info 使用 1-based 页码
-	lines := strings.Split(raw, "\n")
-	foundPage := false
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// 定位 "Page N" 行（兼容 "Page N:" 或 "Page N" 格式）
-		if strings.HasPrefix(trimmed, "Page ") {
-			var n int
-			if _, err := fmt.Sscanf(trimmed, "Page %d", &n); err == nil && n == pageNum {
-				foundPage = true
-				continue
-			}
-			// 遇到下一个 Page 行，停止搜索
-			if foundPage {
-				break
-			}
-		}
-
-		if !foundPage {
-			continue
-		}
-
-		// 在目标 Page 行之后查找 MediaBox 或 CropBox
-		// 兼容格式: "MediaBox: 0 0 595.276 841.89" 或 "MediaBox:   0 0 595 842"
-		// 也兼容 "MediaBox[0 0 595 842]" 格式
-		boxLine := trimmed
-		boxPrefix := ""
-		if strings.HasPrefix(boxLine, "MediaBox") {
-			boxPrefix = "MediaBox"
-		} else if strings.HasPrefix(boxLine, "CropBox") {
-			boxPrefix = "CropBox"
-		}
-
-		if boxPrefix != "" {
-			// 去掉前缀，处理 ": ..." 和 "[...]" 两种格式
-			rest := strings.TrimPrefix(boxLine, boxPrefix)
-			rest = strings.TrimLeft(rest, ": ")
-			rest = strings.Trim(rest, "[]")
-			parts := strings.Fields(rest)
-			if len(parts) >= 4 {
-				// 格式: x0 y0 x1 y1（MediaBox 的坐标）
-				x0, err0 := strconv.ParseFloat(parts[0], 64)
-				y0, err1 := strconv.ParseFloat(parts[1], 64)
-				x1, err2 := strconv.ParseFloat(parts[2], 64)
-				y1, err3 := strconv.ParseFloat(parts[3], 64)
-				if err0 == nil && err1 == nil && err2 == nil && err3 == nil {
-					w := x1 - x0
-					h := y1 - y0
-					if w > 0 && h > 0 {
-						return w, h, nil
-					}
-				}
-			}
-		}
+	page := f.Page(pageNum)
+	if page == nil {
+		return 0, 0, fmt.Errorf("page %d is nil", pageNum)
 	}
 
-	log.Printf("[pdf] GetPdfPageSize: MediaBox not found for page %d in %s, mutool output:\n%s", pageNum, fp, raw)
-	return 0, 0, fmt.Errorf("MediaBox not found for page %d in %s", pageNum, fp)
+	size := page.Size()
+	if size.Width <= 0 || size.Height <= 0 {
+		return 0, 0, fmt.Errorf("invalid page size: %.0fx%.0f", size.Width, size.Height)
+	}
+
+	return size.Width, size.Height, nil
 }
 
 // pdfPageCountByPdfinfo 用 poppler 的 `pdfinfo` 获取 PDF 页数。
