@@ -879,13 +879,12 @@ func pdfPageCountByMutool(fp string) (int, bool) {
 }
 
 // GetPdfPageSize 返回 PDF 指定页面的物理宽高（单位：pt，1pt = 1/72 inch）。
-// 使用纯 Go 的 rsc.io/pdf 读取页面尺寸，无需外部工具。
+// 使用纯 Go 的 rsc.io/pdf 读取 MediaBox，无需外部工具。
 func GetPdfPageSize(fp string, pageIndex int) (widthPt, heightPt float64, err error) {
 	f, err := rscpdf.Open(fp)
 	if err != nil {
 		return 0, 0, fmt.Errorf("open pdf: %w", err)
 	}
-	defer f.Close()
 
 	pageNum := pageIndex + 1 // rsc.io/pdf 使用 1-based 页码
 	if pageNum < 1 || pageNum > f.NumPage() {
@@ -893,16 +892,28 @@ func GetPdfPageSize(fp string, pageIndex int) (widthPt, heightPt float64, err er
 	}
 
 	page := f.Page(pageNum)
-	if page == nil {
-		return 0, 0, fmt.Errorf("page %d is nil", pageNum)
+	if page.V.IsNull() {
+		return 0, 0, fmt.Errorf("page %d not found", pageNum)
 	}
 
-	size := page.Size()
-	if size.Width <= 0 || size.Height <= 0 {
-		return 0, 0, fmt.Errorf("invalid page size: %.0fx%.0f", size.Width, size.Height)
+	// 读取 MediaBox: [x0, y0, x1, y1]
+	mediaBox := page.V.Key("MediaBox")
+	if mediaBox.IsNull() || mediaBox.Len() < 4 {
+		return 0, 0, fmt.Errorf("MediaBox not found for page %d", pageNum)
 	}
 
-	return size.Width, size.Height, nil
+	x0 := mediaBox.Index(0).Float64()
+	y0 := mediaBox.Index(1).Float64()
+	x1 := mediaBox.Index(2).Float64()
+	y1 := mediaBox.Index(3).Float64()
+
+	w := x1 - x0
+	h := y1 - y0
+	if w <= 0 || h <= 0 {
+		return 0, 0, fmt.Errorf("invalid MediaBox for page %d: %.0f %.0f %.0f %.0f", pageNum, x0, y0, x1, y1)
+	}
+
+	return w, h, nil
 }
 
 // pdfPageCountByPdfinfo 用 poppler 的 `pdfinfo` 获取 PDF 页数。
