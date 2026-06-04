@@ -425,7 +425,7 @@ export default function Home() {
     sortOrder: sortOrder || undefined,
     category: selectedCategory || undefined,
     contentType: contentType || undefined,
-    excludeGrouped: true,
+    excludeGrouped: showGroupView || undefined,
   });
   // 系列视图下加载系列级分类统计
   useEffect(() => {
@@ -540,6 +540,13 @@ export default function Home() {
   const sortedComics = useMemo(() => {
     return filteredComics;
   }, [filteredComics]);
+
+  // 默认视图下的散本漫画（排除已在合集中的）
+  const looseComics = useMemo(() => {
+    if (showGroupView) return sortedComics; // 合集视图不过滤
+    if (Object.keys(groupedComicMap).length === 0) return sortedComics; // 无合集不过滤
+    return sortedComics.filter((c) => !groupedComicMap[c.id]);
+  }, [sortedComics, groupedComicMap, showGroupView]);
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -1261,7 +1268,7 @@ export default function Home() {
                   </p>
                 </div>
               )
-            ) : (filteredGroups.length > 0 || sortedComics.length > 0) ? (
+            ) : (filteredGroups.length > 0 || looseComics.length > 0) ? (
               <div
                 className={
                   viewMode === "grid"
@@ -1288,7 +1295,7 @@ export default function Home() {
                   </ScrollReveal>
                 ))}
                 {/* 散本漫画卡片（不属于任何合集） */}
-                {sortedComics.map((comic, index) => {
+                {looseComics.map((comic, index) => {
                   const offset = filteredGroups.length;
                   return (
                     <ScrollReveal key={comic.id} disabled={offset + index < 20} delay={offset + index >= 20 ? (offset + index - 20) % 6 * 50 : 0}>
