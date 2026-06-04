@@ -896,7 +896,7 @@ export default function Home() {
         multiple
         accept={
           contentType === "novel"
-            ? ".txt,.epub,.mobi,.azw3,.html,.htm"
+            ? ".txt,.epub,.mobi,.azw3,.html,.htm,.pdf"
             : ".zip,.cbz,.cbr,.rar,.7z,.cb7,.pdf"
         }
         className="hidden"
