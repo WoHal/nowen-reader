@@ -1034,8 +1034,8 @@ export default function Home() {
             {/* Stats + Sort Controls */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
               <StatsBar
-                totalComics={showGroupView ? filteredGroups.length : apiTotal}
-                filteredCount={showGroupView ? filteredGroups.length : apiTotal}
+                totalComics={showGroupView ? filteredGroups.length : filteredGroups.length + apiTotal}
+                filteredCount={showGroupView ? filteredGroups.length : filteredGroups.length + apiTotal}
               />
 
               {/* Sort & Filter Controls — horizontally scrollable on mobile */}
