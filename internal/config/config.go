@@ -12,6 +12,7 @@ import (
 // SiteConfig represents the site-config.json file structure.
 type SiteConfig struct {
 	SiteName         string           `json:"siteName,omitempty"`
+	SiteIcon         string           `json:"siteIcon,omitempty"` // 自定义站点图标路径
 	ComicsDir        string           `json:"comicsDir,omitempty"`
 	ExtraComicsDirs  []string         `json:"extraComicsDirs,omitempty"`
 	NovelsDir        string           `json:"novelsDir,omitempty"`       // 电子书主目录
@@ -453,6 +454,11 @@ func GetSiteName() string {
 		return n
 	}
 	return "NowenReader"
+}
+
+// GetSiteIcon 返回自定义站点图标路径，为空则使用默认图标。
+func GetSiteIcon() string {
+	return loadSiteConfig().SiteIcon
 }
 
 // GetRegistrationMode 返回注册策略。

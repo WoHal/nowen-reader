@@ -86,13 +86,15 @@ var Migrations = []Migration{
 		Description: "Add FTS5 full-text search for comics (replace LIKE with FTS5)",
 		SQL: strings.Join([]string{
 			// 创建 FTS5 虚拟表（content-sync 模式，与 Comic 表联动）
-			`CREATE VIRTUAL TABLE IF NOT EXISTS "ComicFTS" USING fts5(title, author, filename, description, seriesName, genre, content="Comic", content_rowid="rowid");`,
+			`DROP TABLE IF EXISTS "ComicFTS";`,
+			`CREATE VIRTUAL TABLE "ComicFTS" USING fts5(title, author, filename, description, seriesName, genre, content="Comic", content_rowid="rowid");`,
 			// 触发器：插入时同步
 			`CREATE TRIGGER IF NOT EXISTS "Comic_ai_fts" AFTER INSERT ON "Comic" BEGIN INSERT INTO "ComicFTS"(rowid, title, author, filename, description, seriesName, genre) VALUES (new.rowid, new.title, new.author, new.filename, new.description, new.seriesName, new.genre); END`,
 			// 触发器：删除时同步
 			`CREATE TRIGGER IF NOT EXISTS "Comic_ad_fts" AFTER DELETE ON "Comic" BEGIN INSERT INTO "ComicFTS"("ComicFTS", rowid, title, author, filename, description, seriesName, genre) VALUES ('delete', old.rowid, old.title, old.author, old.filename, old.description, old.seriesName, old.genre); END`,
 			// 触发器：更新时同步
-			`CREATE TRIGGER IF NOT EXISTS "Comic_au_fts" AFTER UPDATE ON "Comic" BEGIN INSERT INTO "ComicFTS"("ComicFTS", rowid, title, author, filename, description, seriesName, genre) VALUES ('delete', old.rowid, old.title, old.author, old.filename, old.description, old.seriesName, old.genre); INSERT INTO "ComicFTS"(rowid, title, author, filename, description, seriesName, genre) VALUES (new.rowid, new.title, new.author, new.filename, new.description, new.seriesName, new.genre); END`,
+			`DROP TRIGGER IF EXISTS "Comic_au_fts";`,
+			`CREATE TRIGGER "Comic_au_fts" AFTER UPDATE ON "Comic" BEGIN INSERT INTO "ComicFTS"("ComicFTS", rowid, title, author, filename, description, seriesName, genre) VALUES ('delete', old.rowid, old.title, old.author, old.filename, old.description, old.seriesName, old.genre); INSERT INTO "ComicFTS"(rowid, title, author, filename, description, seriesName, genre) VALUES (new.rowid, new.title, new.author, new.filename, new.description, new.seriesName, new.genre); END`,
 		}, "\n"),
 	},
 	{
@@ -293,6 +295,14 @@ var Migrations = []Migration{
 			`CREATE INDEX IF NOT EXISTS "SROL_comicId_idx" ON "ScanRuleOpLog"("comicId");`,
 			`CREATE INDEX IF NOT EXISTS "SROL_action_idx" ON "ScanRuleOpLog"("action");`,
 			`CREATE INDEX IF NOT EXISTS "SROL_createdAt_idx" ON "ScanRuleOpLog"("createdAt" DESC);`,
+		}, "\n"),
+	},
+	{
+		Version:     21,
+		Description: "Add missingSince column to Comic for grace-period cleanup",
+		SQL: strings.Join([]string{
+			`ALTER TABLE "Comic" ADD COLUMN "missingSince" DATETIME;`,
+			`CREATE INDEX IF NOT EXISTS "Comic_missingSince_idx" ON "Comic"("missingSince");`,
 		}, "\n"),
 	},
 }

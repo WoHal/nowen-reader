@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"log"
@@ -67,7 +67,7 @@ func (h *ThumbnailHandler) ManageThumbnails(c *gin.Context) {
 			go func() {
 				defer wg.Done()
 				for comic := range jobs {
-					if _, _, err := service.GetComicThumbnail(comic.ID); err == nil {
+					if _, _, _, err := service.GetComicThumbnail(comic.ID); err == nil {
 						atomic.AddInt64(&generated, 1)
 					} else {
 						log.Printf("[thumbnails] Failed to generate for %s: %v", comic.ID, err)
@@ -105,7 +105,7 @@ func (h *ThumbnailHandler) ManageThumbnails(c *gin.Context) {
 			go func() {
 				defer wg.Done()
 				for comic := range jobs {
-					if _, _, err := service.GetComicThumbnail(comic.ID); err == nil {
+					if _, _, _, err := service.GetComicThumbnail(comic.ID); err == nil {
 						atomic.AddInt64(&generated, 1)
 					} else {
 						atomic.AddInt64(&failed, 1)

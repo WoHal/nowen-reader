@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"encoding/json"
@@ -379,7 +379,7 @@ func (h *MetadataHandler) AIBatch(c *gin.Context) {
 		var searchQuery string
 		// 优先尝试 Vision 内容识别
 		var coverData []byte
-		coverBytes, _, coverErr := service.GetComicThumbnail(comic.ID)
+		coverBytes, _, _, coverErr := service.GetComicThumbnail(comic.ID)
 		if coverErr == nil && len(coverBytes) > 0 {
 			coverData = coverBytes
 		}
@@ -463,7 +463,7 @@ func (h *MetadataHandler) AIBatch(c *gin.Context) {
 		detail, _ := store.GetComicByID(comic.ID)
 		// 复用 Step 1 中已获取的 coverData（如果没有则重新获取）
 		if len(coverData) == 0 {
-			if cb, _, cbErr := service.GetComicThumbnail(comic.ID); cbErr == nil && len(cb) > 0 {
+			if cb, _, _, cbErr := service.GetComicThumbnail(comic.ID); cbErr == nil && len(cb) > 0 {
 				coverData = cb
 			}
 		}

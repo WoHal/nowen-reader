@@ -1,10 +1,11 @@
-package service
+﻿package service
 
 import (
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -614,10 +615,10 @@ func getPdfPageImage(comicID, fp string, pageIndex int) (*PageImage, error) {
 // ============================================================
 
 // GetComicThumbnail returns the thumbnail and cover aspect ratio for a comic.
-func GetComicThumbnail(comicID string) ([]byte, float64, error) {
+func GetComicThumbnail(comicID string) ([]byte, string, float64, error) {
 	fp, _, err := FindComicFilePath(comicID)
 	if err != nil {
-		return nil, 0, err
+		return nil, "", 0, err
 	}
 	return archive.GenerateThumbnail(fp, comicID)
 }
@@ -692,8 +693,9 @@ func WarmupPages(comicID string, startPage, count int) {
 // 与普通漫画不同，电子书漫画使用专用的图片提取接口（按索引而非按路径）。
 func warmupEbookComic(comicID string, archiveType archive.ArchiveType, reader archive.Reader, images []string, start, end int, cacheDir string) {
 	warmed := 0
+	cacheSet := buildCacheSet(cacheDir)
 	for i := start; i < end; i++ {
-		if pageExistsInCache(cacheDir, i) {
+		if cacheSetHas(cacheSet, i) {
 			continue
 		}
 
@@ -738,9 +740,9 @@ func warmupEbookComic(comicID string, archiveType archive.ArchiveType, reader ar
 // warmupNormal 对 ZIP/7z 等支持随机访问的格式逐页预热。
 func warmupNormal(reader archive.Reader, comicID string, images []string, start, end int, cacheDir string) {
 	warmed := 0
+	cacheSet := buildCacheSet(cacheDir)
 	for i := start; i < end; i++ {
-		// 检查磁盘缓存是否已存在
-		if pageExistsInCache(cacheDir, i) {
+		if cacheSetHas(cacheSet, i) {
 			continue
 		}
 
@@ -767,8 +769,9 @@ func warmupNormal(reader archive.Reader, comicID string, images []string, start,
 func warmupRarBatch(fp, comicID string, images []string, start, end int, cacheDir string) {
 	// 构建需要提取的 entry 名称集合
 	needExtract := make(map[string]int) // entryName -> pageIndex
+	cacheSet := buildCacheSet(cacheDir)
 	for i := start; i < end; i++ {
-		if !pageExistsInCache(cacheDir, i) {
+		if !cacheSetHas(cacheSet, i) {
 			needExtract[images[i]] = i
 		}
 	}
@@ -805,6 +808,29 @@ func pageExistsInCache(cacheDir string, pageIndex int) bool {
 		}
 	}
 	return false
+}
+
+// buildCacheSet reads the cache directory once and returns a set of cached page prefixes.
+// This avoids O(n²) directory reads when checking many pages.
+func buildCacheSet(cacheDir string) map[string]bool {
+	set := make(map[string]bool)
+	entries, err := os.ReadDir(cacheDir)
+	if err != nil {
+		return set
+	}
+	for _, e := range entries {
+		name := e.Name()
+		// Extract the page index prefix (e.g., "0." from "0.webp")
+		if dot := strings.IndexByte(name, '.'); dot > 0 {
+			set[name[:dot]] = true
+		}
+	}
+	return set
+}
+
+// cacheSetHas checks if a page exists in the pre-built cache set.
+func cacheSetHas(cacheSet map[string]bool, pageIndex int) bool {
+	return cacheSet[strconv.Itoa(pageIndex)]
 }
 
 // ============================================================

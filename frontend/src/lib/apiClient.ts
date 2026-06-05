@@ -20,16 +20,7 @@ interface ApiError {
   raw?: unknown;
 }
 
-/**
- * 获取存储的认证 token
- */
-function getAuthToken(): string | null {
-  try {
-    return localStorage.getItem("auth_token") || null;
-  } catch {
-    return null;
-  }
-}
+// Auth is handled via session cookie (credentials: "include"), no token needed.
 
 /**
  * 核心请求函数
@@ -43,11 +34,7 @@ async function request<T = unknown>(
   // 构建请求头
   const reqHeaders: Record<string, string> = { ...headers };
 
-  // 自动注入认证 token
-  const token = getAuthToken();
-  if (token) {
-    reqHeaders["Authorization"] = `Bearer ${token}`;
-  }
+
 
   // 自动设置 Content-Type（非 FormData 时）
   if (body && !(body instanceof FormData)) {
@@ -66,6 +53,7 @@ async function request<T = unknown>(
   try {
     const res = await fetch(url, {
       method,
+      credentials: "include",
       headers: reqHeaders,
       body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
       signal: combinedSignal,

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,6 +22,7 @@ func NewSettingsHandler() *SettingsHandler {
 // SiteConfigResponse is the full settings response.
 type SiteConfigResponse struct {
 	SiteName            string   `json:"siteName"`
+	SiteIcon            string   `json:"siteIcon"`
 	ComicsDir           string   `json:"comicsDir"`
 	ExtraComicsDirs     []string `json:"extraComicsDirs"`
 	NovelsDir           string   `json:"novelsDir"`
@@ -74,6 +76,7 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 
 	resp := SiteConfigResponse{
 		SiteName:            config.GetSiteName(),
+		SiteIcon:            config.GetSiteIcon(),
 		ComicsDir:           comicsDir,
 		ExtraComicsDirs:     extraDirs,
 		NovelsDir:           novelsDir,
@@ -186,4 +189,118 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "config": current})
+}
+
+// POST /api/site-settings/icon — Upload site icon
+func (h *SettingsHandler) UploadIcon(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请选择要上传的图标文件"})
+		return
+	}
+
+	// 验证文件类型（不支持 SVG，存在 XSS 风险）
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExts := map[string]bool{
+		".png": true, ".jpg": true, ".jpeg": true, ".webp": true,
+	}
+	if !allowedExts[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的文件格式，请上传 PNG、JPG 或 WebP 格式的图标"})
+		return
+	}
+
+	// 验证文件大小（最大 2MB）
+	if file.Size > 2*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "图标文件大小不能超过 2MB"})
+		return
+	}
+
+	// 保存图标文件
+	dataDir := config.DataDir()
+	iconPath := filepath.Join(dataDir, "site-icon"+ext)
+
+	// 删除旧的图标文件（如果有，且在安全目录内）
+	oldIcon := config.GetSiteIcon()
+	if oldIcon != "" && oldIcon != iconPath {
+		cleanDataDir := filepath.Clean(dataDir)
+		cleanOldIcon := filepath.Clean(oldIcon)
+		if strings.HasPrefix(cleanOldIcon, cleanDataDir) {
+			if err := os.Remove(oldIcon); err != nil {
+				log.Printf("[settings] Failed to remove old icon: %v", err)
+			}
+		}
+	}
+
+	if err := c.SaveUploadedFile(file, iconPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存图标文件失败"})
+		return
+	}
+
+	// 更新配置
+	current := config.GetSiteConfig()
+	current.SiteIcon = iconPath
+	if err := config.SaveSiteConfig(&current); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存配置失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "iconPath": iconPath})
+}
+
+// GET /api/site-settings/icon — Get site icon
+func (h *SettingsHandler) GetIcon(c *gin.Context) {
+	iconPath := config.GetSiteIcon()
+	if iconPath == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "未设置自定义图标"})
+		return
+	}
+
+	// 检查文件是否存在
+	if _, err := os.Stat(iconPath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "图标文件不存在"})
+		return
+	}
+
+	// 根据扩展名设置 Content-Type
+	ext := strings.ToLower(filepath.Ext(iconPath))
+	contentTypes := map[string]string{
+		".png":  "image/png",
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".svg":  "image/svg+xml",
+		".webp": "image/webp",
+	}
+	contentType := contentTypes[ext]
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.File(iconPath)
+}
+
+// DELETE /api/site-settings/icon — Delete site icon (reset to default)
+func (h *SettingsHandler) DeleteIcon(c *gin.Context) {
+	iconPath := config.GetSiteIcon()
+	if iconPath != "" {
+		// 验证路径在安全目录内
+		dataDir := config.DataDir()
+		cleanDataDir := filepath.Clean(dataDir)
+		cleanIconPath := filepath.Clean(iconPath)
+		if strings.HasPrefix(cleanIconPath, cleanDataDir) {
+			if err := os.Remove(iconPath); err != nil {
+				log.Printf("[settings] Failed to remove icon: %v", err)
+			}
+		}
+	}
+
+	current := config.GetSiteConfig()
+	current.SiteIcon = ""
+	if err := config.SaveSiteConfig(&current); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存配置失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }

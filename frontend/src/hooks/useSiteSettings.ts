@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 
 interface SiteSettings {
   siteName: string;
+  siteIcon: string;
   scraperEnabled: boolean;
 }
 
 const defaultSettings: SiteSettings = {
   siteName: "NowenReader",
+  siteIcon: "",
   scraperEnabled: false,
 };
 
@@ -23,6 +25,7 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
     const data = await res.json();
     return {
       siteName: data.siteName || "NowenReader",
+      siteIcon: data.siteIcon || "",
       scraperEnabled: data.scraperEnabled ?? false,
     };
   } catch {

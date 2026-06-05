@@ -1,4 +1,4 @@
-/// 漫画/小说数据模型
+﻿/// 漫画/小说数据模型
 class Comic {
   final String id;
   final String filename;
@@ -89,6 +89,9 @@ class Comic {
 
   /// 是否为图片文件夹漫画（filename 以 "/" 结尾）
   bool get isImageFolder => filename.endsWith('/');
+
+  /// 是否为 PDF 文件
+  bool get isPdf => filename.toLowerCase().endsWith('.pdf');
 
   /// 复制并修改部分字段
   Comic copyWith({

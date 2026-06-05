@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"fmt"
@@ -340,7 +340,7 @@ func (h *GroupHandler) AIRecognize(c *gin.Context) {
 	log.Printf("[AI-Recognize] group=%d firstComic=%s filename=%s", id, firstComic.ComicID, firstComic.Filename)
 
 	var coverData []byte
-	coverBytes, _, coverErr := service.GetComicThumbnail(firstComic.ComicID)
+	coverBytes, _, _, coverErr := service.GetComicThumbnail(firstComic.ComicID)
 	if coverErr != nil {
 		log.Printf("[AI-Recognize] GetComicThumbnail failed: %v", coverErr)
 	} else if len(coverBytes) > 0 {

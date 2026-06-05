@@ -112,6 +112,7 @@ const zhCN = {
     detail: "查看详情",
     favorite: "收藏",
     unfavorite: "取消收藏",
+    favoriteFailed: "操作失败，请重试",
     addToGroup: "加入分组",
     delete: "删除",
     confirmDelete: "确认删除？",
@@ -496,6 +497,12 @@ const zhCN = {
     title: "站点设置",
     siteName: "站点名称",
     siteNameDesc: "显示在浏览器标题栏中的名称",
+    siteIcon: "站点图标",
+    siteIconDesc: "上传自定义站点图标，支持 PNG、JPG、WebP 格式，最大 2MB",
+    uploadIcon: "上传图标",
+    uploading: "上传中...",
+    resetIcon: "恢复默认",
+    iconSaved: "图标保存成功",
     comicsDir: "漫画库目录",
     comicsDirDesc: "存放漫画压缩包的路径，修改后需重启服务生效",
     comicsDirsMergedDesc: "所有目录都会被扫描。第一个为主目录（用于上传），修改后需重启生效",
@@ -1244,6 +1251,7 @@ export interface Translations {
     detail: string;
     favorite: string;
     unfavorite: string;
+    favoriteFailed: string;
     addToGroup: string;
     delete: string;
     confirmDelete: string;
@@ -1603,6 +1611,12 @@ export interface Translations {
     title: string;
     siteName: string;
     siteNameDesc: string;
+    siteIcon: string;
+    siteIconDesc: string;
+    uploadIcon: string;
+    uploading: string;
+    resetIcon: string;
+    iconSaved: string;
     comicsDir: string;
     comicsDirDesc: string;
     comicsDirsMergedDesc: string;

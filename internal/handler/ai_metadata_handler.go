@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"strings"
@@ -279,7 +279,7 @@ func (h *AIHandler) AnalyzeCover(c *gin.Context) {
 	}
 
 	// 获取封面图片数据
-	coverData, _, err := service.GetComicThumbnail(comicID)
+	coverData, _, _, err := service.GetComicThumbnail(comicID)
 	if err != nil || len(coverData) == 0 {
 		c.JSON(500, gin.H{"error": "Failed to get cover image"})
 		return

@@ -1287,6 +1287,10 @@ func StartBackgroundSync() {
 
 // CleanupInvalidComics 检查数据库中所有漫画记录，删除磁盘上文件已不存在的记录。
 // 返回被删除的漫画数量。
+// missingGracePeriod is how long a comic can be missing from disk before being deleted.
+// This protects against NAS/NFS/CIFS temporary unmounts.
+const missingGracePeriod = 24 * time.Hour
+
 func CleanupInvalidComics() (int, error) {
 	allComics, err := store.GetAllComicIDsAndFilenames()
 	if err != nil {
@@ -1294,12 +1298,13 @@ func CleanupInvalidComics() (int, error) {
 	}
 
 	allDirs := config.GetAllScanDirs()
-	var invalidIDs []string
+	var nowMissingIDs []string
+	var reappearedIDs []string
 
 	for _, c := range allComics {
 		found := false
 		for _, dir := range allDirs {
-			// 图片文件夹漫画：filename 以 "/" 结尾
+			// image folder comic: filename ends with "/"
 			if strings.HasSuffix(c.Filename, "/") {
 				fp := filepath.Join(dir, strings.TrimSuffix(c.Filename, "/"))
 				if info, err := os.Stat(fp); err == nil && info.IsDir() {
@@ -1315,26 +1320,50 @@ func CleanupInvalidComics() (int, error) {
 			}
 		}
 		if !found {
-			invalidIDs = append(invalidIDs, c.ID)
+			nowMissingIDs = append(nowMissingIDs, c.ID)
+		} else {
+			reappearedIDs = append(reappearedIDs, c.ID)
 		}
 	}
 
-	if len(invalidIDs) == 0 {
+	// Reappeared comics: clear missingSince
+	if len(reappearedIDs) > 0 {
+		if err := store.UnmarkComicsAsMissing(reappearedIDs); err != nil {
+			log.Printf("[cleanup] Failed to unmark reappeared comics: %v", err)
+		}
+	}
+
+	// Mark newly missing comics with a timestamp
+	if len(nowMissingIDs) > 0 {
+		if err := store.MarkComicsAsMissing(nowMissingIDs); err != nil {
+			log.Printf("[cleanup] Failed to mark missing comics: %v", err)
+			return 0, err
+		}
+		log.Printf("[cleanup] Marked %d comics as missing (grace period: %v)", len(nowMissingIDs), missingGracePeriod)
+	}
+
+	// Only delete comics that have been missing longer than the grace period
+	expiredIDs, err := store.GetMissingComicIDsOlderThan(missingGracePeriod)
+	if err != nil {
+		log.Printf("[cleanup] Failed to query expired missing comics: %v", err)
+		return 0, err
+	}
+
+	if len(expiredIDs) == 0 {
 		return 0, nil
 	}
 
-	// 批量删除无效记录
-	for i := 0; i < len(invalidIDs); i += dbBatchSize {
+	for i := 0; i < len(expiredIDs); i += dbBatchSize {
 		end := i + dbBatchSize
-		if end > len(invalidIDs) {
-			end = len(invalidIDs)
+		if end > len(expiredIDs) {
+			end = len(expiredIDs)
 		}
-		if err := store.BulkDeleteComicsByIDs(invalidIDs[i:end]); err != nil {
-			log.Printf("[cleanup] Failed to bulk delete invalid comics: %v", err)
+		if err := store.BulkDeleteComicsByIDs(expiredIDs[i:end]); err != nil {
+			log.Printf("[cleanup] Failed to bulk delete expired comics: %v", err)
 			return 0, err
 		}
 	}
 
-	log.Printf("[cleanup] Removed %d invalid comics (files not found on disk)", len(invalidIDs))
-	return len(invalidIDs), nil
+	log.Printf("[cleanup] Removed %d expired comics (missing for > %v)", len(expiredIDs), missingGracePeriod)
+	return len(expiredIDs), nil
 }

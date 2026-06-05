@@ -6,13 +6,14 @@ import {
   Globe, Save, FolderOpen, Image, Languages, BookOpen,
   CheckCircle, Trash2, RefreshCw, Plus, X, Search, Sparkles,
   ImagePlus, AlertCircle, ChevronRight, ChevronUp, Folder,
-  Database,
+  Database, BookMarked,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { invalidateSiteSettings } from "@/hooks/useSiteSettings";
 
 interface SiteConfig {
   siteName: string;
+  siteIcon: string;
   comicsDir: string;
   extraComicsDirs: string[];
   novelsDir: string;
@@ -381,6 +382,88 @@ export function SiteSettingsPanel() {
     setSaved(false);
   };
 
+  // Icon upload states
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
+  const [iconSuccess, setIconSuccess] = useState(false);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type (不支持 SVG，存在 XSS 风险)
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setIconError("不支持的文件格式，请上传 PNG、JPG 或 WebP 格式的图标");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setIconError("图标文件大小不能超过 2MB");
+      return;
+    }
+
+    setUploadingIcon(true);
+    setIconError(null);
+    setIconSuccess(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/site-settings/icon", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setIconSuccess(true);
+        invalidateSiteSettings();
+        // Update config to reflect new icon
+        const data = await res.json();
+        if (config) {
+          setConfig({ ...config, siteIcon: data.iconPath });
+        }
+        setTimeout(() => setIconSuccess(false), 2000);
+      } else {
+        const data = await res.json();
+        setIconError(data.error || "上传失败");
+      }
+    } catch {
+      setIconError("上传失败，请重试");
+    } finally {
+      setUploadingIcon(false);
+      // Reset file input
+      if (iconInputRef.current) {
+        iconInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleIconDelete = async () => {
+    try {
+      const res = await fetch("/api/site-settings/icon", {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setIconSuccess(true);
+        invalidateSiteSettings();
+        if (config) {
+          setConfig({ ...config, siteIcon: "" });
+        }
+        setTimeout(() => setIconSuccess(false), 2000);
+      } else {
+        const data = await res.json();
+        setIconError(data.error || "删除失败");
+      }
+    } catch {
+      setIconError("删除失败，请重试");
+    }
+  };
+
   const addExtraDir = () => {
     if (!config || !newDir.trim()) return;
     if (config.extraComicsDirs.includes(newDir.trim())) return;
@@ -598,6 +681,74 @@ export function SiteSettingsPanel() {
         <p className="text-[11px] text-muted">
           {siteT?.siteNameDesc || "Display name shown in the browser title bar"}
         </p>
+      </div>
+
+      {/* Site Icon */}
+      <div className="space-y-3 rounded-xl bg-background p-4">
+        <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+          <Image className="h-3.5 w-3.5 text-accent" />
+          {siteT?.siteIcon || "Site Icon"}
+        </div>
+        <p className="text-[11px] text-muted">
+          {siteT?.siteIconDesc || "Upload a custom icon for the site logo. Supports PNG, JPG, SVG, WebP formats, max 2MB."}
+        </p>
+
+        <div className="flex items-center gap-4">
+          {/* Icon Preview */}
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-border bg-card overflow-hidden">
+            {config.siteIcon ? (
+              <img src="/api/site-settings/icon" alt="Site Icon" className="h-full w-full object-contain" />
+            ) : (
+              <BookMarked className="h-8 w-8 text-muted" />
+            )}
+          </div>
+
+          {/* Upload/Delete Buttons */}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={iconInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleIconUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => iconInputRef.current?.click()}
+              disabled={uploadingIcon}
+              className="flex items-center gap-1.5 rounded-lg bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/25 transition-colors disabled:opacity-50"
+            >
+              {uploadingIcon ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ImagePlus className="h-3.5 w-3.5" />
+              )}
+              {uploadingIcon ? (siteT?.uploading || "Uploading...") : (siteT?.uploadIcon || "Upload Icon")}
+            </button>
+            {config.siteIcon && (
+              <button
+                onClick={handleIconDelete}
+                className="flex items-center gap-1.5 rounded-lg bg-destructive/15 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/25 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {siteT?.resetIcon || "Reset to Default"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Error/Success Messages */}
+        {iconError && (
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5" />
+            {iconError}
+          </div>
+        )}
+        {iconSuccess && (
+          <div className="flex items-center gap-2 text-xs text-green-500">
+            <CheckCircle className="h-3.5 w-3.5" />
+            {siteT?.iconSaved || "Icon saved successfully"}
+          </div>
+        )}
       </div>
 
       {/* Comics Directories */}

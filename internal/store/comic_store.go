@@ -199,12 +199,17 @@ func ToggleFavorite(comicID string, userID ...string) (bool, error) {
 		uid = userID[0]
 	}
 
-	// 如果有 userID，从 UserComicState 读取当前状态
+	// 如果有 userID，优先从 UserComicState 读取当前状态
+	// 如果 UserComicState 没有记录，则从 Comic 表读取
 	var current int
 	if uid != "" {
 		err := db.QueryRow(`SELECT COALESCE("isFavorite", 0) FROM "UserComicState" WHERE "userId" = ? AND "comicId" = ?`, uid, comicID).Scan(&current)
 		if err != nil {
-			current = 0 // 不存在则默认未收藏
+			// UserComicState 没有记录，从 Comic 表读取
+			err = db.QueryRow(`SELECT "isFavorite" FROM "Comic" WHERE "id" = ?`, comicID).Scan(&current)
+			if err != nil {
+				current = 0 // 都不存在则默认未收藏
+			}
 		}
 	} else {
 		err := db.QueryRow(`SELECT "isFavorite" FROM "Comic" WHERE "id" = ?`, comicID).Scan(&current)

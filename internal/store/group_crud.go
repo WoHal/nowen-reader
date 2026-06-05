@@ -69,10 +69,11 @@ type GroupComicItem struct {
 
 // GroupListOptions 分组列表查询选项。
 type GroupListOptions struct {
-	UserID      string   // 用户ID过滤
-	ContentType string   // 内容类型过滤: "comic" | "novel" | "" (全部)
-	Category    string   // 分类过滤（slug）
-	Tags        []string // 标签过滤（标签名列表，AND 逻辑）
+	UserID       string   // 用户ID过滤
+	ContentType  string   // 内容类型过滤: "comic" | "novel" | "" (全部)
+	Category     string   // 分类过滤（slug）
+	Tags         []string // 标签过滤（标签名列表，AND 逻辑）
+	FavoritesOnly bool   // 仅返回包含收藏漫画的分组
 }
 
 // GetAllGroups 获取所有分组（带漫画数量）。
@@ -125,6 +126,25 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 				WHERE t."name" = ?
 			)`)
 			args = append(args, tagName)
+		}
+	}
+
+	// 收藏过滤：只返回至少包含一本收藏漫画的分组
+	if opts.FavoritesOnly {
+		if opts.UserID != "" {
+			conditions = append(conditions, `g."id" IN (
+				SELECT DISTINCT gi5."groupId" FROM "ComicGroupItem" gi5
+				JOIN "Comic" c5 ON c5."id" = gi5."comicId"
+				LEFT JOIN "UserComicState" ucs5 ON ucs5."comicId" = c5."id" AND ucs5."userId" = ?
+				WHERE COALESCE(ucs5."isFavorite", c5."isFavorite") = 1
+			)`)
+			args = append(args, opts.UserID)
+		} else {
+			conditions = append(conditions, `g."id" IN (
+				SELECT DISTINCT gi5."groupId" FROM "ComicGroupItem" gi5
+				JOIN "Comic" c5 ON c5."id" = gi5."comicId"
+				WHERE c5."isFavorite" = 1
+			)`)
 		}
 	}
 

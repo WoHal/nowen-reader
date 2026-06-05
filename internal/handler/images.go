@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"fmt"
@@ -168,7 +168,7 @@ func (h *ImageHandler) GetThumbnail(c *gin.Context) {
 		return
 	}
 
-	thumbnail, aspectRatio, err := service.GetComicThumbnail(id)
+	thumbnail, mimeType, aspectRatio, err := service.GetComicThumbnail(id)
 	if err != nil || thumbnail == nil {
 		log.Printf("[thumbnail] Failed for %s (%s): %v", id, comic.Filename, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("Thumbnail unavailable: %v", err)})
@@ -199,11 +199,11 @@ func (h *ImageHandler) GetThumbnail(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Type", "image/webp")
+	c.Header("Content-Type", mimeType)
 	c.Header("Cache-Control", "public, max-age=300, must-revalidate")
 	c.Header("Content-Length", strconv.Itoa(len(thumbnail)))
 	c.Header("ETag", etag)
-	c.Data(http.StatusOK, "image/webp", thumbnail)
+	c.Data(http.StatusOK, mimeType, thumbnail)
 }
 
 // serveGroupCoverThumbnail 处理合集封面缩略图请求（通过 group_ 前缀识别）。
@@ -238,11 +238,11 @@ func (h *ImageHandler) serveGroupCoverThumbnail(c *gin.Context, id string) {
 			c.Status(http.StatusNotModified)
 			return
 		}
-		c.Header("Content-Type", "image/webp")
+		c.Header("Content-Type", http.DetectContentType(data))
 		c.Header("Cache-Control", "public, max-age=300, must-revalidate")
 		c.Header("Content-Length", strconv.Itoa(len(data)))
 		c.Header("ETag", etag)
-		c.Data(http.StatusOK, "image/webp", data)
+		c.Data(http.StatusOK, c.Writer.Header().Get("Content-Type"), data)
 		return
 	}
 
@@ -257,7 +257,7 @@ func (h *ImageHandler) serveGroupCoverThumbnail(c *gin.Context, id string) {
 		case strings.HasPrefix(rawCoverURL, "data:image/"):
 			if err := service.CacheGroupCoverDataURL(groupID, rawCoverURL); err == nil {
 				if data, err := os.ReadFile(cachePath); err == nil && len(data) > 0 {
-					c.Data(http.StatusOK, "image/webp", data)
+							 c.Data(http.StatusOK, http.DetectContentType(data), data)
 					return
 				}
 			}
@@ -322,7 +322,7 @@ func (h *ImageHandler) UpdateCover(c *gin.Context) {
 			return
 		}
 
-		thumbnail, err := archive.ResizeImageToWebP(imgData,
+		thumbnail, _, err := archive.ResizeImageToWebP(imgData,
 			config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process image"})
@@ -376,7 +376,7 @@ func (h *ImageHandler) UpdateCover(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to extract embedded image: " + err.Error()})
 			return
 		}
-		thumbnail, err := archive.ResizeImageToWebP(img.Data,
+		thumbnail, _, err := archive.ResizeImageToWebP(img.Data,
 			config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process image"})
@@ -398,7 +398,7 @@ func (h *ImageHandler) UpdateCover(c *gin.Context) {
 			return
 		}
 
-		thumbnail, err := archive.ResizeImageToWebP(imgData,
+		thumbnail, _, err := archive.ResizeImageToWebP(imgData,
 			config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process image"})
@@ -416,7 +416,14 @@ func (h *ImageHandler) UpdateCover(c *gin.Context) {
 
 	// Fetch from URL
 	if body.URL != "" {
-		resp, err := http.Get(body.URL)
+		// Validate URL scheme to prevent SSRF
+		if !strings.HasPrefix(body.URL, "http://") && !strings.HasPrefix(body.URL, "https://") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL: only http/https schemes are allowed"})
+			return
+		}
+		// Use a client with timeout to prevent hanging on slow/malicious URLs
+		safeClient := &http.Client{Timeout: 15 * time.Second}
+		resp, err := safeClient.Get(body.URL)
 		if err != nil || resp.StatusCode != 200 {
 			status := 0
 			if resp != nil {
@@ -433,7 +440,7 @@ func (h *ImageHandler) UpdateCover(c *gin.Context) {
 			return
 		}
 
-		thumbnail, err := archive.ResizeImageToWebP(imgData,
+		thumbnail, _, err := archive.ResizeImageToWebP(imgData,
 			config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process image"})
@@ -470,7 +477,7 @@ func generateAndSaveFirstPageCover(comicID, cachePath string) error {
 	}
 
 	// GenerateThumbnail 已经自动处理了所有格式的 "第一张图" 提取逻辑
-	thumbnail, _, err := archive.GenerateThumbnail(fp, comicID)
+	thumbnail, _, _, err := archive.GenerateThumbnail(fp, comicID)
 	if err != nil {
 		return fmt.Errorf("generate thumbnail: %w", err)
 	}

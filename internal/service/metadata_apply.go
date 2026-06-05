@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/base64"
@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nowen-reader/nowen-reader/internal/archive"
@@ -17,6 +18,9 @@ import (
 )
 
 const maxCoverDownloadBytes = 20 << 20
+
+// 合集封面下载去重：同一 groupID 同时只有一个下载任务，其余等待结果
+var groupCoverDownload sync.Map // groupID -> chan struct{}
 
 // ============================================================
 // Apply metadata to comic
@@ -135,7 +139,7 @@ func downloadCoverAsThumbnail(comicID, coverURL string) {
 	}
 
 	thumbPath := filepath.Join(thumbDir, archive.ThumbnailCacheName(comicID))
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		log.Printf("[metadata] Cover convert failed for %s: %v", comicID, err)
 		return
@@ -167,12 +171,45 @@ func DownloadGroupCover(groupID int, coverURL string) {
 }
 
 // downloadGroupCoverToLocal 下载合集封面图片并保存为本地 WebP 缩略图。
+// 使用去重机制确保同一 groupID 同时只有一个下载任务。
 func downloadGroupCoverToLocal(groupID int, coverURL string) {
 	thumbDir := config.GetThumbnailsDir()
 	if err := os.MkdirAll(thumbDir, 0755); err != nil {
 		return
 	}
 
+	// 快速路径：磁盘缓存命中
+	cacheName := archive.GroupCoverCacheName(groupID)
+	cachePath := filepath.Join(thumbDir, cacheName)
+	if data, err := os.ReadFile(cachePath); err == nil && len(data) > 0 {
+		return
+	}
+
+	// 去重：如果同一 groupID 正在下载，等待其完成后重新检查缓存
+	ch, loaded := groupCoverDownload.LoadOrStore(groupID, make(chan struct{}, 1))
+	done := ch.(chan struct{})
+	if loaded {
+		// 其他 goroutine 正在下载，等待完成
+		<-done
+		// 重新检查缓存是否被成功写入
+		if data, err := os.ReadFile(cachePath); err == nil && len(data) > 0 {
+			return
+		}
+		// 下载失败，等待下次请求时重新尝试
+		return
+	}
+
+	// 当前 goroutine 负责下载，完成后通知等待者
+	defer func() {
+		close(done)
+		groupCoverDownload.Delete(groupID)
+	}()
+
+	downloadGroupCoverToLocalInternal(groupID, coverURL, thumbDir, cachePath)
+}
+
+// downloadGroupCoverToLocalInternal 执行实际的封面下载和保存逻辑。
+func downloadGroupCoverToLocalInternal(groupID int, coverURL string, thumbDir string, cachePath string) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest("GET", coverURL, nil)
 	if err != nil {
@@ -195,9 +232,7 @@ func downloadGroupCoverToLocal(groupID int, coverURL string) {
 		return
 	}
 
-	cacheName := archive.GroupCoverCacheName(groupID)
-	cachePath := filepath.Join(thumbDir, cacheName)
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		// Fallback: 保存原始图片数据
 		log.Printf("[metadata] Group cover cache failed for group %d: %v", groupID, err)
@@ -229,7 +264,7 @@ func CacheGroupCoverDataURL(groupID int, coverDataURL string) error {
 	if err := os.MkdirAll(thumbDir, 0755); err != nil {
 		return err
 	}
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		return err
 	}

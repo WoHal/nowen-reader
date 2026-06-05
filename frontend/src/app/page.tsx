@@ -326,7 +326,7 @@ export default function Home() {
   // 加载分组数据（按 contentType 过滤）
   const loadGroups = useCallback(async () => {
     const [grps, gmap] = await Promise.all([
-      fetchGroups(contentType || undefined, selectedCategory || undefined, selectedTags.length > 0 ? selectedTags : undefined),
+      fetchGroups(contentType || undefined, selectedCategory || undefined, selectedTags.length > 0 ? selectedTags : undefined, favoritesOnly || undefined),
       fetchGroupedComicMap(),
     ]);
     setGroups(grps);
@@ -335,7 +335,7 @@ export default function Home() {
     if (showGroupView) {
       refetchGroupCategories(contentType || undefined);
     }
-  }, [contentType, selectedCategory, selectedTags, showGroupView, refetchGroupCategories]);
+  }, [contentType, selectedCategory, selectedTags, favoritesOnly, showGroupView, refetchGroupCategories]);
 
   // 搜索过滤合集（前端过滤，匹配名称、作者、描述、标签；隐藏空合集）
   const filteredGroups = useMemo(() => {
@@ -1728,8 +1728,12 @@ export default function Home() {
           }}
           onDetail={(id) => router.push(`/comic/${id}`)}
           onToggleFavorite={async (id) => {
-            await toggleComicFavorite(id);
-            await refetch();
+            const result = await toggleComicFavorite(id);
+            if (result !== null) {
+              await refetch();
+            } else {
+              toast.error(t.contextMenu?.favoriteFailed || "操作失败，请重试");
+            }
           }}
           onAddToGroup={(id) => {
             setContextAddToGroupIds([id]);

@@ -56,16 +56,32 @@ export default function Navbar({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scraperT = (t as any).scraper || {};
   const { batchRunning } = useScraperStore();
-  const { siteName, scraperEnabled } = useSiteSettings();
+  const { siteName, siteIcon, scraperEnabled } = useSiteSettings();
+
+  // Update favicon dynamically
+  useEffect(() => {
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (!link) return;
+
+    if (siteIcon) {
+      link.href = `/api/site-settings/icon?t=${Date.now()}`;
+    } else {
+      link.href = "/icons/icon-192.png";
+    }
+  }, [siteIcon]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-12 sm:h-14 max-w-[1800px] items-center justify-between px-3 sm:px-6">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-accent">
-            <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-          </div>
+          {siteIcon ? (
+            <img src="/api/site-settings/icon" alt="Site Icon" className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg object-contain" />
+          ) : (
+            <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-accent">
+              <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+            </div>
+          )}
           <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground">
             {siteName}
           </span>

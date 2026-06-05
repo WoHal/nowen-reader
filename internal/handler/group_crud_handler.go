@@ -36,10 +36,11 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 	}
 
 	groups, err := store.GetAllGroupsWithOptions(store.GroupListOptions{
-		UserID:      getUserID(c),
-		ContentType: c.Query("contentType"),
-		Category:    c.Query("category"),
-		Tags:        tags,
+		UserID:        getUserID(c),
+		ContentType:   c.Query("contentType"),
+		Category:      c.Query("category"),
+		Tags:          tags,
+		FavoritesOnly: c.Query("favoritesOnly") == "true",
 	})
 	if err != nil {
 		log.Printf("[API] ListGroups error: %v", err)
