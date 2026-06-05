@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"fmt"
@@ -164,7 +164,7 @@ func (h *AIHandler) VerifyDuplicates(c *gin.Context) {
 				"pageCount": fmt.Sprintf("%d", comic.PageCount),
 			})
 			// 获取封面数据
-			coverData, _, err := service.GetComicThumbnail(comic.ID)
+			coverData, _, _, err := service.GetComicThumbnail(comic.ID)
 			if err == nil && len(coverData) > 0 {
 				coverDataList = append(coverDataList, coverData)
 			}

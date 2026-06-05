@@ -298,6 +298,13 @@ func (h *AuthHandler) UpdateUser(c *gin.Context) {
 			return
 		}
 
+		// Invalidate all other sessions for this user (security best practice)
+		currentToken, _ := c.Cookie(middleware.SessionCookie)
+		if err := store.DeleteSessionsByUserID(targetID, currentToken); err != nil {
+			// Non-fatal: log but don't fail the request
+			log.Printf("[auth] Warning: failed to cleanup sessions after password change for user %s: %v", targetID, err)
+		}
+
 		c.JSON(http.StatusOK, gin.H{"success": true})
 
 	case "updateProfile":

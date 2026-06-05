@@ -58,10 +58,12 @@ func main() {
 		log.Printf("[Main] Warning: schema migration failed: %v", err)
 	}
 
-	// Rebuild FTS5 full-text search index (fast, idempotent)
-	if err := store.RebuildFTSIndex(); err != nil {
-		log.Printf("[Main] Warning: FTS index rebuild failed: %v", err)
-	}
+	// Rebuild FTS5 full-text search index in background (non-blocking)
+	go func() {
+		if err := store.RebuildFTSIndex(); err != nil {
+			log.Printf("[Main] Warning: FTS index rebuild failed: %v", err)
+		}
+	}()
 
 	// ============================================================
 	// Ensure required directories exist
@@ -82,17 +84,6 @@ func main() {
 	// ============================================================
 	// Start session cleanup ticker (every hour)
 	// ============================================================
-	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
-		defer ticker.Stop()
-		for range ticker.C {
-			if n, err := store.CleanExpiredSessions(); err != nil {
-				log.Printf("[Auth] Failed to clean expired sessions: %v", err)
-			} else if n > 0 {
-				log.Printf("[Auth] Cleaned %d expired sessions", n)
-			}
-		}
-	}()
 
 	// ============================================================
 	// Start background comic sync
@@ -189,7 +180,6 @@ func main() {
 		log.Printf("[Main] Server forced shutdown: %v", err)
 	}
 
-	store.CloseDB()
 	log.Println("[Main] Server stopped.")
 }
 

@@ -572,3 +572,80 @@ func batchUpdateType(ids []string, newType string) {
 		db.Exec(query, args...)
 	}
 }
+
+// MarkComicsAsMissing sets missingSince to now for the given comic IDs.
+// If missingSince is already set, it is left unchanged.
+func MarkComicsAsMissing(ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	for i := 0; i < len(ids); i += batchSize {
+		end := i + batchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		batch := ids[i:end]
+		placeholders := make([]string, len(batch))
+		args := []interface{}{now}
+		for j, id := range batch {
+			placeholders[j] = "?"
+			args = append(args, id)
+		}
+		_, err := db.Exec(
+			fmt.Sprintf(`UPDATE "Comic" SET "missingSince" = ? WHERE "id" IN (%s) AND "missingSince" IS NULL`, strings.Join(placeholders, ",")),
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UnmarkComicsAsMissing clears missingSince for the given comic IDs
+// (files reappeared on disk).
+func UnmarkComicsAsMissing(ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	for i := 0; i < len(ids); i += batchSize {
+		end := i + batchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		batch := ids[i:end]
+		placeholders := make([]string, len(batch))
+		args := make([]interface{}, len(batch))
+		for j, id := range batch {
+			placeholders[j] = "?"
+			args[j] = id
+		}
+		_, err := db.Exec(
+			fmt.Sprintf(`UPDATE "Comic" SET "missingSince" = NULL WHERE "id" IN (%s)`, strings.Join(placeholders, ",")),
+			args...,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetMissingComicIDsOlderThan returns comic IDs whose missingSince is older than the given duration.
+func GetMissingComicIDsOlderThan(olderThan time.Duration) ([]string, error) {
+	cutoff := time.Now().UTC().Add(-olderThan)
+	rows, err := db.Query(`SELECT "id" FROM "Comic" WHERE "missingSince" IS NOT NULL AND "missingSince" < ?`, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}

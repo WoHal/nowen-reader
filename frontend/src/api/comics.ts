@@ -3,13 +3,15 @@
  * 从 useComics.ts 中拆分出来的纯函数层
  */
 
+import { apiClient } from "@/lib/apiClient";
+
 /**
  * 上传文件到服务器
  *
  * @param files    待上传的文件列表
  * @param category 可选，当前页面的内容类别（"comic" | "novel"）。
  *                 后端会按文件扩展名自动分流到漫画/电子书目录；
- *                 此参数仅用于消除歧义扩展名（如 .azw3）。
+ *                 此参数仅用于消除歧义扩展名（如.azw3）。
  */
 export async function uploadComics(
   files: FileList | File[],
@@ -21,18 +23,30 @@ export async function uploadComics(
     formData.append("category", category);
   }
 
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
+  try {
+    const data = await apiClient.upload<{
+      success?: boolean;
+      message?: string;
+      error?: string;
+      successCount?: number;
+      totalCount?: number;
+    }>("/api/upload", formData);
 
-  const data = await res.json();
-  return {
-    success: res.ok && (data.successCount ?? 0) > 0,
-    message: data.message || data.error || "Unknown error",
-    successCount: data.successCount ?? 0,
-    totalCount: data.totalCount ?? Array.from(files).length,
-  };
+    return {
+      success: (data.successCount ?? 0) > 0,
+      message: data.message || data.error || "Unknown error",
+      successCount: data.successCount ?? 0,
+      totalCount: data.totalCount ?? Array.from(files).length,
+    };
+  } catch (e: unknown) {
+    const err = e as { message?: string };
+    return {
+      success: false,
+      message: err?.message || "Upload failed",
+      successCount: 0,
+      totalCount: Array.from(files).length,
+    };
+  }
 }
 
 /**
@@ -40,11 +54,7 @@ export async function uploadComics(
  */
 export async function saveReadingProgress(comicId: string, page: number) {
   try {
-    await fetch(`/api/comics/${comicId}/progress`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ page }),
-    });
+    await apiClient.put(`/api/comics/${comicId}/progress`, { page });
   } catch {
     // 静默失败 — 进度保存不应阻塞阅读
   }
@@ -57,13 +67,10 @@ export async function toggleComicFavorite(
   comicId: string
 ): Promise<boolean | null> {
   try {
-    const res = await fetch(`/api/comics/${comicId}/favorite`, {
-      method: "PUT",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.isFavorite;
-    }
+    const data = await apiClient.put<{ isFavorite?: boolean }>(
+      `/api/comics/${comicId}/favorite`
+    );
+    return data.isFavorite ?? null;
   } catch {
     // ignore
   }
@@ -78,11 +85,7 @@ export async function updateComicRating(
   rating: number | null
 ) {
   try {
-    await fetch(`/api/comics/${comicId}/rating`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating }),
-    });
+    await apiClient.put(`/api/comics/${comicId}/rating`, { rating });
   } catch {
     // ignore
   }
@@ -93,11 +96,7 @@ export async function updateComicRating(
  */
 export async function addComicTags(comicId: string, tags: string[]) {
   try {
-    await fetch(`/api/comics/${comicId}/tags`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags }),
-    });
+    await apiClient.post(`/api/comics/${comicId}/tags`, { tags });
   } catch {
     // ignore
   }
@@ -108,11 +107,7 @@ export async function addComicTags(comicId: string, tags: string[]) {
  */
 export async function removeComicTag(comicId: string, tag: string) {
   try {
-    await fetch(`/api/comics/${comicId}/tags`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tag }),
-    });
+    await apiClient.delete(`/api/comics/${comicId}/tags`, { tag });
   } catch {
     // ignore
   }
@@ -123,9 +118,7 @@ export async function removeComicTag(comicId: string, tag: string) {
  */
 export async function clearAllComicTags(comicId: string) {
   try {
-    await fetch(`/api/comics/${comicId}/tags/clear-all`, {
-      method: "DELETE",
-    });
+    await apiClient.delete(`/api/comics/${comicId}/tags/clear-all`);
   } catch {
     // ignore
   }
@@ -145,9 +138,9 @@ export interface ComicTagWithSource {
  */
 export async function getComicTagsWithSource(comicId: string): Promise<ComicTagWithSource[]> {
   try {
-    const res = await fetch(`/api/comics/${comicId}/tags-with-source`);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data = await apiClient.get<{ tags?: ComicTagWithSource[] }>(
+      `/api/comics/${comicId}/tags-with-source`
+    );
     return data.tags || [];
   } catch {
     return [];
@@ -159,11 +152,7 @@ export async function getComicTagsWithSource(comicId: string): Promise<ComicTagW
  */
 export async function excludeSeriesTag(comicId: string, tagName: string, groupId: number) {
   try {
-    await fetch(`/api/comics/${comicId}/tags/exclude-series`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tagName, groupId }),
-    });
+    await apiClient.put(`/api/comics/${comicId}/tags/exclude-series`, { tagName, groupId });
   } catch {
     // ignore
   }
@@ -174,11 +163,7 @@ export async function excludeSeriesTag(comicId: string, tagName: string, groupId
  */
 export async function includeSeriesTag(comicId: string, tagName: string, groupId: number) {
   try {
-    await fetch(`/api/comics/${comicId}/tags/include-series`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tagName, groupId }),
-    });
+    await apiClient.put(`/api/comics/${comicId}/tags/include-series`, { tagName, groupId });
   } catch {
     // ignore
   }
@@ -186,51 +171,38 @@ export async function includeSeriesTag(comicId: string, tagName: string, groupId
 
 /**
  * 批量操作
- * @param params - 额外参数（如 deleteFiles: true, tags: [...] 等）
+ * @param params - 额外参数（如 deleteFiles: true）
  */
-export async function batchOperation(
-  action: string,
+export async function batchComicAction(
   comicIds: string[],
+  action: string,
   params?: Record<string, unknown>
-) {
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch("/api/comics/batch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, comicIds, ...params }),
-    });
-    return res.ok;
-  } catch {
-    return false;
+    await apiClient.post("/api/comics/batch", { comicIds, action, ...params });
+    return { success: true };
+  } catch (e: unknown) {
+    const err = e as { status?: number; message?: string };
+    return { success: false, error: err?.message || `HTTP ${err?.status ?? "unknown"}` };
   }
 }
 
-/**
- * 删除单个漫画
- * @param deleteFiles - 是否同时删除磁盘文件（默认 false，仅删除数据库记录）
- * 返回 { success, error? } 包含具体错误信息
- */
+// Backward-compatible alias
+export function batchOperation(action: string, comicIds: string[], params?: Record<string, unknown>) {
+  return batchComicAction(comicIds, action, params);
+}
+
+// Delete a single comic
 export async function deleteComicById(comicId: string, deleteFiles = false): Promise<{ success: boolean; error?: string }> {
   try {
     const url = deleteFiles
-      ? `/api/comics/${comicId}/delete?deleteFiles=true`
-      : `/api/comics/${comicId}/delete`;
-    const res = await fetch(url, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      return { success: true };
-    }
-    // 尝试解析后端返回的具体错误信息
-    try {
-      const data = await res.json();
-      const detail = data.error || `HTTP ${res.status}`;
-      return { success: false, error: detail };
-    } catch {
-      return { success: false, error: `HTTP ${res.status} ${res.statusText}` };
-    }
-  } catch (e) {
-    return { success: false, error: String(e) };
+      ? `/api/comics/${comicId}?deleteFiles=true`
+      : `/api/comics/${comicId}`;
+    await apiClient.delete(url);
+    return { success: true };
+  } catch (e: unknown) {
+    const err = e as { status?: number; message?: string };
+    return { success: false, error: err?.message || `HTTP ${err?.status ?? "unknown"}` };
   }
 }
 
@@ -240,15 +212,11 @@ export async function deleteComicById(comicId: string, deleteFiles = false): Pro
 
 export async function startSession(comicId: string, startPage: number): Promise<number | null> {
   try {
-    const res = await fetch("/api/stats/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comicId, startPage }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.sessionId;
-    }
+    const data = await apiClient.post<{ sessionId?: number }>(
+      "/api/stats/session",
+      { comicId, startPage }
+    );
+    return data.sessionId ?? null;
   } catch {
     // ignore
   }
@@ -257,11 +225,7 @@ export async function startSession(comicId: string, startPage: number): Promise<
 
 export async function endSession(sessionId: number, endPage: number, duration: number) {
   try {
-    await fetch("/api/stats/session", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, endPage, duration }),
-    });
+    await apiClient.put("/api/stats/session", { sessionId, endPage, duration });
   } catch {
     // ignore
   }
@@ -289,11 +253,7 @@ export function endSessionBeacon(sessionId: number, endPage: number, duration: n
 
 export async function updateSortOrders(orders: { id: string; sortOrder: number }[]) {
   try {
-    await fetch("/api/comics/reorder", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orders }),
-    });
+    await apiClient.put("/api/comics/reorder", { orders });
   } catch {
     // ignore
   }
@@ -305,11 +265,7 @@ export async function updateSortOrders(orders: { id: string; sortOrder: number }
 
 export async function addComicCategories(comicId: string, categorySlugs: string[]) {
   try {
-    await fetch(`/api/comics/${comicId}/categories`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categorySlugs }),
-    });
+    await apiClient.post(`/api/comics/${comicId}/categories`, { categorySlugs });
   } catch {
     // ignore
   }
@@ -317,11 +273,7 @@ export async function addComicCategories(comicId: string, categorySlugs: string[
 
 export async function setComicCategories(comicId: string, categorySlugs: string[]) {
   try {
-    await fetch(`/api/comics/${comicId}/categories`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categorySlugs }),
-    });
+    await apiClient.put(`/api/comics/${comicId}/categories`, { categorySlugs });
   } catch {
     // ignore
   }
@@ -329,11 +281,7 @@ export async function setComicCategories(comicId: string, categorySlugs: string[
 
 export async function removeComicCategory(comicId: string, categorySlug: string) {
   try {
-    await fetch(`/api/comics/${comicId}/categories`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categorySlug }),
-    });
+    await apiClient.delete(`/api/comics/${comicId}/categories`, { categorySlug });
   } catch {
     // ignore
   }
@@ -372,12 +320,8 @@ export async function updateComicMetadata(
   metadata: ComicMetadataUpdate
 ): Promise<boolean> {
   try {
-    const res = await fetch(`/api/comics/${comicId}/metadata`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(metadata),
-    });
-    return res.ok;
+    await apiClient.put(`/api/comics/${comicId}/metadata`, metadata);
+    return true;
   } catch {
     return false;
   }
@@ -392,12 +336,8 @@ export async function setReadingStatus(
   status: string
 ): Promise<boolean> {
   try {
-    const res = await fetch(`/api/comics/${comicId}/reading-status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    return res.ok;
+    await apiClient.put(`/api/comics/${comicId}/reading-status`, { status });
+    return true;
   } catch {
     return false;
   }

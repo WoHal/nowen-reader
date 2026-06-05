@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { AuthGuard } from "@/components/AuthGuard";
 import { PWARegister } from "@/app/pwa-register";
 import { useAuth } from "@/lib/auth-context";
+import { Navigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 
@@ -20,18 +21,18 @@ import PageProgressBar from "@/components/PageProgressBar";
 // Pages — imported directly from original Next.js pages
 // The "use client" directive is harmless in Vite
 import Home from "@/app/page";
-import ComicDetail from "@/app/comic/[id]/page";
-import Reader from "@/app/reader/[id]/page";
-import NovelReader from "@/app/novel/[id]/page";
-import Recommendations from "@/app/recommendations/page";
-import Stats from "@/app/stats/page";
-import Logs from "@/app/logs/page";
-import Settings from "@/app/settings/page";
-import GroupDetail from "@/app/group/[id]/page";
-import Scraper from "@/app/scraper/page";
-import Collections from "@/app/collections/page";
-import TagManager from "@/app/tag-manager/page";
-import DataAdmin from "@/app/data-admin/page";
+const ComicDetail = React.lazy(() => import("@/app/comic/[id]/page"));
+const Reader = React.lazy(() => import("@/app/reader/[id]/page"));
+const NovelReader = React.lazy(() => import("@/app/novel/[id]/page"));
+const Recommendations = React.lazy(() => import("@/app/recommendations/page"));
+const Stats = React.lazy(() => import("@/app/stats/page"));
+const Logs = React.lazy(() => import("@/app/logs/page"));
+const Settings = React.lazy(() => import("@/app/settings/page"));
+const GroupDetail = React.lazy(() => import("@/app/group/[id]/page"));
+const Scraper = React.lazy(() => import("@/app/scraper/page"));
+const Collections = React.lazy(() => import("@/app/collections/page"));
+const TagManager = React.lazy(() => import("@/app/tag-manager/page"));
+const DataAdmin = React.lazy(() => import("@/app/data-admin/page"));
 
 /** 动态设置浏览器标签页标题 */
 function SiteTitle() {
@@ -46,7 +47,7 @@ function SiteTitle() {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (user && user.role !== "admin") {
-    return <Home />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
@@ -86,9 +87,11 @@ function App() {
                 <AuthGuard>
                   <SiteTitle />
                   <PageProgressBar />
-                  <AnimatedRoutes />
+                  <React.Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div></div>}>
+                    <AnimatedRoutes />
+                  </React.Suspense>
+                  <MobileBottomNav />
                 </AuthGuard>
-                <MobileBottomNav />
               </ToastProvider>
             </AuthProvider>
           </I18nProvider>

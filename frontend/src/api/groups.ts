@@ -1,7 +1,8 @@
 /**
- * Groups API — 自定义合并分组相关 API
+ * Groups API �?自定义合并分组相�?API
  */
 
+import { apiClient } from "@/lib/apiClient";
 import type { ComicGroup, ComicGroupDetail, AutoDetectGroup } from "@/hooks/useComicTypes";
 
 // ============================================================
@@ -17,24 +18,20 @@ export async function fetchGroups(contentType?: string, category?: string, tags?
     if (tags && tags.length > 0) params.set("tags", tags.join(","));
     if (favoritesOnly) params.set("favoritesOnly", "true");
     const url = params.toString() ? `/api/groups?${params}` : "/api/groups";
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await apiClient.get(url);
     return data.groups || [];
   } catch {
     return [];
   }
 }
 
-/** 获取分组详情（支持按内容类型过滤分组内的漫画） */
+/** 获取分组详情（支持按内容类型过滤分组内的漫画�?*/
 export async function fetchGroupDetail(groupId: number, contentType?: string): Promise<ComicGroupDetail | null> {
   try {
     const params = new URLSearchParams();
     if (contentType) params.set("contentType", contentType);
     const url = params.toString() ? `/api/groups/${groupId}?${params}` : `/api/groups/${groupId}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
+    return await apiClient.get<ComicGroupDetail | null>(url);
   } catch {
     return null;
   }
@@ -43,16 +40,8 @@ export async function fetchGroupDetail(groupId: number, contentType?: string): P
 /** 创建分组 */
 export async function createGroup(name: string, comicIds?: string[]): Promise<{ success: boolean; id?: number }> {
   try {
-    const res = await fetch("/api/groups", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, comicIds: comicIds || [] }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, id: data.id };
-    }
-    return { success: false };
+    const data: any = await apiClient.post("/api/groups", { name, comicIds: comicIds || [] });
+    return { success: true, id: data.id };
   } catch {
     return { success: false };
   }
@@ -61,18 +50,14 @@ export async function createGroup(name: string, comicIds?: string[]): Promise<{ 
 /** 更新分组 */
 export async function updateGroup(groupId: number, name: string, coverUrl?: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, coverUrl: coverUrl || "" }),
-    });
-    return res.ok;
+    await apiClient.put(`/api/groups/${groupId}`, { name, coverUrl: coverUrl || "" });
+    return true;
   } catch {
     return false;
   }
 }
 
-/** 更新系列元数据 */
+/** 更新系列元数�?*/
 export async function updateGroupMetadata(
   groupId: number,
   metadata: {
@@ -89,24 +74,18 @@ export async function updateGroupMetadata(
   }
 ): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/metadata`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(metadata),
-    });
-    return res.ok;
+    await apiClient.put(`/api/groups/${groupId}/metadata`, metadata);
+    return true;
   } catch {
     return false;
   }
 }
 
-/** 从第一本漫画继承元数据到系列 */
+/** 从第一本漫画继承元数据到系�?*/
 export async function inheritGroupMetadata(groupId: number): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/inherit-metadata`, {
-      method: "POST",
-    });
-    return res.ok;
+    await apiClient.post(`/api/groups/${groupId}/inherit-metadata`);
+    return true;
   } catch {
     return false;
   }
@@ -115,50 +94,42 @@ export async function inheritGroupMetadata(groupId: number): Promise<boolean> {
 /** 删除分组 */
 export async function deleteGroup(groupId: number): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
-    return res.ok;
+    await apiClient.delete(`/api/groups/${groupId}`);
+    return true;
   } catch {
     return false;
   }
 }
 
 // ============================================================
-// 分组内漫画管理
+// 分组内漫画管�?
 // ============================================================
 
-/** 添加漫画到分组 */
+/** 添加漫画到分�?*/
 export async function addComicsToGroup(groupId: number, comicIds: string[]): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/comics`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comicIds }),
-    });
-    return res.ok;
+    await apiClient.post(`/api/groups/${groupId}/comics`, { comicIds });
+    return true;
   } catch {
     return false;
   }
 }
 
-/** 从分组移除漫画 */
+/** 从分组移除漫�?*/
 export async function removeComicFromGroup(groupId: number, comicId: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/comics/${comicId}`, { method: "DELETE" });
-    return res.ok;
+    await apiClient.delete(`/api/groups/${groupId}/comics/${comicId}`);
+    return true;
   } catch {
     return false;
   }
 }
 
-/** 重新排序分组内漫画 */
+/** 重新排序分组内漫�?*/
 export async function reorderGroupComics(groupId: number, comicIds: string[]): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/reorder`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comicIds }),
-    });
-    return res.ok;
+    await apiClient.put(`/api/groups/${groupId}/reorder`, { comicIds });
+    return true;
   } catch {
     return false;
   }
@@ -171,13 +142,7 @@ export async function reorderGroupComics(groupId: number, comicIds: string[]): P
 /** 自动检测可合并的漫画系列（支持按内容类型过滤） */
 export async function autoDetectGroups(contentType?: string): Promise<AutoDetectGroup[]> {
   try {
-    const res = await fetch("/api/groups/auto-detect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentType: contentType || "" }),
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await apiClient.post("/api/groups/auto-detect", { contentType: contentType || "" });
     return data.suggestions || [];
   } catch {
     return [];
@@ -190,23 +155,15 @@ export async function batchCreateGroups(
   autoInherit: boolean = false
 ): Promise<{ success: boolean; created: number }> {
   try {
-    const res = await fetch("/api/groups/batch-create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groups, autoInherit }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, created: data.created || 0 };
-    }
-    return { success: false, created: 0 };
+    const data: any = await apiClient.post("/api/groups/batch-create", { groups, autoInherit });
+    return { success: true, created: data.created || 0 };
   } catch {
     return { success: false, created: 0 };
   }
 }
 
 // ============================================================
-// 元数据继承
+// 元数据继�?
 // ============================================================
 
 /** 继承字段变更 */
@@ -226,14 +183,10 @@ export interface InheritPreview {
   volumeChanges: InheritField[];
 }
 
-/** 预览从首卷继承元数据的结果 */
+/** 预览从首卷继承元数据的结�?*/
 export async function previewInheritMetadata(groupId: number): Promise<InheritPreview | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/preview-inherit`, {
-      method: "POST",
-    });
-    if (res.ok) return await res.json();
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/preview-inherit`);
   } catch {
     return null;
   }
@@ -242,10 +195,8 @@ export async function previewInheritMetadata(groupId: number): Promise<InheritPr
 /** 从首卷继承元数据到系列所有卷 */
 export async function inheritMetadataToVolumes(groupId: number): Promise<boolean> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/inherit-to-volumes`, {
-      method: "POST",
-    });
-    return res.ok;
+    await apiClient.post(`/api/groups/${groupId}/inherit-to-volumes`);
+    return true;
   } catch {
     return false;
   }
@@ -258,16 +209,8 @@ export async function inheritMetadataToVolumes(groupId: number): Promise<boolean
 /** 批量删除分组 */
 export async function batchDeleteGroups(groupIds: number[]): Promise<{ success: boolean; deleted: number }> {
   try {
-    const res = await fetch("/api/groups/batch-delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupIds }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, deleted: data.deleted || 0 };
-    }
-    return { success: false, deleted: 0 };
+    const data: any = await apiClient.post("/api/groups/batch-delete", { groupIds });
+    return { success: true, deleted: data.deleted || 0 };
   } catch {
     return { success: false, deleted: 0 };
   }
@@ -276,16 +219,8 @@ export async function batchDeleteGroups(groupIds: number[]): Promise<{ success: 
 /** 合并多个分组 */
 export async function mergeGroups(groupIds: number[], newName: string): Promise<{ success: boolean; newGroupId?: number }> {
   try {
-    const res = await fetch("/api/groups/merge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupIds, newName }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, newGroupId: data.newGroupId };
-    }
-    return { success: false };
+    const data: any = await apiClient.post("/api/groups/merge", { groupIds, newName });
+    return { success: true, newGroupId: data.newGroupId };
   } catch {
     return { success: false };
   }
@@ -294,26 +229,16 @@ export async function mergeGroups(groupIds: number[], newName: string): Promise<
 /** 导出分组数据 */
 export async function exportGroups(groupIds: number[]): Promise<unknown | null> {
   try {
-    const res = await fetch("/api/groups/export", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupIds }),
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.post("/api/groups/export", { groupIds });
   } catch {
     return null;
   }
 }
 
-/** 获取已分组的漫画ID映射（一本漫画可属于多个分组） */
+/** 获取已分组的漫画ID映射（一本漫画可属于多个分组�?*/
 export async function fetchGroupedComicMap(): Promise<Record<string, number[]>> {
   try {
-    const res = await fetch("/api/groups/comic-map");
-    if (!res.ok) return {};
-    const data = await res.json();
+    const data: any = await apiClient.get("/api/groups/comic-map");
     return data.map || {};
   } catch {
     return {};
@@ -321,7 +246,7 @@ export async function fetchGroupedComicMap(): Promise<Record<string, number[]>> 
 }
 
 // ============================================================
-// P2: 系列级标签管理
+// P2: 系列级标签管�?
 // ============================================================
 
 /** 系列标签 */
@@ -343,27 +268,17 @@ export interface TagSyncResult {
 /** 获取系列标签 */
 export async function fetchGroupTags(groupId: number): Promise<GroupTag[]> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/tags`);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await apiClient.get(`/api/groups/${groupId}/tags`);
     return data.tags || [];
   } catch {
     return [];
   }
 }
 
-/** 设置系列标签（替换所有现有标签，自动同步到所有卷） */
+/** 设置系列标签（替换所有现有标签，自动同步到所有卷�?*/
 export async function setGroupTags(groupId: number, tags: string[], autoSync: boolean = true): Promise<TagSyncResult | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/tags`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags, autoSync }),
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.put(`/api/groups/${groupId}/tags`, { tags, autoSync });
   } catch {
     return null;
   }
@@ -381,13 +296,7 @@ export interface TagFullSyncResult {
 /** 将系列标签同步到所有卷（完整同步） */
 export async function syncGroupTags(groupId: number): Promise<TagFullSyncResult | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/sync-tags`, {
-      method: "POST",
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/sync-tags`);
   } catch {
     return null;
   }
@@ -404,13 +313,7 @@ export interface TagOverrideResult {
 /** 将系列标签覆盖到所有卷（先清除卷标签再设置为系列标签） */
 export async function overrideGroupTagsToVolumes(groupId: number): Promise<TagOverrideResult | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/override-tags`, {
-      method: "POST",
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/override-tags`);
   } catch {
     return null;
   }
@@ -419,22 +322,14 @@ export async function overrideGroupTagsToVolumes(groupId: number): Promise<TagOv
 /** AI 建议系列标签 */
 export async function aiSuggestGroupTags(groupId: number, targetLang: string = "zh"): Promise<{ success: boolean; suggestedTags: string[] } | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/ai-suggest-tags`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetLang }),
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/ai-suggest-tags`, { targetLang });
   } catch {
     return null;
   }
 }
 
 // ============================================================
-// P5: 系列级分类管理
+// P5: 系列级分类管�?
 // ============================================================
 
 /** 系列分类 */
@@ -448,29 +343,21 @@ export interface GroupCategory {
 /** 获取系列分类 */
 export async function fetchGroupCategories(groupId: number): Promise<GroupCategory[]> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/categories`);
-    if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await apiClient.get(`/api/groups/${groupId}/categories`);
     return data.categories || [];
   } catch {
     return [];
   }
 }
 
-/** 设置系列分类（替换所有，可选自动同步到所有卷） */
+/** 设置系列分类（替换所有，可选自动同步到所有卷�?*/
 export async function setGroupCategories(
   groupId: number,
   categorySlugs: string[],
   autoSync: boolean = true
 ): Promise<{ success: boolean; syncedTo: number } | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/categories`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categorySlugs, autoSync }),
-    });
-    if (res.ok) return await res.json();
-    return null;
+    return await apiClient.put(`/api/groups/${groupId}/categories`, { categorySlugs, autoSync });
   } catch {
     return null;
   }
@@ -479,11 +366,7 @@ export async function setGroupCategories(
 /** 将系列分类同步到所有卷 */
 export async function syncGroupCategories(groupId: number): Promise<{ success: boolean; totalVolumes: number; syncedVolumes: number } | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/sync-categories`, {
-      method: "POST",
-    });
-    if (res.ok) return await res.json();
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/sync-categories`);
   } catch {
     return null;
   }
@@ -495,33 +378,21 @@ export async function aiSuggestGroupCategories(
   targetLang: string = "zh"
 ): Promise<{ success: boolean; suggestedCategories: string[] } | null> {
   try {
-    const res = await fetch(`/api/groups/${groupId}/ai-suggest-categories`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetLang }),
-    });
-    if (res.ok) return await res.json();
-    return null;
+    return await apiClient.post(`/api/groups/${groupId}/ai-suggest-categories`, { targetLang });
   } catch {
     return null;
   }
 }
 
 // ============================================================
-// P3: 按话/卷自动分组
+// P3: 按话/卷自动分�?
 // ============================================================
 
 /** 按文件夹自动创建分组（用于按话分类模式） */
 export async function autoGroupByDirectory(): Promise<{ success: boolean; created: number }> {
   try {
-    const res = await fetch("/api/groups/auto-group-by-dir", {
-      method: "POST",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, created: data.created || 0 };
-    }
-    return { success: false, created: 0 };
+    const data: any = await apiClient.post("/api/groups/auto-group-by-dir");
+    return { success: true, created: data.created || 0 };
   } catch {
     return { success: false, created: 0 };
   }
@@ -574,18 +445,10 @@ export interface BatchScrapeParams {
   dryRun?: boolean;
 }
 
-/** 批量刮削系列元数据 */
+/** 批量刮削系列元数�?*/
 export async function batchScrapeGroups(params: BatchScrapeParams): Promise<BatchScrapeResponse | null> {
   try {
-    const res = await fetch("/api/groups/batch-scrape", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-    return null;
+    return await apiClient.post("/api/groups/batch-scrape", params);
   } catch {
     return null;
   }

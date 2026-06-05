@@ -169,6 +169,12 @@ func DeleteSession(token string) error {
 	return err
 }
 
+// DeleteSessionsByUserID removes all sessions for a user, except the given token (current session).
+func DeleteSessionsByUserID(userID string, exceptToken string) error {
+	_, err := db.Exec(`DELETE FROM "UserSession" WHERE "userId" = ? AND "id" != ?`, userID, exceptToken)
+	return err
+}
+
 // RenewSession 更新 Session 的过期时间（自动续期）。
 func RenewSession(token string, newExpiry time.Time) error {
 	_, err := db.Exec(`UPDATE "UserSession" SET "expiresAt" = ? WHERE "id" = ?`, newExpiry, token)

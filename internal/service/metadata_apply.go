@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"encoding/base64"
@@ -139,7 +139,7 @@ func downloadCoverAsThumbnail(comicID, coverURL string) {
 	}
 
 	thumbPath := filepath.Join(thumbDir, archive.ThumbnailCacheName(comicID))
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		log.Printf("[metadata] Cover convert failed for %s: %v", comicID, err)
 		return
@@ -232,7 +232,7 @@ func downloadGroupCoverToLocalInternal(groupID int, coverURL string, thumbDir st
 		return
 	}
 
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		// Fallback: 保存原始图片数据
 		log.Printf("[metadata] Group cover cache failed for group %d: %v", groupID, err)
@@ -264,7 +264,7 @@ func CacheGroupCoverDataURL(groupID int, coverDataURL string) error {
 	if err := os.MkdirAll(thumbDir, 0755); err != nil {
 		return err
 	}
-	webpData, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
+	webpData, _, err := archive.ResizeImageToWebP(imgData, config.GetThumbnailWidth(), config.GetThumbnailHeight(), 85)
 	if err != nil {
 		return err
 	}

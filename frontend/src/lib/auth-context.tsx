@@ -1,5 +1,6 @@
 "use client";
 
+import { apiClient } from "@/lib/apiClient";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 interface AuthUser {
@@ -31,25 +32,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
-      if (!res.ok) {
-        // 服务端错误（如数据库临时锁定），保持当前状态，不清空 user
-        if (res.status >= 500) {
-          console.warn("[Auth] /api/auth/me returned", res.status, "— keeping current state");
+        const data = await apiClient.get("/api/auth/me");
+        const d = data as any;
+        setUser(d.user || null);
+        setNeedsSetup(d.needsSetup || false);
+        if (d.registrationMode) setRegistrationMode(d.registrationMode);
+      } catch (err: any) {
+        if (err?.status >= 500) {
+          console.warn("[Auth] /api/auth/me returned", err.status, "— keeping current state");
           return;
         }
-        // 4xx 错误，视为未认证
+        // 4xx or network error
         setUser(null);
-        return;
-      }
-      const data = await res.json();
-      setUser(data.user || null);
-      setNeedsSetup(data.needsSetup || false);
-      if (data.registrationMode) setRegistrationMode(data.registrationMode);
-    } catch {
-      // 网络错误，不清空 user（可能只是暂时连接问题）
-      console.warn("[Auth] Failed to reach /api/auth/me — keeping current state");
-    } finally {
+      } finally {
       setLoading(false);
     }
   }, []);
@@ -59,31 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser]);
 
   const login = async (username: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Login failed");
+    const data = await apiClient.post("/api/auth/login", { username, password }) as any;
     setUser(data.user);
     setNeedsSetup(false);
   };
 
   const register = async (username: string, password: string, nickname?: string) => {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, nickname }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Registration failed");
+    const data = await apiClient.post("/api/auth/register", { username, password, nickname }) as any;
     setUser(data.user);
     setNeedsSetup(false);
   };
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    try { await apiClient.post("/api/auth/logout"); } catch { /* ignore */ }
     setUser(null);
   };
 

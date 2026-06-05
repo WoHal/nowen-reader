@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"encoding/json"
@@ -105,7 +105,7 @@ func (h *MetadataHandler) BatchSelected(c *gin.Context) {
 			var searchQuery string
 			// 优先尝试 Vision 内容识别
 			var coverData []byte
-			coverBytes, _, coverErr := service.GetComicThumbnail(comic.ID)
+			coverBytes, _, _, coverErr := service.GetComicThumbnail(comic.ID)
 			if coverErr == nil && len(coverBytes) > 0 {
 				coverData = coverBytes
 			}
@@ -174,7 +174,7 @@ func (h *MetadataHandler) BatchSelected(c *gin.Context) {
 					title = detail.Title
 				}
 				var coverData []byte
-				if cb, _, err := service.GetComicThumbnail(comic.ID); err == nil {
+				if cb, _, _, err := service.GetComicThumbnail(comic.ID); err == nil {
 					coverData = cb
 				}
 				meta, err := service.AICompleteMetadata(*aiCfg, comic.Filename, title, coverData, body.Lang)

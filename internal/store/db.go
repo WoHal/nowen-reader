@@ -68,8 +68,10 @@ func InitDB(dbPath string) error {
 	log.Println("[DB] Database schema ready.")
 
 	// 自动完整性检查与索引修复
-	if err := autoRepairIndexes(); err != nil {
-		log.Printf("[DB] Warning: auto-repair failed: %v", err)
+	if os.Getenv("SKIP_INTEGRITY_CHECK") == "" {
+		if err := autoRepairIndexes(); err != nil {
+			log.Printf("[DB] Warning: auto-repair failed: %v", err)
+		}
 	}
 
 	return nil
@@ -167,17 +169,21 @@ func createTables() error {
 			"description"    TEXT NOT NULL DEFAULT '',
 			"language"       TEXT NOT NULL DEFAULT '',
 			"genre"          TEXT NOT NULL DEFAULT '',
+			"seriesName"     TEXT NOT NULL DEFAULT '',
+			"seriesIndex"    REAL NOT NULL DEFAULT 0,
 			"metadataSource" TEXT NOT NULL DEFAULT '',
 			"coverImageUrl"  TEXT NOT NULL DEFAULT '',
 			"coverAspectRatio" REAL NOT NULL DEFAULT 0,
 			"type"           TEXT NOT NULL DEFAULT 'comic',
-			"readingStatus"  TEXT NOT NULL DEFAULT ''
+			"readingStatus"  TEXT NOT NULL DEFAULT '',
+			"missingSince"   DATETIME
 		)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS "Comic_filename_key" ON "Comic"("filename")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_title_idx" ON "Comic"("title")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_isFavorite_idx" ON "Comic"("isFavorite")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_lastReadAt_idx" ON "Comic"("lastReadAt")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_sortOrder_idx" ON "Comic"("sortOrder")`,
+		`CREATE INDEX IF NOT EXISTS "Comic_seriesName_idx" ON "Comic"("seriesName")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_author_idx" ON "Comic"("author")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_rating_idx" ON "Comic"("rating")`,
 		`CREATE INDEX IF NOT EXISTS "Comic_addedAt_idx" ON "Comic"("addedAt")`,
