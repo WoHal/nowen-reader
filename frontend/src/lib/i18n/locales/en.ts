@@ -504,6 +504,8 @@ const en: Translations = {
     siteNameDesc: "Display name shown in the browser title bar",
     siteIcon: "Site Icon",
     siteIconDesc: "Upload a custom icon for the site logo. Supports PNG, JPG, WebP formats, max 2MB.",
+    iconTypeError: "Unsupported file format. Please upload PNG, JPG, or WebP icon.",
+    iconSizeError: "Icon file size cannot exceed 2MB.",
     uploadIcon: "Upload Icon",
     uploading: "Uploading...",
     resetIcon: "Reset to Default",

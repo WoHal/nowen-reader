@@ -115,12 +115,12 @@
     favorite: "收藏",
     unfavorite: "取消收藏",
     favoriteFailed: "操作失败，请重试",
-    addToGroup: "加入分组",
+    addToGroup: "加入合集",
     delete: "删除",
     confirmDelete: "确认删除？",
-    openGroup: "打开分组",
+    openGroup: "打开合集",
     renameGroup: "重命名",
-    deleteGroup: "删除分组",
+    deleteGroup: "删除合集",
     renameSuccess: "已重命名",
   },
 
@@ -501,6 +501,8 @@
     siteNameDesc: "显示在浏览器标题栏中的名称",
     siteIcon: "站点图标",
     siteIconDesc: "上传自定义站点图标，支持 PNG、JPG、WebP 格式，最大 2MB",
+    iconTypeError: "不支持的文件格式，请上传 PNG、JPG 或 WebP 格式的图标",
+    iconSizeError: "图标文件大小不能超过 2MB",
     uploadIcon: "上传图标",
     uploading: "上传中...",
     resetIcon: "恢复默认",
@@ -737,7 +739,7 @@
     deleteGoal: "删除",
   },
 
-  // 漫画分组
+  // 漫画合集
   comicGroup: {
     title: "漫画系列管理",
     groups: "合集",
@@ -751,7 +753,7 @@
     volumes: "卷",
     totalPages: "总页数",
     totalReadTime: "总阅读时长",
-autoDetect: "智能分组",
+autoDetect: "智能合集",
     autoDetecting: "正在检测...",
     autoDetectDesc: "自动识别可合并的同系列漫画",
     foundSuggestions: "发现 {count} 个可合并的系列",
@@ -769,7 +771,7 @@ autoDetect: "智能分组",
     volumeIndex: "第 {index} 卷",
     dragToReorder: "拖拽排序",
     noGroups: "还没有系列",
-    noGroupsHint: "可以选中多本漫画后合并为系列，或使用智能分组自动发现同系列漫画",
+    noGroupsHint: "可以选中多本漫画后合并为系列，或使用智能合集自动发现同系列漫画",
     aiEnhanceDetect: "智能 + AI 检测",
     aiDetecting: "AI 深度分析中...",
     searchComicHint: "输入关键词搜索漫画",
@@ -802,7 +804,7 @@ autoDetect: "智能分组",
     inheritNote: "注意：仅填充为空的字段，不会覆盖已有数据。继承后可在各卷详情页手动调整。",
     confirmInherit: "确认继承",
     autoInheritMetadata: "自动继承首卷元数据",
-    autoInheritMetadataDesc: "创建分组后自动将首卷的作者、出版商等信息继承到系列",
+    autoInheritMetadataDesc: "创建合集后自动将首卷的作者、出版商等信息继承到系列",
     saveSuccess: "元数据保存成功",
     statusOngoing: "连载中",
     statusCompleted: "已完结",
@@ -843,7 +845,7 @@ autoDetect: "智能分组",
     sortByCreated: "按创建时间",
     works: "部作品",
     emptyTitle: "还没有合集",
-    emptyHint: "使用智能分组自动发现同系列作品，或手动创建合集来整理你的书库",
+    emptyHint: "使用智能合集自动发现同系列作品，或手动创建合集来整理你的书库",
     emptySearchHint: "尝试其他关键词或清除搜索",
     createTitle: "新建合集",
     viewDetail: "查看详情",
@@ -1064,7 +1066,7 @@ autoDetect: "智能分组",
 
     // 合集管理
     collectionTitle: "合集管理",
-    collectionDesc: "管理漫画系列分组与元数据关联",
+    collectionDesc: "管理漫画系列合集与元数据关联",
     collectionEmpty: "暂无合集",
     collectionEmptyHint: "可通过智能检测自动发现系列，或手动创建合集",
     collectionCreate: "创建合集",
@@ -1617,6 +1619,8 @@ export interface Translations {
     siteNameDesc: string;
     siteIcon: string;
     siteIconDesc: string;
+    iconTypeError: string;
+    iconSizeError: string;
     uploadIcon: string;
     uploading: string;
     resetIcon: string;
