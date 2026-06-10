@@ -1,4 +1,4 @@
-﻿package handler
+package handler
 
 import (
 	"fmt"
@@ -741,3 +741,8 @@ func (h *ImageHandler) GetEmbeddedImage(c *gin.Context) {
 	c.Header("ETag", etag)
 	c.Data(http.StatusOK, img.MimeType, img.Data)
 }
+
+
+
+
+
