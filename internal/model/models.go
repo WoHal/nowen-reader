@@ -34,6 +34,32 @@ type UserSession struct {
 }
 
 // ============================================================
+// Library System (书库权限)
+// ============================================================
+
+// Library 代表一个可扫描的书库/目录
+type Library struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"` // "comic" | "novel" | "mixed"
+	RootPath  string    `json:"rootPath"`
+	Enabled   bool      `json:"enabled"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// UserLibraryAccess 保存用户对特定书库的访问权限
+type UserLibraryAccess struct {
+	UserID      string    `json:"userId"`
+	LibraryID   string    `json:"libraryId"`
+	CanView     bool      `json:"canView"`
+	CanDownload bool      `json:"canDownload"`
+	CanManage   bool      `json:"canManage"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// ============================================================
 // Comics
 // ============================================================
 
@@ -70,6 +96,10 @@ type Comic struct {
 	MetadataSource string `json:"metadataSource"` // "comicvine" | "anilist" | "manual"
 	CoverImageURL    string  `json:"coverImageUrl"`    // external cover URL
 	CoverAspectRatio float64 `json:"coverAspectRatio"` // width/height ratio (>1 = landscape)
+
+	// Library access control
+	LibraryID    string `json:"libraryId"`    // 书库ID
+	RelativePath string `json:"relativePath"` // 相对于书库根目录的路径
 
 	// Relations (populated by queries)
 	Tags       []Tag      `json:"tags,omitempty"`
