@@ -42,3 +42,5 @@ func SetupRoutes(r *gin.Engine) {
 	registerContentRoutes(api)
 	registerMetadataRoutes(api)
 }
+
+
