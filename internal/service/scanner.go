@@ -1367,3 +1367,11 @@ func CleanupInvalidComics() (int, error) {
 	log.Printf("[cleanup] Removed %d expired comics (missing for > %v)", len(expiredIDs), missingGracePeriod)
 	return len(expiredIDs), nil
 }
+
+
+
+
+
+
+
+
