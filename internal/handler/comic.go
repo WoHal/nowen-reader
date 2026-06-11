@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"fmt"
@@ -51,6 +51,14 @@ func (h *ComicHandler) ListComics(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "0"))
 
+	// 书库权限过滤：普通用户只能看到被授权的书库下的漫画
+	var libraryIDs []string
+	if uid := getUserID(c); uid != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			libraryIDs = ids
+		}
+	}
+
 	result, err := store.GetAllComics(store.ComicListOptions{
 		Search:         search,
 		Tags:           tags,
@@ -64,6 +72,7 @@ func (h *ComicHandler) ListComics(c *gin.Context) {
 		ReadingStatus:  c.Query("readingStatus"),
 		ExcludeGrouped: c.Query("excludeGrouped") == "true",
 		UserID:         getUserID(c),
+		LibraryIDs:     libraryIDs,
 	})
 	if err != nil {
 		log.Printf("[API] ListComics error: %v (sortBy=%s, contentType=%s, readingStatus=%s)",
