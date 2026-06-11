@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 书库管理 API
  * 对应后端 /api/admin/libraries/*
  */
@@ -14,6 +14,7 @@ export interface Library {
   rootPath: string;
   enabled: boolean;
   sortOrder: number;
+  defaultAccess: "public" | "private";
   createdAt: string;
   updatedAt: string;
   comicCount: number;
@@ -58,6 +59,7 @@ export async function createLibrary(library: {
   rootPath: string;
   enabled?: boolean;
   sortOrder?: number;
+  defaultAccess?: "public" | "private";
 }): Promise<Library> {
   const res = await fetch("/api/admin/libraries", {
     method: "POST",
@@ -77,6 +79,7 @@ export async function updateLibrary(
     rootPath: string;
     enabled: boolean;
     sortOrder: number;
+    defaultAccess: "public" | "private";
   }>
 ): Promise<Library> {
   const res = await fetch(`/api/admin/libraries/${id}`, {

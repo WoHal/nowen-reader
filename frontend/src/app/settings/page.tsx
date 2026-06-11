@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -77,6 +77,16 @@ const AccountPanel = dynamic(
   { loading: LoadingSkeleton }
 );
 
+const LibraryManagementPanel = dynamic(
+  () => import("@/components/LibraryManagementPanel").then((mod) => mod.LibraryManagementPanel),
+  { loading: LoadingSkeleton }
+);
+
+const UserGroupManagementPanel = dynamic(
+  () => import("@/components/UserGroupManagementPanel").then((mod) => mod.default),
+  { loading: LoadingSkeleton }
+);
+
 /* ── 类型 ── */
 type SettingsTab =
   | "account"
@@ -87,6 +97,8 @@ type SettingsTab =
   | "stats"
   | "file-stats"
   | "logs"
+  | "libraries"
+  | "user-groups"
   | "about";
 
 interface TabDef {
@@ -108,7 +120,7 @@ export default function SettingsPage() {
   const t = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const validTabs: SettingsTab[] = ["account", ...(isAdmin ? ["site" as const, "ai" as const, "scan-rules" as const, "users" as const, "stats" as const, "file-stats" as const, "logs" as const] : []), "about"];
+  const validTabs: SettingsTab[] = ["account", ...(isAdmin ? ["site" as const, "ai" as const, "scan-rules" as const, "users" as const, "stats" as const, "file-stats" as const, "logs" as const, "libraries" as const, "user-groups" as const] : []), "about"];
   const tabFromUrl = searchParams.get("tab") as SettingsTab | null;
   const [activeTab, setActiveTab] = useState<SettingsTab>(
     tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : "account"
@@ -153,6 +165,8 @@ export default function SettingsPage() {
           { id: "ai" as const, label: t.ai?.title || "AI 功能", icon: <Brain className="h-[18px] w-[18px]" />, desc: "智能识别与推荐" },
           { id: "scan-rules" as const, label: "扫描规则", icon: <Wand2 className="h-[18px] w-[18px]" />, desc: "AI 识别 + 自动归类" },
           { id: "users" as const, label: "用户管理", icon: <Users className="h-[18px] w-[18px]" />, desc: "账号、角色、注册策略" },
+          { id: "libraries" as const, label: "书库管理", icon: <BookOpen className="h-[18px] w-[18px]" />, desc: "目录、权限、公开策略" },
+          { id: "user-groups" as const, label: "用户组", icon: <Users className="h-[18px] w-[18px]" />, desc: "批量管理用户权限" },
         ] : []),
       ],
     },
@@ -290,6 +304,8 @@ export default function SettingsPage() {
             {activeTab === "ai" && <AISettingsPanel />}
             {activeTab === "scan-rules" && <ScanRulesPanel />}
             {activeTab === "users" && <UserManagementPanel />}
+            {activeTab === "libraries" && <LibraryManagementPanel />}
+            {activeTab === "user-groups" && <UserGroupManagementPanel />}
             {activeTab === "stats" && <StatsPanel />}
             {activeTab === "file-stats" && <FileStatsPanel />}
             {activeTab === "logs" && <LogsPanel />}
