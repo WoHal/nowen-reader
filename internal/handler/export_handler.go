@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"encoding/csv"
@@ -82,10 +82,19 @@ func (h *ExportHandler) ExportCSV(c *gin.Context) {
 
 // ExportComicsCSV 导出漫画库为CSV格式。
 func (h *ExportHandler) ExportComicsCSV(c *gin.Context) {
+	uid := getUserID(c)
+	var libraryIDs []string
+	if uid != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			libraryIDs = ids
+		}
+	}
+
 	result, err := store.GetAllComics(store.ComicListOptions{
 		Page:     1,
 		PageSize: 0, // 全部
 		SortBy:   "title",
+		LibraryIDs: libraryIDs,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -167,10 +176,18 @@ func collectExportData(userID string) (map[string]interface{}, error) {
 	data["version"] = "1.0"
 
 	// 漫画列表
+	var libraryIDs []string
+	if userID != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(userID); err == nil {
+			libraryIDs = ids
+		}
+	}
+
 	result, err := store.GetAllComics(store.ComicListOptions{
 		Page:     1,
 		PageSize: 0, // 全部
 		SortBy:   "title",
+		LibraryIDs: libraryIDs,
 		UserID:   userID,
 	})
 	if err != nil {
