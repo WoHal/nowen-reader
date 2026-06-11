@@ -45,8 +45,6 @@ func registerComicRoutes(api *gin.RouterGroup) {
 	comicByIDWrite := api.Group("/comics/:id")
 	comicByIDWrite.Use(middleware.AdminRequired())
 	{
-		comicByIDWrite.PUT("/favorite", comic.ToggleFavorite)
-		comicByIDWrite.PUT("/rating", comic.UpdateRating)
 
 		// Tags per comic
 		comicByIDWrite.POST("/tags", comic.AddTags)
@@ -68,6 +66,8 @@ func registerComicRoutes(api *gin.RouterGroup) {
 	{
 		comicByIDAuth.PUT("/progress", comic.UpdateProgress)
 		comicByIDAuth.PUT("/reading-status", comic.SetReadingStatus)
+		comicByIDAuth.PUT("/favorite", comic.ToggleFavorite)
+		comicByIDAuth.PUT("/rating", comic.UpdateRating)
 	}
 
 	// 单本漫画管理员操作（删除等危险操作）
