@@ -54,11 +54,17 @@ func registerContentRoutes(api *gin.RouterGroup) {
 		statsRead.GET("", stats.GetStats)
 		statsRead.GET("/yearly", stats.GetYearlyReport)
 		statsRead.GET("/enhanced", stats.GetEnhancedStats)
-		statsRead.GET("/files", stats.GetFileStats)
-		statsRead.GET("/folder-tree", stats.GetFolderTreeStats)
 		statsRead.POST("/session", stats.StartSession)
 		statsRead.PUT("/session", stats.EndSession)
 		statsRead.POST("/session/end", stats.EndSession) // sendBeacon 兆底
+	}
+
+	// 管理员专用统计（文件统计、文件夹树）
+	statsAdmin := api.Group("/stats")
+	statsAdmin.Use(middleware.AdminRequired())
+	{
+		statsAdmin.GET("/files", stats.GetFileStats)
+		statsAdmin.GET("/folder-tree", stats.GetFolderTreeStats)
 	}
 
 	// ============================================================
