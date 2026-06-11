@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"strconv"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nowen-reader/nowen-reader/internal/service"
+	"github.com/nowen-reader/nowen-reader/internal/store"
 )
 
 type RecommendationHandler struct{}
@@ -41,7 +42,14 @@ func (h *RecommendationHandler) GetRecommendations(c *gin.Context) {
 		}
 	}
 
-	recommendations, err := service.GetRecommendations(limit, excludeRead, contentType, seed)
+	// 获取用户可访问的书库ID
+	var libraryIDs []string
+	if uid := getUserID(c); uid != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			libraryIDs = ids
+		}
+	}
+	recommendations, err := service.GetRecommendations(limit, excludeRead, contentType, seed, libraryIDs...)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to get recommendations"})
 		return
@@ -65,7 +73,13 @@ func (h *RecommendationHandler) GetSimilar(c *gin.Context) {
 		}
 	}
 
-	similar, err := service.GetSimilarComics(comicID, limit)
+	var libraryIDs []string
+	if uid := getUserID(c); uid != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			libraryIDs = ids
+		}
+	}
+	similar, err := service.GetSimilarComics(comicID, limit, libraryIDs...)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to get similar comics"})
 		return

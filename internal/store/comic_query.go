@@ -600,12 +600,18 @@ type RecommendationComic struct {
 }
 
 // GetAllComicsForRecommendation 返回所有漫画的推荐所需数据（分批加载标签/分类，避免 IN 参数超限）。
-func GetAllComicsForRecommendation() ([]RecommendationComic, error) {
+func GetAllComicsForRecommendation(libraryIDs ...string) ([]RecommendationComic, error) {
 	rows, err := db.Query(`
 		SELECT "id", "title", "author", "genre",
 		       "filename", "type", "pageCount", "lastReadPage", "lastReadAt", "isFavorite",
 		       "rating", "totalReadTime"
 		FROM "Comic"
+	` + func() string {
+		if len(libraryIDs) == 0 { return "" }
+		ph := make([]string, len(libraryIDs))
+		for i := range libraryIDs { ph[i] = "?" }
+		return fmt.Sprintf(` WHERE "libraryId" IN (%s)`, strings.Join(ph, ","))
+	}() + `
 	`)
 	if err != nil {
 		return nil, err
