@@ -91,17 +91,24 @@ func (h *ComicHandler) ListComics(c *gin.Context) {
 
 func (h *ComicHandler) GetComic(c *gin.Context) {
 	id := c.Param("id")
-	comic, err := store.GetComicByID(id)
+	// 书库权限校验
+	if err := checkComicAccess(c, id); err != nil {
+		return
+	}
+	uid := getUserID(c)
+	var comic *store.ComicListItem
+	var err error
+	if uid != "" {
+		comic, err = store.GetComicByIDForUser(id, uid)
+	} else {
+		comic, err = store.GetComicByID(id)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get comic"})
 		return
 	}
 	if comic == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
-		return
-	}
-	// 书库权限校验：无权限用户不得查看漫画详情（含元数据）
-	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
 
@@ -616,7 +623,12 @@ func (h *ComicHandler) SetReadingStatus(c *gin.Context) {
 		return
 	}
 
-	if err := store.UpdateComicFields(id, map[string]interface{}{"readingStatus": body.Status}); err != nil {
+	uid := getUserID(c)
+	if uid == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Login required to set reading status"})
+		return
+	}
+	if err := store.SetUserReadingStatus(uid, id, body.Status); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update reading status"})
 		return
 	}
