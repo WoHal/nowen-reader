@@ -38,11 +38,20 @@ func (h *AIHandler) SemanticSearch(c *gin.Context) {
 		return
 	}
 
+	// 书库权限过滤：普通用户只能搜索被授权的书库
+	var libraryIDs []string
+	if uid := getUserID(c); uid != "" {
+		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			libraryIDs = ids
+		}
+	}
+
 	// 获取库中所有作品的基本信息作为候选
 	result, err := store.GetAllComics(store.ComicListOptions{
-		PageSize: body.Limit,
-		Page:     1,
-		SortBy:   "title",
+		PageSize:   body.Limit,
+		Page:       1,
+		SortBy:     "title",
+		LibraryIDs: libraryIDs,
 	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to fetch library"})
@@ -165,7 +174,7 @@ func (h *AIHandler) GenerateReadingInsight(c *gin.Context) {
 	}
 }
 
-// currentYear 返回当前年份
+// currentYear returns current year
 func currentYear() int {
 	return time.Now().Year()
 }
