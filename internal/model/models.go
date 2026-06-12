@@ -46,6 +46,10 @@ type Library struct {
 	Enabled   bool      `json:"enabled"`
 	SortOrder int       `json:"sortOrder"`
 	DefaultAccess string    `json:"defaultAccess"` // "public" | "private"
+	LastScanAt    *time.Time `json:"lastScanAt"`   // 上次扫描时间
+	LastScanAdded int        `json:"lastScanAdded"` // 上次扫描新增数
+	LastScanTotal int        `json:"lastScanTotal"` // 上次扫描文件总数
+	ScanEnabled   bool       `json:"scanEnabled"`   // 是否参与自动扫描
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

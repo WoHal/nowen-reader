@@ -414,6 +414,10 @@ func createTables() error {
 			"enabled"       BOOLEAN NOT NULL DEFAULT 1,
 			"sortOrder"     INTEGER NOT NULL DEFAULT 0,
 			"defaultAccess" TEXT NOT NULL DEFAULT "private",
+			"lastScanAt"    DATETIME,
+			"lastScanAdded" INTEGER NOT NULL DEFAULT 0,
+			"lastScanTotal" INTEGER NOT NULL DEFAULT 0,
+			"scanEnabled"   BOOLEAN NOT NULL DEFAULT 1,
 			"createdAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			"updatedAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,

@@ -1,4 +1,4 @@
-package store
+﻿package store
 
 import (
 	"database/sql"
@@ -352,6 +352,16 @@ var Migrations = []Migration{
 
 			// Update existing comics with default library
 			`UPDATE "Comic" SET "libraryId" = 'default', "relativePath" = "filename";`,
+		}, "\n"),
+	},
+	{
+		Version:     24,
+		Description: "Add scan status fields to Library for per-library scan management",
+		SQL: strings.Join([]string{
+			`ALTER TABLE "Library" ADD COLUMN "lastScanAt" DATETIME;`,
+			`ALTER TABLE "Library" ADD COLUMN "lastScanAdded" INTEGER NOT NULL DEFAULT 0;`,
+			`ALTER TABLE "Library" ADD COLUMN "lastScanTotal" INTEGER NOT NULL DEFAULT 0;`,
+			`ALTER TABLE "Library" ADD COLUMN "scanEnabled" BOOLEAN NOT NULL DEFAULT 1;`,
 		}, "\n"),
 	},
 }
