@@ -27,6 +27,7 @@ import {
   scanLibrary,
   type Library as LibraryType,
 } from "@/api/libraries";
+import { FolderBrowser } from "@/components/FolderBrowser";
 
 export function LibraryManagementPanel() {
   const { user: currentUser } = useAuth();
@@ -53,6 +54,16 @@ export function LibraryManagementPanel() {
 
   // 确认删除
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Folder browser
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseTarget, setBrowseTarget] = useState<"create" | "edit">("create");
+
+  // Additional fields
+  const [newDefaultAccess, setNewDefaultAccess] = useState<"public" | "private">("private");
+  const [newScanEnabled, setNewScanEnabled] = useState(true);
+  const [editDefaultAccess, setEditDefaultAccess] = useState<"public" | "private">("private");
+  const [editScanEnabledState, setEditScanEnabledState] = useState(true);
 
   const showMessage = useCallback((msg: string, isError = false) => {
     if (isError) {
@@ -117,6 +128,8 @@ export function LibraryManagementPanel() {
     setEditType(lib.type);
     setEditRootPath(lib.rootPath);
     setEditScanEnabled(lib.scanEnabled);
+    setEditDefaultAccess(lib.defaultAccess || "private");
+    setEditScanEnabledState(lib.scanEnabled);
   };
 
   // 取消编辑
@@ -526,6 +539,19 @@ export function LibraryManagementPanel() {
           ))}
         </div>
       )}
+
+      {/* Folder Browser */}
+      <FolderBrowser
+        open={browseOpen}
+        onClose={() => setBrowseOpen(false)}
+        onSelect={(path) => {
+          if (browseTarget === "create") {
+            setNewRootPath(path);
+          } else {
+            setEditRootPath(path);
+          }
+        }}
+      />
     </div>
   );
 }

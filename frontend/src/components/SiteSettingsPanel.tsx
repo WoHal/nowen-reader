@@ -7,7 +7,9 @@ import {
   CheckCircle, Trash2, RefreshCw, Plus, X, Search, Sparkles,
   ImagePlus, AlertCircle, ChevronRight, ChevronUp, Folder,
   Database, BookMarked,
+  Library
 } from "lucide-react";
+import { FolderBrowser } from "@/components/FolderBrowser";
 import { useTranslation } from "@/lib/i18n";
 import { invalidateSiteSettings } from "@/hooks/useSiteSettings";
 
@@ -52,175 +54,6 @@ interface BrowseDirResponse {
   current: string;
   parent: string;
   dirs: { name: string; path: string }[];
-}
-
-// 文件夹浏览器弹窗组件
-function FolderBrowser({
-  open,
-  onClose,
-  onSelect,
-  siteT,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSelect: (path: string) => void;
-  siteT: any;
-}) {
-  const [currentPath, setCurrentPath] = useState("/");
-  const [dirs, setDirs] = useState<{ name: string; path: string }[]>([]);
-  const [parentPath, setParentPath] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [hint, setHint] = useState("");
-
-  const browseTo = useCallback(async (path: string) => {
-    setLoading(true);
-    setError("");
-    setHint("");
-    try {
-      const res = await fetch(`/api/browse-dirs?path=${encodeURIComponent(path)}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || siteT?.browseError || "Cannot read directory");
-        if (data.hint) setHint(data.hint);
-        return;
-      }
-      const data: BrowseDirResponse = await res.json();
-      setCurrentPath(data.current);
-      setParentPath(data.parent);
-      setDirs(data.dirs || []);
-    } catch {
-      setError(siteT?.browseError || "Cannot read directory");
-    } finally {
-      setLoading(false);
-    }
-  }, [siteT]);
-
-  useEffect(() => {
-    if (open) {
-      browseTo("/");
-    }
-  }, [open, browseTo]);
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-backdrop-in" onClick={onClose}>
-      <div
-        className="relative w-full max-w-md mx-4 max-h-[70vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl animate-modal-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-accent" />
-            <span className="text-sm font-medium text-foreground">
-              {siteT?.browseDirTitle || "Select Folder"}
-            </span>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-muted hover:text-foreground hover:bg-background transition-colors">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* 当前路径 */}
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2 bg-background/50">
-          <span className="text-[11px] text-muted shrink-0">{siteT?.currentPath || "Current path"}:</span>
-          <span className="text-xs font-mono text-foreground truncate flex-1" title={currentPath}>{currentPath}</span>
-        </div>
-
-        {/* 目录列表 */}
-        <div className="flex-1 overflow-y-auto min-h-0 max-h-[40vh]">
-          {loading ? (
-            <div className="flex items-center justify-center py-8 text-xs text-muted">
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              Loading...
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center gap-3 py-6 px-4">
-              <div className="flex items-center gap-2 text-xs text-red-400">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {error}
-              </div>
-              {hint && (
-                <div className="w-full rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 px-3 py-2.5">
-                  <div className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 mb-1.5">
-                    {siteT?.permissionFixTitle || "💡 如何获取权限："}
-                  </div>
-                  <pre className="text-[10px] text-amber-700 dark:text-amber-200/90 whitespace-pre-wrap break-all leading-relaxed font-mono">{hint}</pre>
-                </div>
-              )}
-              {parentPath && (
-                <button
-                  onClick={() => browseTo(parentPath)}
-                  className="text-[11px] text-accent hover:underline"
-                >
-                  ← {siteT?.parentDir || "Parent directory"}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-border/50">
-              {/* 上级目录 */}
-              {parentPath && (
-                <button
-                  onClick={() => browseTo(parentPath)}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-accent hover:bg-accent/5 transition-colors"
-                >
-                  <ChevronUp className="h-4 w-4 shrink-0" />
-                  <span className="font-medium">{siteT?.parentDir || "Parent directory"} ..</span>
-                </button>
-              )}
-
-              {/* 子目录列表 */}
-              {dirs.length === 0 && !parentPath ? (
-                <div className="py-8 text-center text-xs text-muted">
-                  {siteT?.emptyDir || "No subdirectories found"}
-                </div>
-              ) : dirs.length === 0 ? (
-                <div className="py-6 text-center text-xs text-muted">
-                  {siteT?.emptyDir || "No subdirectories found"}
-                </div>
-              ) : (
-                dirs.map((dir) => (
-                  <button
-                    key={dir.path}
-                    onClick={() => browseTo(dir.path)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent/5 transition-colors group"
-                  >
-                    <Folder className="h-4 w-4 shrink-0 text-accent/70" />
-                    <span className="flex-1 truncate">{dir.name}</span>
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 底部操作按钮 */}
-        <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-background"
-          >
-            {/* Cancel */}
-            取消
-          </button>
-          <button
-            onClick={() => {
-              onSelect(currentPath);
-              onClose();
-            }}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/90"
-          >
-            <CheckCircle className="h-3.5 w-3.5" />
-            {siteT?.selectDir || "Select this directory"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // 默认阅读模式选择组件
@@ -751,81 +584,30 @@ export function SiteSettingsPanel() {
         )}
       </div>
 
-      {/* Comics Directories */}
+      {/* Comics Directories - migrated to library management */}
       <div className="space-y-3 rounded-xl bg-background p-4">
         <div className="flex items-center gap-2 text-xs font-medium text-foreground">
           <FolderOpen className="h-3.5 w-3.5 text-accent" />
           {siteT?.comicsDir || "Comics Directory"}
         </div>
-        <p className="text-[11px] text-muted">
-          {siteT?.comicsDirsMergedDesc || "All directories will be scanned for comics. The first directory is the primary one (used for uploads). Requires restart to take effect."}
-        </p>
-
-        {/* Primary dir */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={config.comicsDir}
-              onChange={(e) => update("comicsDir", e.target.value)}
-              className="w-full rounded-lg border border-accent/40 bg-card px-3 py-1.5 text-sm text-foreground font-mono outline-none focus:border-accent/50 transition-colors pr-14"
-              placeholder="/path/to/comics"
-            />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-              {siteT?.primaryDir || "Primary"}
-            </span>
+        <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
+          <Library className="h-5 w-5 text-accent shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              {"目录配置已迁移到书库管理"}
+            </p>
+            <p className="text-xs text-muted mt-0.5">
+              {"请在书库管理中创建漫画库、小说库或混合库，统一管理扫描目录"}
+            </p>
           </div>
           <button
-            onClick={() => { setBrowseTarget("primary"); setBrowseOpen(true); }}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors"
-            title={siteT?.browseDir || "Browse"}
+            onClick={() => window.dispatchEvent(new CustomEvent("navigate-to-library"))}
+            className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-opacity"
           >
-            <FolderOpen className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Extra dirs */}
-        {config.extraComicsDirs.map((dir, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            <div className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground font-mono truncate">
-              {dir}
-            </div>
-            <button
-              onClick={() => removeExtraDir(idx)}
-              className="shrink-0 rounded-lg p-1.5 text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-
-        {/* Add new dir */}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newDir}
-            onChange={(e) => setNewDir(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addExtraDir()}
-            className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground font-mono outline-none focus:border-accent/50 transition-colors"
-            placeholder={siteT?.extraDirPlaceholder || "/mnt/nas/comics or /data/manga"}
-          />
-          <button
-            onClick={() => { setBrowseTarget("extra"); setBrowseOpen(true); }}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors"
-            title={siteT?.browseDir || "Browse"}
-          >
-            <FolderOpen className="h-4 w-4" />
-          </button>
-          <button
-            onClick={addExtraDir}
-            disabled={!newDir.trim()}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors disabled:opacity-30"
-          >
-            <Plus className="h-4 w-4" />
+            {"前往书库管理"}
           </button>
         </div>
       </div>
-
       {/* Folder Browser Modal */}
       <FolderBrowser
         open={browseOpen}
@@ -848,77 +630,27 @@ export function SiteSettingsPanel() {
         siteT={siteT}
       />
 
-      {/* Novels/Ebooks Directories */}
+      {/* Novels/Ebooks Directories - migrated to library management */}
       <div className="space-y-3 rounded-xl bg-background p-4">
         <div className="flex items-center gap-2 text-xs font-medium text-foreground">
           <BookOpen className="h-3.5 w-3.5 text-accent" />
           {siteT?.novelsDir || "电子书目录"}
         </div>
-        <p className="text-[11px] text-muted">
-          {siteT?.novelsDirDesc || "独立的电子书文件存放路径，与漫画目录分离管理。支持 EPUB/MOBI/AZW3/TXT 等格式，修改后需重启生效"}
-        </p>
-
-        {/* Primary novels dir */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={config.novelsDir}
-              onChange={(e) => update("novelsDir", e.target.value)}
-              className="w-full rounded-lg border border-accent/40 bg-card px-3 py-1.5 text-sm text-foreground font-mono outline-none focus:border-accent/50 transition-colors pr-14"
-              placeholder="/path/to/novels"
-            />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-              {siteT?.primaryDir || "Primary"}
-            </span>
+        <div className="flex items-center gap-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
+          <Library className="h-5 w-5 text-accent shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              {"目录配置已迁移到书库管理"}
+            </p>
+            <p className="text-xs text-muted mt-0.5">
+              {"请在书库管理中创建小说库或混合库"}
+            </p>
           </div>
           <button
-            onClick={() => { setBrowseTarget("novelPrimary"); setBrowseOpen(true); }}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors"
-            title={siteT?.browseDir || "Browse"}
+            onClick={() => window.dispatchEvent(new CustomEvent("navigate-to-library"))}
+            className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-opacity"
           >
-            <FolderOpen className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Extra novels dirs */}
-        {config.extraNovelsDirs.map((dir, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            <div className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground font-mono truncate">
-              {dir}
-            </div>
-            <button
-              onClick={() => removeExtraNovelDir(idx)}
-              className="shrink-0 rounded-lg p-1.5 text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-
-        {/* Add new novel dir */}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newNovelDir}
-            onChange={(e) => setNewNovelDir(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addExtraNovelDir()}
-            className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground font-mono outline-none focus:border-accent/50 transition-colors"
-            placeholder={siteT?.extraNovelDirPlaceholder || "/mnt/nas/ebooks 或 /data/novels"}
-          />
-          <button
-            onClick={() => { setBrowseTarget("novelExtra"); setBrowseOpen(true); }}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors"
-            title={siteT?.browseDir || "Browse"}
-          >
-            <FolderOpen className="h-4 w-4" />
-          </button>
-          <button
-            onClick={addExtraNovelDir}
-            disabled={!newNovelDir.trim()}
-            className="shrink-0 rounded-lg bg-accent/15 p-1.5 text-accent hover:bg-accent/25 transition-colors disabled:opacity-30"
-          >
-            <Plus className="h-4 w-4" />
+            {"前往书库管理"}
           </button>
         </div>
       </div>
