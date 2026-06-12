@@ -66,6 +66,14 @@ export default function WebtoonView({
   // Track which pages failed to load
   const [errorPages, setErrorPages] = useState<Set<number>>(new Set());
 
+  // Zoom state
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const panStartRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  const isPanningRef = useRef(false);
+  const lastTapTimeRef = useRef(0);
+  const touchHandledRef = useRef(false);
+
   // Preload images ahead of current page
   useImagePreloader(pages, currentPage, preloadCount, comicId);
 
@@ -166,6 +174,57 @@ export default function WebtoonView({
     }
   }, []);
 
+  // Touch gesture handlers for double-tap zoom and pan
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && scale > 1) {
+      panStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        tx: translate.x,
+        ty: translate.y,
+      };
+    }
+  }, [scale, translate]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1 && panStartRef.current && scale > 1) {
+      const dx = e.touches[0].clientX - panStartRef.current.x;
+      const dy = e.touches[0].clientY - panStartRef.current.y;
+      isPanningRef.current = true;
+      // touch-none CSS class prevents browser scroll when zoomed
+      setTranslate({
+        x: panStartRef.current.tx + dx,
+        y: panStartRef.current.ty + dy,
+      });
+    }
+  }, [scale]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    panStartRef.current = null;
+
+    // Double-tap detection
+    const now = Date.now();
+    if (now - lastTapTimeRef.current < 300 && e.changedTouches.length === 1) {
+      // Double tap detected
+      lastTapTimeRef.current = 0;
+      touchHandledRef.current = true;
+      setTimeout(() => { touchHandledRef.current = false; }, 400);
+
+      if (scale > 1) {
+        setScale(1);
+        setTranslate({ x: 0, y: 0 });
+      } else {
+        setScale(2);
+        setTranslate({ x: 0, y: 0 });
+      }
+    } else {
+      lastTapTimeRef.current = now;
+    }
+
+    // Reset panning state after a short delay
+    setTimeout(() => { isPanningRef.current = false; }, 50);
+  }, [scale]);
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -191,7 +250,15 @@ export default function WebtoonView({
       onScroll={handleScroll}
       onClick={handleClick}
     >
-      <div className="mx-auto" style={containerWidth ? { width: containerWidth, maxWidth: "100%" } : { maxWidth: "48rem" }}>
+      <div
+        className="mx-auto"
+        style={{
+          ...(containerWidth ? { width: containerWidth, maxWidth: "100%" } : { maxWidth: "48rem" }),
+          transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+          transformOrigin: "center top",
+          transition: isPanningRef.current ? "none" : "transform 0.2s ease-out",
+        }}
+      >
         {/* 顶部不在 DOM 范围内的页面用一个合并占位元素 */}
         {(() => {
           const domStart = Math.max(0, renderRange.start - DOM_BUFFER);
