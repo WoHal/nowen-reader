@@ -4,6 +4,12 @@
 
 ### Added
 
+- 上传功能支持选择目标书库：管理员可在首页上传区域选择目标书库，文件直接写入该书库的 rootPath
+- `POST /api/upload` 新增可选参数 `libraryId`，传入时上传到对应书库，不传时兼容旧 `comicsDir` / `novelsDir` 逻辑
+- 上传文件类型按书库类型自动校验（comic 书库只允许归档、novel 书库只允许电子书、mixed 允许全部）
+- 系统诊断和 PDF renderer 接口（`/api/system/*`）添加认证要求
+- Library.defaultAccess 防御性数据库迁移（migration 25），兼容中间版本升级的老数据库
+
 - 多用户书库权限能力（Library / UserLibraryAccess / UserGroup / GroupLibraryAccess）
 - `UserCanViewLibrary()` 统一授权语义：admin→enabled / public→自动 / 直接授权 / 用户组继承
 - `UserCanViewComic()` 处理 NULL libraryId 和不存在书库的向后兼容
@@ -27,6 +33,10 @@
 - 系统诊断面板适配日间模式（33 处硬编码颜色替换为 CSS 变量）
 
 ### Fixed
+
+- FolderBrowser 目录浏览器 API 路径错误（`/api/admin/browse` → `/api/browse-dirs`），导致书库管理中目录选择不可用
+- AI 语义搜索未做书库权限过滤，普通用户可搜索到无权限书库内容
+- `.gitignore` 缺少 `site-config.json` 和 `storage-history.json` 规则
 
 - 普通用户可通过直接请求 comicId 越权访问漫画详情的问题
 - OPDS 列表接口未过滤无权限书库、下载接口可下载无权限文件的问题
