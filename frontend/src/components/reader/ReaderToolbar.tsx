@@ -16,6 +16,8 @@ import {
   Settings,
   Play,
   Square,
+  Bookmark,
+  List,
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { ComicReadingMode, ReadingDirection } from "@/types/reader";
@@ -48,6 +50,14 @@ interface ReaderToolbarProps {
   onToggleAutoPage?: () => void;
   /** 通知父组件工具栏正在被交互，不要自动隐藏 */
   onInteracting?: (interacting: boolean) => void;
+  /** 当前页是否已书签 */
+  isBookmarked?: boolean;
+  /** 切换当前页书签 */
+  onToggleBookmark?: () => void;
+  /** 打开书签列表 */
+  onShowBookmarks?: () => void;
+  /** 书签数量 */
+  bookmarkCount?: number;
 }
 
 export default function ReaderToolbar({
@@ -71,6 +81,10 @@ export default function ReaderToolbar({
   autoPageInterval,
   onToggleAutoPage,
   onInteracting,
+  isBookmarked,
+  onToggleBookmark,
+  onShowBookmarks,
+  bookmarkCount,
 }: ReaderToolbarProps) {
   const t = useTranslation();
   const [showPageInput, setShowPageInput] = useState(false);
@@ -157,6 +171,30 @@ export default function ReaderToolbar({
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <Info className="h-4 w-4" />
+              </button>
+            )}
+            {/* Bookmark toggle */}
+            {onToggleBookmark && (
+              <button
+                onClick={onToggleBookmark}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                  isBookmarked
+                    ? "text-amber-400 hover:bg-amber-400/20"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                }`}
+                title={isBookmarked ? t.readerToolbar.bookmarked : t.readerToolbar.bookmark}
+              >
+                <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
+              </button>
+            )}
+            {/* Bookmark list */}
+            {onShowBookmarks && bookmarkCount != null && bookmarkCount > 0 && (
+              <button
+                onClick={onShowBookmarks}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                title={t.readerBookmarks.title}
+              >
+                <List className="h-4 w-4" />
               </button>
             )}
             {onShowSettings && (

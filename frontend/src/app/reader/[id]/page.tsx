@@ -32,6 +32,8 @@ import AIChatPanel from "@/components/reader/AIChatPanel";
 import PageTranslateOverlay from "@/components/reader/PageTranslateOverlay";
 import { useAIStatus } from "@/hooks/useAIStatus";
 import { useReaderOptions } from "@/hooks/useReaderOptions";
+import { useComicBookmarks } from "@/hooks/useComicBookmarks";
+import BookmarkPanel from "@/components/reader/BookmarkPanel";
 import { fetchGroupedComicMap, fetchGroupDetail } from "@/api/groups";
 
 // 跨卷导航信息
@@ -51,6 +53,7 @@ export default function ReaderPage() {
   const { locale } = useLocale();
   const { aiConfigured } = useAIStatus();
   const { options: readerOpts, updateOptions: updateReaderOpts, loaded: optsLoaded } = useReaderOptions();
+  const { bookmarks, isBookmarked, toggleBookmark, removeBookmark } = useComicBookmarks(comicId);
 
   // Try API first
   const {
@@ -94,6 +97,7 @@ export default function ReaderPage() {
   const [toolbarVisible, setToolbarVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [showBookmarkPanel, setShowBookmarkPanel] = useState(false);
   const [showOptionsPanel, setShowOptionsPanel] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [autoPageActive, setAutoPageActive] = useState(false);
@@ -688,6 +692,10 @@ export default function ReaderPage() {
         autoPageInterval={readerOpts.autoPageInterval}
         onToggleAutoPage={() => setAutoPageActive((v) => !v)}
         onInteracting={setToolbarInteracting}
+            isBookmarked={isBookmarked(currentPage)}
+            onToggleBookmark={() => toggleBookmark(currentPage)}
+            onShowBookmarks={() => setShowBookmarkPanel(true)}
+            bookmarkCount={bookmarks.length}
       />
 
       {/* Page number indicator (页码指示器可见性控制) */}
@@ -753,6 +761,20 @@ export default function ReaderPage() {
           options={readerOpts}
           onChange={handleOptionsChange}
           onClose={() => setShowOptionsPanel(false)}
+        />
+      )}
+
+      {/* Bookmark Panel */}
+      {showBookmarkPanel && (
+        <BookmarkPanel
+          bookmarks={bookmarks}
+          currentPage={currentPage}
+          onJump={(pageIndex) => {
+            setCurrentPage(pageIndex);
+            setShowBookmarkPanel(false);
+          }}
+          onRemove={removeBookmark}
+          onClose={() => setShowBookmarkPanel(false)}
         />
       )}
 

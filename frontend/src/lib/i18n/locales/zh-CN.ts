@@ -327,6 +327,16 @@ const zhCN = {
     settings: "设置",
     autoPage: "自动翻页",
     autoPageStop: "停止翻页",
+    bookmark: "书签",
+    bookmarked: "已书签",
+  },
+
+  // 书签面板
+  readerBookmarks: {
+    title: "书签列表",
+    empty: "暂无书签",
+    page: "第",
+    remove: "删除书签",
   },
 
   // 阅读器选项面板
@@ -1477,6 +1487,14 @@ export interface Translations {
     settings: string;
     autoPage: string;
     autoPageStop: string;
+    bookmark: string;
+    bookmarked: string;
+  };
+  readerBookmarks: {
+    title: string;
+    empty: string;
+    page: string;
+    remove: string;
   };
   readerOptions: {
     title: string;

@@ -331,6 +331,16 @@ const en: Translations = {
     settings: "Settings",
     autoPage: "Auto Page",
     autoPageStop: "Stop Auto",
+    bookmark: "Bookmark",
+    bookmarked: "Bookmarked",
+  },
+
+  // Bookmarks Panel
+  readerBookmarks: {
+    title: "Bookmarks",
+    empty: "No bookmarks yet",
+    page: "Page",
+    remove: "Remove bookmark",
   },
 
   // Reader Options Panel
