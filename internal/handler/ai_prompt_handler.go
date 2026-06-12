@@ -31,6 +31,18 @@ func (h *AIHandler) GenerateRecommendationReasons(c *gin.Context) {
 		return
 	}
 
+	// 校验用户对每个推荐项的漫画是否有访问权限
+	uid := getUserID(c)
+	for _, item := range body.Items {
+		if uid != "" {
+			ok, err := store.UserCanViewComic(uid, item.ID)
+			if err != nil || !ok {
+				c.JSON(403, gin.H{"error": "Access denied for comic " + item.ID})
+				return
+			}
+		}
+	}
+
 	// 转换为 service 层结构
 	var items []service.RecommendationItem
 	for _, item := range body.Items {

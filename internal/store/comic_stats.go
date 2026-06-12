@@ -31,6 +31,13 @@ func StartReadingSession(comicID string, startPage int, userID ...string) (int64
 	return res.LastInsertId()
 }
 
+// GetReadingSessionComicID 根据会话 ID 获取关联的漫画 ID。
+func GetReadingSessionComicID(sessionID int) (string, error) {
+	var comicID string
+	err := db.QueryRow(`SELECT "comicId" FROM "ReadingSession" WHERE "id" = ?`, sessionID).Scan(&comicID)
+	return comicID, err
+}
+
 // EndReadingSession 完成一个阅读会话并更新漫画的总阅读时间。
 func EndReadingSession(sessionID int, endPage int, duration int, userID ...string) error {
 	// Get the comicId from the session

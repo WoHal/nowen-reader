@@ -114,6 +114,9 @@ func (h *ComicHandler) GetComic(c *gin.Context) {
 
 func (h *ComicHandler) ToggleFavorite(c *gin.Context) {
 	id := c.Param("id")
+	if err := checkComicAccess(c, id); err != nil {
+		return
+	}
 	uid := getUserID(c)
 	newState, err := store.ToggleFavorite(id, uid)
 	if err != nil {
@@ -129,6 +132,9 @@ func (h *ComicHandler) ToggleFavorite(c *gin.Context) {
 
 func (h *ComicHandler) UpdateRating(c *gin.Context) {
 	id := c.Param("id")
+	if err := checkComicAccess(c, id); err != nil {
+		return
+	}
 	var body struct {
 		Rating *int `json:"rating"`
 	}
@@ -156,6 +162,9 @@ func (h *ComicHandler) UpdateRating(c *gin.Context) {
 
 func (h *ComicHandler) UpdateProgress(c *gin.Context) {
 	id := c.Param("id")
+	if err := checkComicAccess(c, id); err != nil {
+		return
+	}
 	var body struct {
 		Page int `json:"page"`
 	}
@@ -589,6 +598,9 @@ func (h *ComicHandler) UpdateMetadata(c *gin.Context) {
 
 func (h *ComicHandler) SetReadingStatus(c *gin.Context) {
 	id := c.Param("id")
+	if err := checkComicAccess(c, id); err != nil {
+		return
+	}
 	var body struct {
 		Status string `json:"status"` // "want" | "reading" | "finished" | "shelved" | ""
 	}

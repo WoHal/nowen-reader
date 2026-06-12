@@ -60,6 +60,10 @@ func (h *StatsHandler) StartSession(c *gin.Context) {
 		return
 	}
 
+	if err := checkComicAccess(c, body.ComicID); err != nil {
+		return
+	}
+
 	sessionID, err := store.StartReadingSession(body.ComicID, body.StartPage, getUserID(c))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start session"})
@@ -82,6 +86,13 @@ func (h *StatsHandler) EndSession(c *gin.Context) {
 	if body.SessionID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "sessionId and duration required"})
 		return
+	}
+
+	// 校验会话关联漫画的书库权限
+	if comicID, err := store.GetReadingSessionComicID(body.SessionID); err == nil {
+		if err := checkComicAccess(c, comicID); err != nil {
+			return
+		}
 	}
 
 	if err := store.EndReadingSession(body.SessionID, body.EndPage, body.Duration, getUserID(c)); err != nil {
