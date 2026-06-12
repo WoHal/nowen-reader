@@ -16,6 +16,10 @@ const en: Translations = {
     collapse: "Collapse",
     noSearchResults: "No matching results",
     tryDifferentKeywords: "Try different keywords",
+    forbidden: "Access Denied",
+    forbiddenDesc: "You do not have permission to access this library content",
+    backToShelf: "Back to Shelf",
+    noPermissionAction: "No permission to perform this action",
   },
 
   // Navbar

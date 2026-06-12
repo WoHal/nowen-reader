@@ -62,7 +62,13 @@ export function useComicPages(comicId: string) {
             setError("Loading timeout — file may be too large. Please retry.");
           }
         } else {
-          setError(err instanceof Error ? err.message : "Unknown error");
+          const msg = err instanceof Error ? err.message : "Unknown error";
+          // 区分 403 错误：如果响应是 403，保留 status 信息供页面判断
+          if (msg.includes("403") || msg.toLowerCase().includes("forbidden") || msg.includes("do not have access")) {
+            setError("403: " + msg);
+          } else {
+            setError(msg);
+          }
         }
       })
       .finally(() => {
@@ -88,10 +94,14 @@ export function useComicPages(comicId: string) {
 export function useComicDetail(comicId: string) {
   const [comic, setComic] = useState<ApiComic | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusCode, setStatusCode] = useState<number | null>(null);
 
   const fetchDetail = useCallback(async () => {
     if (!comicId) return;
     try {
+      setError(null);
+      setStatusCode(null);
       const res = await fetch(`/api/comics/${comicId}`);
       if (res.ok) {
         const data = await res.json();
@@ -100,9 +110,13 @@ export function useComicDetail(comicId: string) {
           tags: data.tags || [],
           categories: data.categories || [],
         });
+      } else {
+        setStatusCode(res.status);
+        const body = await res.json().catch(() => null);
+        setError(body?.error || `HTTP ${res.status}`);
       }
     } catch {
-      // ignore
+      // ignore network errors
     } finally {
       setLoading(false);
     }
@@ -112,5 +126,5 @@ export function useComicDetail(comicId: string) {
     fetchDetail();
   }, [fetchDetail]);
 
-  return { comic, loading, refetch: fetchDetail };
+  return { comic, loading, error, statusCode, refetch: fetchDetail };
 }

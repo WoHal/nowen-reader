@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useComics";
 import { ComicReadingMode, ReadingDirection } from "@/types/reader";
 import ReaderToolbar from "@/components/reader/ReaderToolbar";
+import { calculateReadingProgress } from "@/lib/progress";
 import type { ReaderTheme } from "@/components/reader/ReaderToolbar";
 import { useTheme } from "@/lib/theme-context";
 import SinglePageView from "@/components/reader/SinglePageView";
@@ -26,6 +27,7 @@ import PdfView from "@/components/reader/PdfView";
 import ReaderOptionsPanel from "@/components/reader/ReaderOptionsPanel";
 import { Heart, Star, Tag, X, Plus, List, Trash2 } from "lucide-react";
 import { useTranslation, useLocale } from "@/lib/i18n";
+import ForbiddenPage from "@/components/ForbiddenPage";
 import AIChatPanel from "@/components/reader/AIChatPanel";
 import PageTranslateOverlay from "@/components/reader/PageTranslateOverlay";
 import { useAIStatus } from "@/hooks/useAIStatus";
@@ -490,6 +492,10 @@ export default function ReaderPage() {
   }
 
   // Error state (e.g. timeout for large files)
+  if (apiError && pages.length === 0 && (apiError.startsWith("403") || apiError.toLowerCase().includes("forbidden") || apiError.includes("do not have access"))) {
+    return <ForbiddenPage />;
+  }
+
   if (apiError && pages.length === 0) {
     return (
       <div className="flex h-dvh items-center justify-center bg-black text-white">
@@ -764,7 +770,7 @@ export default function ReaderPage() {
             {/* 章节列表 */}
             <div className="p-2 space-y-1">
               {seriesVolumes.map((vol) => {
-                const progress = vol.pageCount > 0 ? Math.round((vol.lastReadPage / vol.pageCount) * 100) : 0;
+                const progress = calculateReadingProgress(vol.lastReadPage, vol.pageCount);
                 const isCurrent = vol.comicId === comicId;
                 return (
                   <button

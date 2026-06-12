@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from "@/lib/apiClient";
+import { useToast } from "@/components/Toast";
 
 /**
  * 上传文件到服务器
@@ -71,8 +72,9 @@ export async function toggleComicFavorite(
       `/api/comics/${comicId}/favorite`
     );
     return data.isFavorite ?? null;
-  } catch {
-    // ignore
+  } catch (e: unknown) {
+    const err = e as { status?: number; message?: string };
+    if (err?.status === 403) throw e;
   }
   return null;
 }
@@ -86,8 +88,9 @@ export async function updateComicRating(
 ) {
   try {
     await apiClient.put(`/api/comics/${comicId}/rating`, { rating });
-  } catch {
-    // ignore
+  } catch (e: unknown) {
+    const err = e as { status?: number };
+    if (err?.status === 403) throw e;
   }
 }
 
@@ -338,7 +341,9 @@ export async function setReadingStatus(
   try {
     await apiClient.put(`/api/comics/${comicId}/reading-status`, { status });
     return true;
-  } catch {
+  } catch (e: unknown) {
+    const err = e as { status?: number };
+    if (err?.status === 403) throw e;
     return false;
   }
 }

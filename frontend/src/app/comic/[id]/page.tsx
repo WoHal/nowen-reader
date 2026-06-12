@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useComics";
 import type { ComicMetadataUpdate } from "@/hooks/useComics";
 import { useAuth } from "@/lib/auth-context";
+import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 import {
   ArrowLeft,
   Heart,
@@ -54,6 +55,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useTranslation, useLocale } from "@/lib/i18n";
+import ForbiddenPage from "@/components/ForbiddenPage";
+import { useToast } from "@/components/Toast";
 import { MetadataSearch } from "@/components/MetadataSearch";
 import { SimilarComics } from "@/components/Recommendations";
 import { useAIStatus } from "@/hooks/useAIStatus";
@@ -81,6 +84,7 @@ export default function ComicDetailPage() {
   const { locale } = useLocale();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const toast = useToast();
 
   function formatDuration(seconds: number) {
     if (seconds < 60) return t.duration.seconds.replace("{n}", String(seconds));
@@ -90,7 +94,7 @@ export default function ComicDetailPage() {
     return t.duration.hours.replace("{h}", String(h)).replace("{m}", String(m));
   }
 
-  const { comic, loading, refetch } = useComicDetail(comicId);
+  const { comic, loading, error: comicError, statusCode, refetch } = useComicDetail(comicId);
   const { categories: allCategories, refetch: refetchCategories, initCategories } = useCategories();
 
   // 监听来自刮削页面/其他标签页的同步事件，自动刷新数据
@@ -254,17 +258,29 @@ export default function ComicDetailPage() {
   }, [comicId, metaForm, refetch]);
 
   const handleToggleFavorite = useCallback(async () => {
-    await toggleComicFavorite(comicId);
-    refetch();
-  }, [comicId, refetch]);
+    try {
+      await toggleComicFavorite(comicId);
+      refetch();
+    } catch (e: unknown) {
+      if ((e as { status?: number })?.status === 403) {
+        toast.error(t.common.noPermissionAction);
+      }
+    }
+  }, [comicId, refetch, toast, t]);
 
   const handleRating = useCallback(
     async (newRating: number) => {
       const r = newRating === comic?.rating ? null : newRating;
-      await updateComicRating(comicId, r);
-      refetch();
+      try {
+        await updateComicRating(comicId, r);
+        refetch();
+      } catch (e: unknown) {
+        if ((e as { status?: number })?.status === 403) {
+          toast.error(t.common.noPermissionAction);
+        }
+      }
     },
-    [comicId, comic?.rating, refetch]
+    [comicId, comic?.rating, refetch, toast, t]
   );
 
   const handleAddTag = useCallback(async () => {
@@ -806,6 +822,10 @@ export default function ComicDetailPage() {
     );
   }
 
+  if (statusCode === 403 || (comicError && comicError.includes("403"))) {
+    return <ForbiddenPage />;
+  }
+
   if (!comic) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -819,7 +839,7 @@ export default function ComicDetailPage() {
     );
   }
 
-  const progress = comic.pageCount > 0 ? Math.round((comic.lastReadPage / comic.pageCount) * 100) : 0;
+  const progress = calculateReadingProgress(comic.lastReadPage, comic.pageCount);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -1155,13 +1175,13 @@ export default function ComicDetailPage() {
               // 当前漫画在合集中的位置
               const currentIdx = group.comics.findIndex(c => c.id === comicId);
               const totalComics = group.comics.length;
-              const completedCount = group.comics.filter(c => c.pageCount > 0 && c.lastReadPage >= c.pageCount).length;
+              const completedCount = group.comics.filter(c => isReadingFinished(c.lastReadPage, c.pageCount)).length;
               const overallProgress = totalComics > 0 ? Math.round((completedCount / totalComics) * 100) : 0;
               // 上一卷/下一卷
               const prevComic = currentIdx > 0 ? group.comics[currentIdx - 1] : null;
               const nextComic = currentIdx >= 0 && currentIdx < totalComics - 1 ? group.comics[currentIdx + 1] : null;
               // 继续阅读的下一未读卷
-              const nextUnread = group.comics.find(c => c.id !== comicId && c.pageCount > 0 && c.lastReadPage < c.pageCount);
+              const nextUnread = group.comics.find(c => c.id !== comicId && !isReadingFinished(c.lastReadPage, c.pageCount));
 
               return (
                 <div key={group.id} className="rounded-xl border border-border/40 bg-card/50 overflow-hidden min-w-0">

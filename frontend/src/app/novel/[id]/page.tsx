@@ -19,6 +19,7 @@ import TextReaderView from "@/components/reader/TextReaderView";
 import NovelToolbar from "@/components/reader/NovelToolbar";
 import { Heart, Star, Tag, X, Plus, Trash2 } from "lucide-react";
 import { useTranslation, useLocale } from "@/lib/i18n";
+import ForbiddenPage from "@/components/ForbiddenPage";
 import { useTheme } from "@/lib/theme-context";
 import type { ReaderTheme } from "@/components/reader/ReaderToolbar";
 import AIChatPanel from "@/components/reader/AIChatPanel";
@@ -357,6 +358,10 @@ export default function NovelReaderPage() {
   }
 
   // Error state
+  if (apiError && (apiError.startsWith("403") || apiError.toLowerCase().includes("forbidden") || apiError.includes("do not have access"))) {
+    return <ForbiddenPage />;
+  }
+
   if (apiError) {
     return (
       <div className="flex h-screen items-center justify-center bg-black text-white">

@@ -14,6 +14,10 @@
     collapse: "收起",
     noSearchResults: "未找到匹配结果",
     tryDifferentKeywords: "试试其他关键词",
+    forbidden: "无权访问",
+    forbiddenDesc: "你没有权限访问这个书库内容",
+    backToShelf: "返回书架",
+    noPermissionAction: "无权操作此内容",
   },
 
   // Navbar
@@ -1172,6 +1176,10 @@ export interface Translations {
     collapse: string;
     noSearchResults: string;
     tryDifferentKeywords: string;
+    forbidden: string;
+    forbiddenDesc: string;
+    backToShelf: string;
+    noPermissionAction: string;
   };
   navbar: {
     searchPlaceholder: string;
