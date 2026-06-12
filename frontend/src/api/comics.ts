@@ -16,12 +16,16 @@ import { useToast } from "@/components/Toast";
  */
 export async function uploadComics(
   files: FileList | File[],
-  category?: "comic" | "novel"
+  category?: "comic" | "novel",
+  libraryId?: string
 ): Promise<{ success: boolean; message: string; successCount: number; totalCount: number }> {
   const formData = new FormData();
   Array.from(files).forEach((file) => formData.append("files", file));
   if (category) {
     formData.append("category", category);
+  }
+  if (libraryId) {
+    formData.append("libraryId", libraryId);
   }
 
   try {

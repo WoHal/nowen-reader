@@ -34,6 +34,7 @@ import { useAIStatus } from "@/hooks/useAIStatus";
 import type { ComicGroup } from "@/hooks/useComicTypes";
 import { fetchGroups, fetchGroupedComicMap, createGroup, updateGroup, deleteGroup } from "@/api/groups";
 import { toggleComicFavorite, deleteComicById } from "@/api/comics";
+import { fetchLibraries, type Library } from "@/api/libraries";
 import { useAuth } from "@/lib/auth-context";
 import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 
@@ -111,6 +112,16 @@ export default function Home() {
     return "grid";
   });
   const [uploading, setUploading] = useState(false);
+  const [selectedLibraryId, setSelectedLibraryId] = useState("");
+  const [libraries, setLibraries] = useState<Library[]>([]);
+
+  // Load libraries for upload selector (admin only)
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchLibraries()
+      .then(setLibraries)
+      .catch(() => {});
+  }, [isAdmin]);
   const [scanningLibrary, setScanningLibrary] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(() => {
     if (typeof window !== "undefined") {
@@ -654,7 +665,8 @@ export default function Home() {
       try {
         // 把当前页面（漫画/电子书）作为类别提示传给后端，
         // 后端会按文件扩展名自动分流，仅在歧义扩展名（如 .azw3）时使用此提示。
-        const result = await uploadComics(files, contentType);
+        const libId = selectedLibraryId || undefined;
+        const result = await uploadComics(files, contentType, libId);
         if (result.success) {
           // 触发后端扫描，确保新文件入库
           try {
@@ -676,7 +688,7 @@ export default function Home() {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [refetch, toast, t, contentType]
+    [refetch, toast, t, contentType, selectedLibraryId]
   );
 
   // Batch selection handlers
@@ -994,6 +1006,29 @@ export default function Home() {
 
       {/* Main Content */}
       <main className={`mx-auto max-w-[1800px] px-3 sm:px-6 pt-20 sm:pt-24 ${batchMode ? "pb-32" : "pb-20 sm:pb-12"}`}>
+        {/* Upload library selector — admin only, shared across all upload entry points */}
+        {isAdmin && libraries.length > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            <label className="text-xs text-muted">上传到:</label>
+            <select
+              value={selectedLibraryId}
+              onChange={(e) => setSelectedLibraryId(e.target.value)}
+              className="rounded-lg border border-border/60 bg-card px-2 py-1 text-xs text-foreground"
+              title="选择上传目标书库"
+            >
+              <option value="">{contentType === "novel" ? "默认目录(小说)" : "默认目录(漫画)"}</option>
+              {libraries
+                .filter((lib) => lib.enabled && lib.rootPath && (
+                  lib.type === "mixed" || lib.type === contentType
+                ))
+                .map((lib) => (
+                  <option key={lib.id} value={lib.id}>
+                    {lib.name} ({lib.type})
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
         {/* Data Source Indicator — 空库提示 */}
         {!loading && displayComics.length === 0 && apiTotal === 0 && !debouncedSearch && selectedTags.length === 0 && !favoritesOnly && !selectedCategory && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
