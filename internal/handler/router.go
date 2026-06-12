@@ -1,10 +1,11 @@
-﻿package handler
+package handler
 
 import (
 	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nowen-reader/nowen-reader/internal/middleware"
 )
 
 // Build info — set by main package
@@ -35,8 +36,13 @@ func SetupRoutes(r *gin.Engine) {
 		})
 	})
 
-	api.GET("/system/pdf-renderer", GetPdfRendererStatus)
-	api.GET("/system/diagnostics", GetDiagnostics)
+	// System diagnostic endpoints — require auth
+	sysGroup := api.Group("/system")
+	sysGroup.Use(middleware.AuthRequired())
+	{
+		sysGroup.GET("/pdf-renderer", GetPdfRendererStatus)
+		sysGroup.GET("/diagnostics", GetDiagnostics)
+	}
 
 	registerAuthRoutes(api)
 	registerComicRoutes(api)
