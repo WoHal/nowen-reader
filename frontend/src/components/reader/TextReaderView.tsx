@@ -6,6 +6,7 @@ import type { ReaderTheme } from "@/components/reader/ReaderToolbar";
 import { useLocale, useTranslation } from "@/lib/i18n";
 import { useAIStatus } from "@/hooks/useAIStatus";
 import { idbSave, idbLoad } from "@/lib/idb-backup";
+import { calculateReadingProgress } from "@/lib/progress";
 import { themeColorMap, themePreviewColorKeys, paddingOptions, pageModeOptions } from "./text-reader-themes";
 import type { ThemeColors, PageMode } from "./text-reader-themes";
 import type { NovelBookmark, TextHighlight, SearchResult, ChapterInfo, TextReaderViewProps } from "./text-reader-types";
@@ -1238,7 +1239,7 @@ export default function TextReaderView({
             {pageMode === 'swipe' && swipeTotalPages > 1 && (
               <span>{swipePage + 1}/{swipeTotalPages}</span>
             )}
-            <span>{Math.round(((currentPage + 1) / chapters.length) * 100)}%</span>
+            <span>{calculateReadingProgress(currentPage, chapters.length)}%</span>
             <span>{currentTime}</span>
           </div>
         </div>

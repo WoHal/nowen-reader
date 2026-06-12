@@ -1006,7 +1006,7 @@ export default function ReaderPage() {
                 <div className="flex justify-between">
                   <span>{t.reader.readProgress}</span>
                   <span className="text-white/80">
-                    {Math.round(((currentPage + 1) / pages.length) * 100)}%
+                    {calculateReadingProgress(currentPage, pages.length)}%
                   </span>
                 </div>
                 {comicDetail?.lastReadAt && (
@@ -1023,7 +1023,7 @@ export default function ReaderPage() {
                 <div
                   className="h-full rounded-full bg-accent transition-all duration-300"
                   style={{
-                    width: `${((currentPage + 1) / pages.length) * 100}%`,
+                    width: `${calculateReadingProgress(currentPage, pages.length)}%`,
                   }}
                 />
               </div>

@@ -20,6 +20,7 @@ import NovelToolbar from "@/components/reader/NovelToolbar";
 import { Heart, Star, Tag, X, Plus, Trash2 } from "lucide-react";
 import { useTranslation, useLocale } from "@/lib/i18n";
 import ForbiddenPage from "@/components/ForbiddenPage";
+import { calculateReadingProgress } from "@/lib/progress";
 import { useTheme } from "@/lib/theme-context";
 import type { ReaderTheme } from "@/components/reader/ReaderToolbar";
 import AIChatPanel from "@/components/reader/AIChatPanel";
@@ -604,7 +605,7 @@ export default function NovelReaderPage() {
                 <div className="flex justify-between">
                   <span>{t.reader.readProgress}</span>
                   <span className="text-white/80">
-                    {Math.round(((currentPage + 1) / totalChapters) * 100)}%
+                    {calculateReadingProgress(currentPage, totalChapters)}%
                   </span>
                 </div>
                 {comicDetail?.lastReadAt && (
@@ -621,7 +622,7 @@ export default function NovelReaderPage() {
                 <div
                   className="h-full rounded-full bg-accent transition-all duration-300"
                   style={{
-                    width: `${((currentPage + 1) / totalChapters) * 100}%`,
+                    width: `${calculateReadingProgress(currentPage, totalChapters)}%`,
                   }}
                 />
               </div>
