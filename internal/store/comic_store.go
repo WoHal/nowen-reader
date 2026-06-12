@@ -262,6 +262,18 @@ func UpdateRating(comicID string, rating *int, userID ...string) error {
 	return err
 }
 
+// SetUserReadingStatus 设置用户级阅读状态（UserComicState 表）。
+// 不更新 Comic 表的全局 readingStatus 字段。
+// 当 status 为空字符串时，只清空 UserComicState.readingStatus，不删除整条记录（可能含其他字段）。
+func SetUserReadingStatus(userID, comicID, status string) error {
+	_, err := db.Exec(`
+		INSERT INTO "UserComicState" ("userId", "comicId", "readingStatus")
+		VALUES (?, ?, ?)
+		ON CONFLICT("userId", "comicId") DO UPDATE SET "readingStatus" = ?
+	`, userID, comicID, status, status)
+	return err
+}
+
 // DeleteComic 从数据库删除漫画，可选删除磁盘文件。
 // deleteFiles 为 true 时同时删除磁盘上的文件。
 func DeleteComic(comicID string, comicsDirs []string, deleteFiles bool) error {

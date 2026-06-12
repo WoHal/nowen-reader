@@ -169,8 +169,13 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 	}
 
 	// ReadingStatus filtering: 阅读状态筛选
+	// 当 UserID 非空时，按用户级 UserComicState.readingStatus 过滤
 	if opts.ReadingStatus != "" {
-		conditions = append(conditions, `c."readingStatus" = ?`)
+		if opts.UserID != "" {
+			conditions = append(conditions, `ucs."readingStatus" = ?`)
+		} else {
+			conditions = append(conditions, `c."readingStatus" = ?`)
+		}
 		args = append(args, opts.ReadingStatus)
 	}
 
@@ -287,7 +292,7 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 		       COALESCE(ucs."totalReadTime", c."totalReadTime") AS trt,
 		       c."author", c."publisher", c."year", c."description",
 		       c."language", c."genre", c."metadataSource",
-		       c."readingStatus", c."type", c."coverAspectRatio"
+		       COALESCE(ucs."readingStatus", '') AS readingStatus, c."type", c."coverAspectRatio"
 		FROM "Comic" c
 		%s %s %s %s
 	`, joinClause, whereClause, orderClause, limitClause)
@@ -575,6 +580,109 @@ func GetComicByID(id string) (*ComicListItem, error) {
 	}
 
 	return &c, nil
+}
+
+// GetComicByIDForUser 根据ID获取单个漫画，合并当前用户的用户级状态。
+// 与 GetComicByID 不同：不 fallback 到 Comic 表的 readingStatus，只用用户级状态。
+func GetComicByIDForUser(comicID string, userID string) (*ComicListItem, error) {
+	query := `
+		SELECT c."id", c."filename", c."title", c."pageCount", c."fileSize",
+		       c."addedAt", c."updatedAt",
+		       COALESCE(ucs."lastReadPage", c."lastReadPage") AS lrp,
+		       COALESCE(ucs."lastReadAt",   c."lastReadAt")   AS lra,
+		       COALESCE(ucs."isFavorite",   c."isFavorite")   AS isfav,
+		       COALESCE(ucs."rating",       c."rating")       AS rt,
+		       c."sortOrder",
+		       COALESCE(ucs."totalReadTime", c."totalReadTime") AS trt,
+		       c."author", c."publisher", c."year", c."description",
+		       c."language", c."genre", c."metadataSource",
+		       COALESCE(ucs."readingStatus", '') AS readingStatus,
+		       c."type", c."coverAspectRatio"
+		FROM "Comic" c
+		LEFT JOIN "UserComicState" ucs ON ucs."comicId" = c."id" AND ucs."userId" = ?
+		WHERE c."id" = ?
+	`
+	var ci ComicListItem
+	var addedAt, updatedAt time.Time
+	var lastReadAtStr sql.NullString
+	var lastReadPage sql.NullInt64
+	var isFavRaw sql.NullInt64
+	var rating sql.NullInt64
+	var totalReadTime sql.NullInt64
+	var year sql.NullInt64
+
+	err := db.QueryRow(query, userID, comicID).Scan(
+		&ci.ID, &ci.Filename, &ci.Title, &ci.PageCount, &ci.FileSize,
+		&addedAt, &updatedAt, &lastReadPage, &lastReadAtStr,
+		&isFavRaw, &rating, &ci.SortOrder, &totalReadTime,
+		&ci.Author, &ci.Publisher, &year, &ci.Description,
+		&ci.Language, &ci.Genre, &ci.MetadataSource,
+		&ci.ReadingStatus, &ci.ComicType, &ci.CoverAspectRatio,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	ci.AddedAt = addedAt.UTC().Format(time.RFC3339Nano)
+	ci.UpdatedAt = updatedAt.UTC().Format(time.RFC3339Nano)
+	ci.IsFavorite = isFavRaw.Int64 != 0
+	if lastReadAtStr.Valid {
+		ci.LastReadAt = &lastReadAtStr.String
+	}
+	if lastReadPage.Valid {
+		ci.LastReadPage = int(lastReadPage.Int64)
+	}
+	if rating.Valid {
+		v := int(rating.Int64)
+		ci.Rating = &v
+	}
+	if year.Valid {
+		v := int(year.Int64)
+		ci.Year = &v
+	}
+	if totalReadTime.Valid {
+		ci.TotalReadTime = int(totalReadTime.Int64)
+	}
+	ci.CoverURL = BuildComicCoverURL(ci.ID)
+
+	// Tags
+	ci.Tags = []ComicTagInfo{}
+	tagRows, err := db.Query(`
+		SELECT t."name", t."color"
+		FROM "ComicTag" ct JOIN "Tag" t ON ct."tagId" = t."id"
+		WHERE ct."comicId" = ?
+	`, comicID)
+	if err == nil {
+		defer tagRows.Close()
+		for tagRows.Next() {
+			var ti ComicTagInfo
+			if tagRows.Scan(&ti.Name, &ti.Color) == nil {
+				ci.Tags = append(ci.Tags, ti)
+			}
+		}
+	}
+
+	// Categories
+	ci.Categories = []ComicCategoryInfo{}
+	catRows, err := db.Query(`
+		SELECT cat."id", cat."name", cat."slug", cat."icon"
+		FROM "ComicCategory" cc JOIN "Category" cat ON cc."categoryId" = cat."id"
+		WHERE cc."comicId" = ?
+	`, comicID)
+	if err == nil {
+		defer catRows.Close()
+		for catRows.Next() {
+			var ci2 ComicCategoryInfo
+			if catRows.Scan(&ci2.ID, &ci2.Name, &ci2.Slug, &ci2.Icon) == nil {
+				ci.Categories = append(ci.Categories, ci2)
+			}
+		}
+	}
+
+	return &ci, nil
 }
 
 // ============================================================
