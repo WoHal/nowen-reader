@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, ChevronRight, ChevronDown, ChevronUp, Clock } from "lucide-react";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslation } from "@/lib/i18n"
+import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";;
 import type { ApiComic } from "@/hooks/useComics";
 
 const STORAGE_KEY = "continue-reading-collapsed";
@@ -159,7 +160,7 @@ export function ContinueReading({ contentType }: { contentType?: string }) {
             {recentComics.map((comic) => {
               const progress =
                 comic.pageCount > 0
-                  ? Math.round((comic.lastReadPage / comic.pageCount) * 100)
+                  ? calculateReadingProgress(comic.lastReadPage, comic.pageCount)
                   : 0;
               const novel = isNovel(comic);
               const href = novel ? `/novel/${comic.id}` : `/reader/${comic.id}`;

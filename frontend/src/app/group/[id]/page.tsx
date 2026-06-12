@@ -32,6 +32,7 @@ import {
 import { useTranslation, useLocale } from "@/lib/i18n";
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/lib/auth-context";
+import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 import {
   fetchGroupDetail,
   updateGroup,
@@ -1482,7 +1483,7 @@ export default function GroupDetailPage() {  const params = useParams();
             {group.comics.map((comic, index) => {
               const progress =
                 comic.pageCount > 0
-                  ? Math.round((comic.lastReadPage / comic.pageCount) * 100)
+                  ? calculateReadingProgress(comic.lastReadPage, comic.pageCount)
                   : 0;
               const readerUrl = getReaderUrl(comic);
 
@@ -1588,7 +1589,7 @@ export default function GroupDetailPage() {  const params = useParams();
             {group.comics.map((comic, index) => {
               const progress =
                 comic.pageCount > 0
-                  ? Math.round((comic.lastReadPage / comic.pageCount) * 100)
+                  ? calculateReadingProgress(comic.lastReadPage, comic.pageCount)
                   : 0;
               const readerUrl = getReaderUrl(comic);
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -35,6 +35,7 @@ import type { ComicGroup } from "@/hooks/useComicTypes";
 import { fetchGroups, fetchGroupedComicMap, createGroup, updateGroup, deleteGroup } from "@/api/groups";
 import { toggleComicFavorite, deleteComicById } from "@/api/comics";
 import { useAuth } from "@/lib/auth-context";
+import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 
 const DEFAULT_PAGE_SIZE = 24;
 
@@ -62,7 +63,7 @@ function apiToComic(api: ApiComic): Comic {
     addedAt: api.addedAt || undefined,
     progress:
       api.pageCount > 0
-        ? Math.round((api.lastReadPage / api.pageCount) * 100)
+        ? calculateReadingProgress(api.lastReadPage, api.pageCount)
         : 0,
     lastRead: api.lastReadAt || undefined,
     isFavorite: api.isFavorite,
