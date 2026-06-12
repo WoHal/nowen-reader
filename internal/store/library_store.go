@@ -286,8 +286,8 @@ func UserCanViewLibrary(userID, libraryID string) (bool, error) {
 
 // UserCanViewComic 检查用户是否有权访问指定漫画
 func UserCanViewComic(userID, comicID string) (bool, error) {
-	// 获取漫画的书库ID
-	var libraryID string
+	// 获取漫画的书库ID（可能为 NULL，旧数据兼容）
+	var libraryID sql.NullString
 	err := db.QueryRow(`SELECT "libraryId" FROM "Comic" WHERE "id" = ?`, comicID).Scan(&libraryID)
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -297,11 +297,17 @@ func UserCanViewComic(userID, comicID string) (bool, error) {
 	}
 
 	// 如果漫画没有书库ID（旧数据），默认允许访问
-	if libraryID == "" {
+	if !libraryID.Valid || libraryID.String == "" {
 		return true, nil
 	}
 
-	return UserCanViewLibrary(userID, libraryID)
+	// 检查该书库是否存在，如果不存在（旧数据/脏数据），默认允许访问
+	var exists int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "Library" WHERE "id" = ?`, libraryID.String).Scan(&exists); err != nil || exists == 0 {
+		return true, nil
+	}
+
+	return UserCanViewLibrary(userID, libraryID.String)
 }
 
 // GetLibraryComicCount 获取书库中的漫画数量
