@@ -364,6 +364,11 @@ var Migrations = []Migration{
 			`ALTER TABLE "Library" ADD COLUMN "scanEnabled" BOOLEAN NOT NULL DEFAULT 1;`,
 		}, "\n"),
 	},
+	{
+		Version:     25,
+		Description: "Add defaultAccess column to Library for databases upgraded from migration 22",
+		SQL:         `ALTER TABLE "Library" ADD COLUMN "defaultAccess" TEXT NOT NULL DEFAULT 'private';`,
+	},
 }
 
 // ensureMigrationsTable creates the migrations tracking table.
