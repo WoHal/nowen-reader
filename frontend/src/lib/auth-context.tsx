@@ -38,12 +38,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setNeedsSetup(d.needsSetup || false);
         if (d.registrationMode) setRegistrationMode(d.registrationMode);
       } catch (err: any) {
-        if (err?.status >= 500) {
-          console.warn("[Auth] /api/auth/me returned", err.status, "— keeping current state");
-          return;
+        // Only clear user on genuine 401 (session expired / not logged in).
+        // Network errors (status=0), timeouts, and 5xx should NOT log the user out,
+        // as these are transient and the session cookie is still valid.
+        if (err?.status === 401) {
+          setUser(null);
+        } else {
+          console.warn("[Auth] /api/auth/me failed with status", err?.status, "— preserving current state");
         }
-        // 4xx or network error
-        setUser(null);
       } finally {
       setLoading(false);
     }
