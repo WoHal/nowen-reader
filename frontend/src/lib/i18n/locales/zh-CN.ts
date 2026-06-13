@@ -338,6 +338,10 @@ const zhCN = {
     autoPageStop: "停止翻页",
     bookmark: "书签",
     bookmarked: "已书签",
+    more: "更多",
+    moreInfo: "详情",
+    fullscreen: "全屏",
+    exitFullscreen: "退出全屏",
   },
 
   // 书签面板
@@ -1509,6 +1513,10 @@ export interface Translations {
     autoPageStop: string;
     bookmark: string;
     bookmarked: string;
+    more: string;
+    moreInfo: string;
+    fullscreen: string;
+    exitFullscreen: string;
   };
   readerBookmarks: {
     title: string;

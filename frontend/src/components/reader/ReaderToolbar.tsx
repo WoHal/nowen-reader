@@ -18,6 +18,7 @@ import {
   Square,
   Bookmark,
   List,
+  MoreHorizontal,
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { ComicReadingMode, ReadingDirection } from "@/types/reader";
@@ -88,6 +89,7 @@ export default function ReaderToolbar({
 }: ReaderToolbarProps) {
   const t = useTranslation();
   const [showPageInput, setShowPageInput] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
   // 进度条拖动状态：拖动中只更新预览值，松手后才真正跳转
   const [isDragging, setIsDragging] = useState(false);
@@ -163,17 +165,9 @@ export default function ReaderToolbar({
             </h1>
           </div>
 
-          {/* Right: Info + Fullscreen */}
-          <div className="flex items-center gap-1">
-            {onShowInfo && (
-              <button
-                onClick={onShowInfo}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Info className="h-4 w-4" />
-              </button>
-            )}
-            {/* Bookmark toggle */}
+          {/* Right: Bookmark + Settings + More (mobile), all buttons (desktop) */}
+          <div className="flex items-center gap-1 relative">
+            {/* Bookmark toggle — always visible */}
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
@@ -187,16 +181,7 @@ export default function ReaderToolbar({
                 <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
               </button>
             )}
-            {/* Bookmark list */}
-            {onShowBookmarks && bookmarkCount != null && bookmarkCount > 0 && (
-              <button
-                onClick={onShowBookmarks}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                title={t.readerBookmarks.title}
-              >
-                <List className="h-4 w-4" />
-              </button>
-            )}
+            {/* Settings — always visible */}
             {onShowSettings && (
               <button
                 onClick={onShowSettings}
@@ -206,9 +191,29 @@ export default function ReaderToolbar({
                 <Settings className="h-4 w-4" />
               </button>
             )}
+            {/* Info — desktop only */}
+            {onShowInfo && (
+              <button
+                onClick={onShowInfo}
+                className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            )}
+            {/* Bookmark list — desktop only */}
+            {onShowBookmarks && bookmarkCount != null && bookmarkCount > 0 && (
+              <button
+                onClick={onShowBookmarks}
+                className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                title={t.readerBookmarks.title}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            )}
+            {/* Fullscreen — desktop only */}
             <button
               onClick={onToggleFullscreen}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             >
               {isFullscreen ? (
                 <Minimize className="h-4 w-4" />
@@ -216,6 +221,47 @@ export default function ReaderToolbar({
                 <Maximize className="h-4 w-4" />
               )}
             </button>
+            {/* More menu — mobile only */}
+            <button
+              onClick={() => setShowMoreMenu((v) => !v)}
+              className="flex sm:hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              title={t.readerToolbar.more}
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+            {/* More dropdown */}
+            {showMoreMenu && (
+              <>
+                <div className="fixed inset-0 z-[60]" onClick={() => setShowMoreMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 z-[61] w-44 rounded-xl bg-zinc-900/95 border border-white/10 shadow-2xl shadow-black/50 backdrop-blur-xl overflow-hidden">
+                  {onShowInfo && (
+                    <button
+                      onClick={() => { onShowInfo(); setShowMoreMenu(false); }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <Info className="h-4 w-4" />
+                      <span>{t.readerToolbar.moreInfo}</span>
+                    </button>
+                  )}
+                  {onShowBookmarks && (
+                    <button
+                      onClick={() => { onShowBookmarks(); setShowMoreMenu(false); }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <List className="h-4 w-4" />
+                      <span>{t.readerBookmarks.title}{bookmarkCount != null && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { onToggleFullscreen(); setShowMoreMenu(false); }}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    <span>{isFullscreen ? t.readerToolbar.exitFullscreen : t.readerToolbar.fullscreen}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

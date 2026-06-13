@@ -342,6 +342,10 @@ const en: Translations = {
     autoPageStop: "Stop Auto",
     bookmark: "Bookmark",
     bookmarked: "Bookmarked",
+    more: "More",
+    moreInfo: "Info",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit Fullscreen",
   },
 
   // Bookmarks Panel
