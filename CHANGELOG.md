@@ -35,6 +35,15 @@
 - 设置面板滤镜 slider 数值实时显示：亮度/对比度/灰度旁边显示当前百分比
 - 移动端顶部工具栏更多菜单：低频操作（详情、书签列表、全屏）收进 overflow 菜单，主栏只保留核心按钮
 
+
+- 首页 Hero 区和背景视觉层：产品标题、内容统计、上传/扫描入口，毛玻璃容器 + radial-gradient 光晕背景
+- 首页媒体横架容器视觉升级：ContinueReading 和 RecommendationStrip 采用 surface-card 圆角容器，卡片封面动效（motion-cover + interactive-scale）
+- 首页筛选栏媒体库控制台：StatsBar、筛选、分类、标签、收藏、阅读状态、排序统一包裹在 surface-glass-panel 毛玻璃容器中
+- 首页内容区 Section Header：显示"全部漫画/全部小说"标题、内容数量、当前页信息
+- 首页空状态视觉升级：surface-card 圆角容器，更紧凑的内边距
+- 首页分页控件 motion-button 动效：所有分页按钮统一 hover/active 交互，当前页 accent 阴影
+- 筛选按钮统一视觉：收藏、阅读状态、分类、合集、批量、重复检测、排序按钮均加 motion-button 和统一边框
+- 清除筛选按钮：仅在有活跃筛选条件时显示，一键清除收藏/阅读状态/分类/标签筛选
 ### Changed
 
 - 站点目录配置入口迁移到书库管理，原入口改为引导提示
@@ -56,6 +65,13 @@
 - 移动端顶部工具栏按钮布局精简：书签切换 + 设置始终显示，更多菜单收纳低频操作
 - 设置面板 slider 数值可读性提升（12px 等宽字体、70% 不透明度）和预设按钮触控区域增大
 
+
+- 首页整体从普通列表页升级为私人媒体库首页（Plex / Apple TV 风格）
+- ContinueReading / RecommendationStrip 采用统一 surface-card 容器和 section header
+- 筛选、分类、收藏、阅读状态、排序按钮统一 pill 风格和 motion-button 交互
+- 分页控件统一 motion-button 交互，当前页按钮增加 shadow-accent/25
+- 移动端布局增加 overflow-x-hidden 防护，筛选控件支持横向滚动
+- 设计系统 utility 首次大范围接入：surface-card、surface-glass-panel、motion-button、motion-cover、interactive-scale
 ### Fixed
 
 - FolderBrowser 目录浏览器 API 路径错误（`/api/admin/browse` → `/api/browse-dirs`），导致书库管理中目录选择不可用
@@ -74,6 +90,16 @@
 - iPhone home indicator 遮挡阅读器底部进度条、设置面板底部内容、书签面板最后一项的问题
 - 小屏手机双页模式内容过小看不清的问题
 - 移动端顶部工具栏按钮拥挤、标题和按钮互相挤压的问题
+
+
+#### UI-R2 首页重构验证
+
+- 验证移动端无横向溢出（375px / 390px / 430px / iPad）
+- 验证收藏筛选 / 阅读状态筛选仍扁平显示具体漫画（isFlatComicFiltering 未被改动）
+- 验证合集 + 散本统一视图未被破坏（unifiedItems 逻辑未变）
+- 验证批量操作、拖拽排序、右键菜单、分页未受影响
+- 验证 prefers-reduced-motion 覆盖所有新 utility class
+- 验证亮色 / 暗色模式无明显坏样式
 
 ### Tests
 
@@ -116,6 +142,12 @@
 | `30a9d23` | refactor(settings): 站点目录配置入口迁移到书库管理 |
 | `f75ce7c` | fix(ui): 修复日间模式下系统诊断面板样式问题 |
 | `66fa6be` | fix(ui): 修复阅读进度显示 99% 问题，统一使用 calculateReadingProgress |
+| `da6bd53` | feat(ui): 视觉 + 动效设计系统 token（globals.css） |
+| `a0767e9` | feat(ui): ComicCard / Recommendations / Toast / ReaderToolbar 设计系统试点接入 |
+| `a168745` | feat(ui): 首页 Hero 区 + 背景视觉层 |
+| `ae8b4ba` | feat(ui): ContinueReading / RecommendationStrip 媒体横架容器视觉升级 |
+| `481b591` | feat(ui): 首页筛选栏媒体库控制台视觉重做 |
+| `6c5ffb6` | feat(ui): 首页内容区 / 空状态 / 分页视觉升级 |
 | `789ed5a` | chore(git): 停止跟踪 TypeScript 构建缓存文件 |
 | `4b3b28d` | fix(ui): 统一小说阅读页及阅读器进度计算，消除最后章节 99% 问题 |
 
