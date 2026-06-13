@@ -44,6 +44,15 @@
 - 首页分页控件 motion-button 动效：所有分页按钮统一 hover/active 交互，当前页 accent 阴影
 - 筛选按钮统一视觉：收藏、阅读状态、分类、合集、批量、重复检测、排序按钮均加 motion-button 和统一边框
 - 清除筛选按钮：仅在有活跃筛选条件时显示，一键清除收藏/阅读状态/分类/标签筛选
+
+- 漫画详情页 Hero 背景模糊视觉：封面图作为 blurred backdrop，blur-2xl + opacity-25 + 渐变遮罩，pointer-events-none 不影响点击
+- 详情页封面卡片动效：motion-cover + shadow-black/20，阅读按钮 motion-button 增强
+- 详情页主信息区视觉层级：标题升级为 text-2xl sm:text-3xl tracking-tight，收藏/评分/阅读状态按钮统一 motion-button
+- 详情页元数据 / 标签 / 分类 / 描述卡片化：统一 surface-card rounded-xl 容器，tag/category pill 加 motion-button
+- SimilarComics 相似推荐容器视觉：surface-card rounded-2xl 容器，section header + 副标题，卡片 interactive-scale
+- SimilarComics loading 骨架屏可见状态：不再 return null，显示 5 个封面骨架 + 标题骨架
+- 详情页 not-found 状态 surface-card 容器美化
+- detail-hero-bg utility：radial-gradient 光晕 + reduced-motion 降级
 ### Changed
 
 - 站点目录配置入口迁移到书库管理，原入口改为引导提示
@@ -72,6 +81,14 @@
 - 分页控件统一 motion-button 交互，当前页按钮增加 shadow-accent/25
 - 移动端布局增加 overflow-x-hidden 防护，筛选控件支持横向滚动
 - 设计系统 utility 首次大范围接入：surface-card、surface-glass-panel、motion-button、motion-cover、interactive-scale
+
+- 详情页从普通信息页升级为媒体详情页风格（Plex / Apple TV 详情页质感）
+- 收藏按钮 active 状态增加 shadow-rose-500/20，未收藏时增加 border-border/40
+- 评分星星 motion-button 增强 hover 弹性
+- 阅读状态按钮统一 motion-button + border-border/40 边框
+- 元数据卡片统一 surface-card 风格，标签/分类区域包裹 surface-card 容器
+- 合集卡片和 AI 结果容器统一 surface-card rounded-xl
+- 描述文字升级为 text-foreground/80 leading-relaxed 增强可读性
 ### Fixed
 
 - FolderBrowser 目录浏览器 API 路径错误（`/api/admin/browse` → `/api/browse-dirs`），导致书库管理中目录选择不可用
@@ -82,6 +99,18 @@
 - OPDS 列表接口未过滤无权限书库、下载接口可下载无权限文件的问题
 - `UserCanViewLibrary()` 缺少 `defaultAccess=public` 和用户组继承检查
 - 收藏、评分、阅读进度、阅读状态、阅读会话、AI 推荐原因缺少权限校验的问题
+
+#### UI-R3 详情页重构验证
+
+- 验证收藏后仍刷新首页缓存和详情数据（handleToggleFavorite → invalidateComicsCache + refetch）
+- 验证评分后仍刷新首页缓存和详情数据（handleRating → invalidateComicsCache + refetch）
+- 验证阅读状态仍保持用户级状态（UserComicState，非全局 Comic.readingStatus）
+- 验证 SimilarComics loading / error / empty 不静默消失（loading 改为骨架屏，error/empty 有 surface-card 容器）
+- 验证 SimilarComics fallback 推荐未被破坏（后端 fallback 逻辑未改动）
+- 验证阅读入口（getReaderUrl）和管理员操作未受影响
+- 验证移动端无横向溢出（375px / 390px / 430px / iPad）
+- 验证 prefers-reduced-motion 覆盖所有详情页新 utility class
+
 - `UserCanViewComic()` 对 NULL libraryId 和不存在书库返回异常的问题
 - 最后一页/最后章节显示 99% 的问题（漫画详情、漫画阅读器、小说阅读页、小说底栏）
 - 系统诊断面板日间模式文字不可读的问题
@@ -148,6 +177,10 @@
 | `ae8b4ba` | feat(ui): ContinueReading / RecommendationStrip 媒体横架容器视觉升级 |
 | `481b591` | feat(ui): 首页筛选栏媒体库控制台视觉重做 |
 | `6c5ffb6` | feat(ui): 首页内容区 / 空状态 / 分页视觉升级 |
+| `e53ea9a` | feat(ui): 漫画详情页 Hero 背景模糊视觉 + detail-hero-bg utility |
+| `237ce66` | feat(ui): 详情页封面/主信息/操作按钮视觉升级 |
+| `3112abc` | feat(ui): 详情页元数据/标签/描述区域视觉升级 |
+| `7f2f7dc` | feat(ui): SimilarComics 相似推荐容器视觉升级 |
 | `789ed5a` | chore(git): 停止跟踪 TypeScript 构建缓存文件 |
 | `4b3b28d` | fix(ui): 统一小说阅读页及阅读器进度计算，消除最后章节 99% 问题 |
 
