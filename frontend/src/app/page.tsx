@@ -1185,6 +1185,8 @@ export default function Home() {
             {/* Recommendations */}
             <RecommendationStrip contentType={contentType} />
 
+            {/* Library Control Console */}
+            <section className="surface-glass-panel rounded-2xl border border-border/30 p-4 sm:p-5 space-y-3">
             {/* Stats + Sort Controls */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
               <StatsBar
@@ -1339,6 +1341,24 @@ export default function Home() {
                 }}
               />
             </div>
+
+              {/* Clear filters — visible when any filter is active */}
+              {(favoritesOnly || readingStatusFilter || selectedCategory || selectedTags.length > 0) && (
+                <div className="flex items-center">
+                  <button
+                    onClick={() => {
+                      setFavoritesOnly(false);
+                      setReadingStatusFilter("");
+                      setSelectedCategory(null);
+                      setSelectedTags([]);
+                    }}
+                    className="motion-button flex h-8 items-center gap-1.5 rounded-lg border border-border/40 px-3 text-xs font-medium text-muted transition-colors hover:text-foreground hover:border-border"
+                  >
+                    ✖ {t.dataExport?.clearFilters || "清除筛选"}
+                  </button>
+                </div>
+              )}
+            </section>
 
             {/* AI Semantic Search Results (Phase 4) */}
             {aiSearchMode && debouncedSearch && (
