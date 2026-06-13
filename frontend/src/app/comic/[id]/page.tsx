@@ -1174,7 +1174,7 @@ export default function ComicDetailPage() {
                   <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="text-[11px] sm:text-xs">{t.comicDetail.pages}</span>
                 </div>
-                <p className="mt-1 text-base sm:text-lg font-semibold text-foreground">{comic.pageCount}</p>
+                <p className="mt-1 text-base sm:text-lg font-semibold text-foreground">{comic.pageCount > 0 ? comic.pageCount : "--"}</p>
               </div>
 
               <div className="surface-card rounded-xl p-3 sm:p-4">
@@ -1212,7 +1212,7 @@ export default function ComicDetailPage() {
                   <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="text-[11px] sm:text-xs">{t.comicDetail.readProgress}</span>
                 </div>
-                <p className="mt-1 text-base sm:text-lg font-semibold text-foreground">{progress}%</p>
+                <p className="mt-1 text-base sm:text-lg font-semibold text-foreground">{comic.pageCount > 0 ? `${progress}%` : "--"}</p>
                 <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted/20">
                   <div
                     className="h-full rounded-full bg-accent transition-all"
