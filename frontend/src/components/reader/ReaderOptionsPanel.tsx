@@ -205,10 +205,10 @@ export default function ReaderOptionsPanel({
     unit: string;
     onChange: (v: number) => void;
   }) => (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
-        <span className="text-[11px] text-white/50 tabular-nums">{value}{unit}</span>
+        <span className="text-xs font-mono text-white/70 tabular-nums">{value}{unit}</span>
       </div>
       <input
         type="range"
@@ -445,7 +445,7 @@ export default function ReaderOptionsPanel({
                         imageFilterPreset: p.key,
                       })
                     }
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       activePreset === p.key
                         ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
                         : "bg-white/8 text-white/50 hover:bg-white/12 hover:text-white/70 active:bg-white/15"
