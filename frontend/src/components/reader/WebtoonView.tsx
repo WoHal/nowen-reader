@@ -113,11 +113,14 @@ export default function WebtoonView({
     return centerPage;
   }, [pages.length, pageHeights]);
 
-  // Scroll to current page when externally changed (e.g. progress bar drag)
+  // Reset zoom when page changes externally (e.g. bookmark jump, progress bar drag)
   useEffect(() => {
     if (isScrollingRef.current) return;
-    // 只有当页码不是由滚动事件报告的（即来自进度条等外部变更）时才滚动
     if (currentPage === lastScrollReportedPage.current) return;
+
+    // External jump detected — reset zoom state
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
 
     // 取消上一次未执行的跳转，避免堆积
     if (jumpRafRef.current) cancelAnimationFrame(jumpRafRef.current);
@@ -153,6 +156,10 @@ export default function WebtoonView({
 
     const centerPage = updateRenderRange();
 
+    // When zoomed in, suppress page-change reporting to avoid
+    // panning-triggered scroll events resetting the zoom state.
+    if (scale > 1) return;
+
     // 节流页码报告：避免高频触发父组件状态更新
     const now = Date.now();
     if (centerPage !== undefined && centerPage !== currentPage && now - lastScrollReportTime.current >= SCROLL_REPORT_THROTTLE) {
@@ -160,7 +167,7 @@ export default function WebtoonView({
       lastScrollReportedPage.current = centerPage;
       onPageChange(centerPage);
     }
-  }, [currentPage, onPageChange, updateRenderRange]);
+  }, [currentPage, onPageChange, updateRenderRange, scale]);
 
   // Record actual image height after load
   const handleImageLoad = useCallback((index: number, e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -225,7 +232,22 @@ export default function WebtoonView({
     setTimeout(() => { isPanningRef.current = false; }, 50);
   }, [scale]);
 
+  const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (scale > 1) {
+      setScale(1);
+      setTranslate({ x: 0, y: 0 });
+    } else {
+      setScale(2);
+      setTranslate({ x: 0, y: 0 });
+    }
+  };
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Ignore clicks that follow a pan or double-tap gesture
+    if (isPanningRef.current || touchHandledRef.current) return;
+    if (scale > 1) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
@@ -249,6 +271,11 @@ export default function WebtoonView({
       }`}
       onScroll={handleScroll}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={scale > 1 ? { touchAction: "none" } : undefined}
     >
       <div
         className="mx-auto"
@@ -366,6 +393,15 @@ export default function WebtoonView({
           </div>
         </div>
       </div>
+
+      {/* Zoom level indicator */}
+      {scale > 1 && (
+        <div className="fixed bottom-20 right-4 z-50 pointer-events-none">
+          <div className="rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+            {Math.round(scale * 100)}%
+          </div>
+        </div>
+      )}
     </div>
   );
 }
