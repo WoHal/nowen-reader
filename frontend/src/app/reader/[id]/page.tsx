@@ -82,6 +82,9 @@ export default function ReaderPage() {
   const title = apiTitle || t.reader.unknownComic;
   const isLoading = apiLoading;
   const useRealData = pages.length > 0 || (comicDetail !== null);
+  const readerDiag = typeof window !== 'undefined'
+    ? `pages=${pages.length} detail=${comicDetail !== null} useReal=${useRealData} apiLoading=${apiLoading} isNovel=${isNovel} isPdf=${isPdf}`
+    : null;
 
   // Redirect novel files to the dedicated novel reader
   useEffect(() => {
@@ -702,6 +705,13 @@ export default function ReaderPage() {
           nextVolumeTitle={nextVolume?.title}
           imageFilter={imageFilter}
         />
+      )}
+
+      {/* 临时阅读器状态诊断提示 */}
+      {readerDiag && (
+        <div className="pointer-events-none fixed left-1/2 top-4 z-[2147483647] -translate-x-1/2 rounded-full bg-black/80 px-3 py-1 text-xs font-medium text-white shadow-lg">
+          {readerDiag}
+        </div>
       )}
 
       {/* 临时阅读会话诊断提示 */}
