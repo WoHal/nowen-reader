@@ -1198,7 +1198,7 @@ export default function Home() {
                 {/* Detect Duplicates */}
                 <button
                   onClick={() => setShowDuplicates(true)}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-card px-2.5 sm:px-3 text-xs font-medium text-muted transition-all hover:text-foreground"
+                  className="motion-button flex h-8 items-center gap-1.5 rounded-lg border border-border/40 bg-card px-2.5 sm:px-3 text-xs font-medium text-muted transition-all hover:text-foreground"
                   title={t.duplicates.detect}
                 >
                   <Copy className="h-3.5 w-3.5" />
@@ -1305,7 +1305,7 @@ export default function Home() {
                   onClick={() =>
                     setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
                   }
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-card text-muted transition-colors hover:text-foreground"
+                  className="motion-button flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-card text-muted transition-colors hover:text-foreground"
                   title={sortOrder === "asc" ? t.home.ascending : t.home.descending}
                 >
                   {sortOrder === "asc" ? "↑" : "↓"}
