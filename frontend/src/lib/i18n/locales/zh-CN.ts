@@ -39,6 +39,10 @@ const zhCN = {
     mockDataNotice2: "漫画文件放入",
     mockDataNotice3: "目录，或点击上传按钮添加漫画。",
     favorites: "收藏",
+    allStatuses: "全部状态",
+    statusWant: "想读",
+    statusReading: "在读",
+    statusFinished: "已读完",
     sortByTitle: "按标题",
     sortByAdded: "按添加时间",
     sortByLastRead: "按阅读时间",
@@ -1225,6 +1229,10 @@ export interface Translations {
     mockDataNotice2: string;
     mockDataNotice3: string;
     favorites: string;
+    allStatuses: string;
+    statusWant: string;
+    statusReading: string;
+    statusFinished: string;
     sortByTitle: string;
     sortByAdded: string;
     sortByLastRead: string;

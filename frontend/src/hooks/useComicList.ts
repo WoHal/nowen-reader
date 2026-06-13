@@ -49,6 +49,7 @@ export function useComics(options?: {
   category?: string;
   contentType?: string; // "comic" | "novel" | ""
   excludeGrouped?: boolean; // 排除已在合集中的漫画（合集视图）
+  readingStatus?: string; // 用户级阅读状态筛选
   fetchAll?: boolean; // 获取全部漫画（不分页，用于客户端合并分页）
 }) {
   const [comics, setComics] = useState<ApiComic[]>([]);
@@ -82,6 +83,7 @@ export function useComics(options?: {
     if (options?.category) params.set("category", options.category);
     if (options?.contentType) params.set("contentType", options.contentType);
     if (options?.excludeGrouped) params.set("excludeGrouped", "true");
+    if (options?.readingStatus) params.set("readingStatus", options.readingStatus);
 
     const qs = params.toString();
     const cacheKey = qs || "__default__";

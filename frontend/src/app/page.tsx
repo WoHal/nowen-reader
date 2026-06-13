@@ -235,6 +235,9 @@ export default function Home() {
   const [renameValue, setRenameValue] = useState("");
 
   // 内容类型 Tab
+  const [readingStatusFilter, setReadingStatusFilter] = useState<string>(() => {
+    return sessionStorage.getItem("homeFilter:readingStatus") || "";
+  });
   const [contentType, setContentType] = useState<"comic" | "novel">(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("homeFilter:contentType");
@@ -265,6 +268,10 @@ export default function Home() {
   useEffect(() => {
     sessionStorage.setItem("homeFilter:contentType", contentType);
   }, [contentType]);
+
+  useEffect(() => {
+    sessionStorage.setItem("homeFilter:readingStatus", readingStatusFilter);
+  }, [readingStatusFilter]);
 
   // AI 语义搜索 handler
   const handleAiSearch = useCallback(async (query: string) => {
@@ -447,6 +454,7 @@ export default function Home() {
     category: selectedCategory || undefined,
     contentType: contentType || undefined,
     excludeGrouped: showGroupView || undefined,
+    readingStatus: readingStatusFilter || undefined,
   });
   // 系列视图下加载系列级分类统计
   useEffect(() => {
@@ -464,7 +472,7 @@ export default function Home() {
 
   // Reset to page 1 when filters change（使用受保护的 setter，在挂载保护期内不会重置页码）
   const filterKeyRef = useRef(
-    JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType])
+    JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, readingStatusFilter])
   );
   useEffect(() => {
     const newKey = JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType]);
@@ -472,7 +480,7 @@ export default function Home() {
     filterKeyRef.current = newKey;
     safeSetCurrentPage(1);
     safeSetGroupPage(1);
-  }, [debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, safeSetCurrentPage, safeSetGroupPage]);
+  }, [debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, readingStatusFilter, safeSetCurrentPage, safeSetGroupPage]);
 
   // 视图模式切换时重置分页（使用受保护的 setter，挂载保护期内不会重置）
   useEffect(() => {
@@ -1227,6 +1235,18 @@ export default function Home() {
                   <span>{favoritesOnly ? "♥" : "♡"}</span>
                   <span className="hidden sm:inline">{t.home.favorites}</span>
                 </button>
+
+                {/* Reading Status filter */}
+                <select
+                  value={readingStatusFilter}
+                  onChange={(e) => setReadingStatusFilter(e.target.value)}
+                  className="h-8 rounded-lg bg-card px-2 text-xs text-foreground outline-none"
+                >
+                  <option value="">{t.home.allStatuses}</option>
+                  <option value="want">{t.home.statusWant}</option>
+                  <option value="reading">{t.home.statusReading}</option>
+                  <option value="finished">{t.home.statusFinished}</option>
+                </select>
 
                 {/* Sort selector */}
                 <select
