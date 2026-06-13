@@ -136,7 +136,7 @@ export function useComics(options?: {
         setFetching(false);
       }
     }
-  }, [options?.search, JSON.stringify(options?.tags), options?.favoritesOnly, options?.sortBy, options?.sortOrder, options?.page, options?.pageSize, options?.category, options?.contentType, options?.excludeGrouped, options?.fetchAll]);
+  }, [options?.search, JSON.stringify(options?.tags), options?.favoritesOnly, options?.sortBy, options?.sortOrder, options?.page, options?.pageSize, options?.category, options?.contentType, options?.excludeGrouped, options?.fetchAll, options?.readingStatus]);
 
   useEffect(() => {
     fetchComics();
