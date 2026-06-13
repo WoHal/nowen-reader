@@ -233,7 +233,7 @@ export default function ReaderToolbar({
             {showMoreMenu && (
               <>
                 <div className="fixed inset-0 z-[60]" onClick={() => setShowMoreMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 z-[61] w-44 rounded-xl bg-zinc-900/95 border border-white/10 shadow-2xl shadow-black/50 backdrop-blur-xl overflow-hidden">
+                <div className="motion-menu surface-menu absolute right-0 top-full mt-1 z-[61] w-44 overflow-hidden">
                   {onShowInfo && (
                     <button
                       onClick={() => { onShowInfo(); setShowMoreMenu(false); }}

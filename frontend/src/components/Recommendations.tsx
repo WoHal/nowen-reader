@@ -236,7 +236,7 @@ export function RecommendationStrip({ contentType }: { contentType?: string }) {
                 className="group shrink-0"
               >
                 <div className="w-[130px] space-y-2">
-                  <div className="relative aspect-[5/7] w-full overflow-hidden rounded-lg bg-card transition-transform group-hover:scale-105">
+                  <div className="relative aspect-[5/7] w-full overflow-hidden rounded-lg bg-card motion-cover group-hover:scale-105">
                     <Image
                       src={item.coverUrl}
                       alt={item.title}
@@ -336,7 +336,7 @@ export function SimilarComics({ comicId }: { comicId: string }) {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-3">
         {similar.map((comic) => (
           <Link key={comic.id} href={`/comic/${comic.id}`} className="group">
-            <div className="relative aspect-[5/7] overflow-hidden rounded-lg bg-card transition-transform group-hover:scale-105">
+            <div className="relative aspect-[5/7] overflow-hidden rounded-lg bg-card motion-cover group-hover:scale-105">
               <Image
                 src={comic.coverUrl}
                 alt={comic.title}

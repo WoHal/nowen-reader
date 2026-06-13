@@ -375,7 +375,7 @@ const ComicCard = memo(function ComicCard({
             </div>
           )}
 
-          <div className="relative overflow-hidden rounded-xl bg-card transition-all duration-300 ease-out group-hover:scale-[1.03] group-hover:shadow-2xl group-hover:shadow-accent/10">
+          <div className="motion-cover relative overflow-hidden rounded-xl bg-card group-hover:shadow-accent/10">
             {/* Cover Image — 点击进入阅读 */}
             <Link
               href={getReaderUrl(comic)}
@@ -459,3 +459,4 @@ const ComicCard = memo(function ComicCard({
 });
 
 export default ComicCard;
+

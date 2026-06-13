@@ -89,7 +89,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300 ${
+      className={`flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg surface-glass-panel transition-all duration-[var(--duration-normal)] ${
         bgMap[toast.type]
       } ${isExiting ? "translate-x-full opacity-0" : "animate-toast-in"}`}
       role="alert"
