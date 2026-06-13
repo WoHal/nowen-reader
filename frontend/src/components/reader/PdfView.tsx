@@ -446,13 +446,13 @@ export default function PdfView({
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div
-            className={`h-8 w-8 animate-spin rounded-full border-2 border-t-accent ${
-              readerTheme === "day" ? "border-gray-300" : "border-white/20"
+            className={`h-10 w-10 animate-spin rounded-full border-2 border-t-accent ${
+              readerTheme === "day" ? "border-gray-300" : "border-white/10"
             }`}
           />
           <p
             className={`text-sm ${
-              readerTheme === "day" ? "text-gray-500" : "text-white/40"
+              readerTheme === "day" ? "text-gray-500" : "text-white/50"
             }`}
           >
             PDF 加载中...
@@ -467,8 +467,8 @@ export default function PdfView({
     const isWeChat = isWeChatBrowser();
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-center px-4">
-          <div className="text-4xl">⚠️</div>
+        <div className="flex flex-col items-center gap-3 text-center px-4 mx-4 max-w-sm rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/60 p-8">
+          <div className="text-4xl mb-1">⚠️</div>
           <p
             className={`text-sm font-medium ${
               readerTheme === "day" ? "text-gray-600" : "text-white/70"
@@ -488,7 +488,7 @@ export default function PdfView({
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => { setError(null); setRetryCount(c => c + 1); }}
-              className="rounded-lg bg-accent/20 px-4 py-1.5 text-xs text-accent hover:bg-accent/30 transition-colors"
+              className="rounded-xl bg-accent/20 px-4 py-1.5 text-xs text-accent hover:bg-accent/30 transition-all duration-150 motion-button border border-accent/20"
             >
               重试
             </button>
@@ -506,7 +506,7 @@ export default function PdfView({
                     prompt("请复制以下链接到浏览器中打开：", window.location.href);
                   }
                 }}
-                className="rounded-lg bg-green-600/20 px-4 py-1.5 text-xs text-green-400 hover:bg-green-600/30 transition-colors"
+                className="rounded-xl bg-green-600/20 px-4 py-1.5 text-xs text-green-400 hover:bg-green-600/30 transition-all duration-150 motion-button border border-green-500/20"
               >
                 复制链接
               </button>

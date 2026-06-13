@@ -462,7 +462,7 @@ export default function WebtoonView({
       {/* Zoom level indicator */}
       {scale > 1 && (
         <div className="fixed bottom-20 right-4 z-50 pointer-events-none">
-          <div className="rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+          <div className="rounded-full bg-zinc-900/80 backdrop-blur-xl border border-white/[0.08] px-3.5 py-1.5 text-sm font-medium text-white shadow-lg shadow-black/40">
             {Math.round(scale * 100)}%
           </div>
         </div>

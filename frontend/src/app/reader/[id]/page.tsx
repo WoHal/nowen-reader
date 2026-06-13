@@ -518,10 +518,11 @@ export default function ReaderPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-black">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
-          <p className="text-sm text-white/40">{t.reader.loading || "正在加载..."}</p>
+      <div className="flex h-dvh items-center justify-center bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.04)_0%,transparent_70%)] pointer-events-none" />
+        <div className="flex flex-col items-center gap-5">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+          <p className="text-sm font-medium text-white/50">{t.reader.loading || "正在加载..."}</p>
         </div>
       </div>
     );
@@ -534,20 +535,22 @@ export default function ReaderPage() {
 
   if (apiError && pages.length === 0) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-black text-white">
-        <div className="text-center">
+      <div className="flex h-dvh items-center justify-center bg-black text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.04)_0%,transparent_70%)] pointer-events-none" />
+        <div className="mx-4 max-w-sm rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/60 p-8 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
           <p className="text-lg font-medium">{t.reader.loadError || "加载失败"}</p>
           <p className="mt-2 text-sm text-white/50">{apiError}</p>
           <div className="mt-4 flex gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="rounded-lg bg-accent px-4 py-2 text-sm"
+              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
             >
               {t.reader.retry || "重试"}
             </button>
             <button
               onClick={() => router.push("/")}
-              className="rounded-lg bg-white/10 px-4 py-2 text-sm"
+              className="rounded-xl bg-white/[0.06] border border-white/[0.08] px-5 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.10] transition-all duration-150 motion-button active:scale-[0.97]"
             >
               {t.reader.backToShelf}
             </button>
@@ -560,12 +563,14 @@ export default function ReaderPage() {
   // 404
   if (pages.length === 0) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-black text-white">
-        <div className="text-center">
+      <div className="flex h-dvh items-center justify-center bg-black text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)] pointer-events-none" />
+        <div className="mx-4 max-w-sm rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/60 p-8 text-center">
+          <div className="text-4xl mb-4">📖</div>
           <p className="text-lg font-medium">{ t.reader.comicNotFound}</p>
           <button
             onClick={() => router.push("/")}
-            className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm"
+            className="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
           >
             {t.reader.backToShelf}
           </button>
@@ -576,7 +581,7 @@ export default function ReaderPage() {
 
   return (
     <div className={`relative h-dvh w-full overflow-hidden transition-colors duration-300 ${
-      readerTheme === "day" ? "bg-gray-100" : "bg-black"
+      readerTheme === "day" ? "bg-gray-100" : "bg-[#0a0a0a]"
     }`}>
       {/* Reading View */}
       {usePdfView && effectiveMode === "single" ? (
@@ -643,7 +648,7 @@ export default function ReaderPage() {
       {/* 无感跳转过渡提示（底部 toast 样式） */}
       {volumeTransitionHint && (
         <div className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="rounded-full bg-accent/90 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 backdrop-blur-sm">
+          <div className="rounded-full bg-accent/90 px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-accent/30 backdrop-blur-xl border border-accent/20">
             {volumeTransitionHint}
           </div>
         </div>
@@ -651,7 +656,7 @@ export default function ReaderPage() {
 
       {/* 系列卷导航指示器（工具栏可见时在底部显示） */}
       {seriesVolumes.length > 1 && toolbarVisible && (
-        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-sm">
+        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-zinc-900/80 px-3.5 py-2 backdrop-blur-xl border border-white/[0.06] shadow-lg shadow-black/30">
           {prevVolume && (
             <button
               onClick={() => router.replace(`/reader/${prevVolume.comicId}`)}
@@ -723,8 +728,8 @@ export default function ReaderPage() {
 
       {/* Page number indicator (页码指示器可见性控制) */}
       {readerOpts.headerVisible && mode !== "webtoon" && !toolbarVisible && (
-        <div className={`pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 backdrop-blur-sm ${
-          readerTheme === "day" ? "bg-white/70 shadow" : "bg-black/50"
+        <div className={`pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1.5 backdrop-blur-xl border border-white/[0.06] shadow-lg shadow-black/30 ${
+          readerTheme === "day" ? "bg-white/80 shadow-md" : "bg-zinc-900/80"
         }`}>
           <span className={`text-xs font-mono ${
             readerTheme === "day" ? "text-gray-500" : "text-white/50"
