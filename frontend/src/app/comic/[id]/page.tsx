@@ -261,6 +261,7 @@ export default function ComicDetailPage() {
   const handleToggleFavorite = useCallback(async () => {
     try {
       await toggleComicFavorite(comicId);
+      invalidateComicsCache();
       refetch();
     } catch (e: unknown) {
       if ((e as { status?: number })?.status === 403) {
@@ -274,6 +275,7 @@ export default function ComicDetailPage() {
       const r = newRating === comic?.rating ? null : newRating;
       try {
         await updateComicRating(comicId, r);
+        invalidateComicsCache();
         refetch();
       } catch (e: unknown) {
         if ((e as { status?: number })?.status === 403) {
@@ -288,6 +290,7 @@ export default function ComicDetailPage() {
     async (status: string) => {
       try {
         await setReadingStatus(comicId, status);
+        invalidateComicsCache();
         refetch();
       } catch (e: unknown) {
         if ((e as { status?: number })?.status === 403) {

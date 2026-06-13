@@ -570,14 +570,14 @@ export default function Home() {
   }, [filteredComics]);
 
   // 默认视图下的散本漫画（排除已在合集中的）
-  const isReadingStatusFiltering = Boolean(readingStatusFilter);
+  const isFlatComicFiltering = Boolean(readingStatusFilter) || Boolean(favoritesOnly);
 
   const looseComics = useMemo(() => {
-    // When filtering by reading status, show all matched comics regardless of grouping
-    if (isReadingStatusFiltering) return sortedComics;
+    // When filtering by reading status or favorites, show all matched comics regardless of grouping
+    if (isFlatComicFiltering) return sortedComics;
     if (Object.keys(groupedComicMap).length === 0) return sortedComics; // 无合集不过滤
     return sortedComics.filter((c) => !groupedComicMap[c.id]);
-  }, [sortedComics, groupedComicMap, isReadingStatusFiltering]);
+  }, [sortedComics, groupedComicMap, isFlatComicFiltering]);
 
   // ── 统一混合列表（合集 + 散本混合排序分页） ──
   type UnifiedItem = { type: 'group'; data: ComicGroup } | { type: 'comic'; data: Comic };
@@ -610,8 +610,8 @@ export default function Home() {
   // 统一混合列表：合集和散本合并排序
   const unifiedItems = useMemo(() => {
     if (!isUnifiedView) return [];
-    // When filtering by reading status, only show comics, not groups
-    const groupItems: UnifiedItem[] = isReadingStatusFiltering ? [] : filteredGroups.map(g => ({ type: 'group', data: g }));
+    // When filtering by reading status or favorites, only show comics, not groups
+    const groupItems: UnifiedItem[] = isFlatComicFiltering ? [] : filteredGroups.map(g => ({ type: 'group', data: g }));
     const comicItems: UnifiedItem[] = looseComics.map(c => ({ type: 'comic', data: c }));
     const all = [...groupItems, ...comicItems];
 
