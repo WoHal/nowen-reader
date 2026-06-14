@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -13,6 +13,8 @@ import {
   FolderInput,
   Sparkles,
   Loader2,
+  Eraser,
+  BookOpen,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useCategories, ApiCategory } from "@/hooks/useComics";
@@ -32,6 +34,8 @@ interface BatchToolbarProps {
   onAISuggestCategory?: () => void;
   aiCategoryLoading?: boolean;
   isAdmin?: boolean;
+  onRemoveTags?: (tags: string[]) => void;
+  onSetReadingStatus?: (status: string) => void;
 }
 
 export default function BatchToolbar({
@@ -49,12 +53,17 @@ export default function BatchToolbar({
   onAISuggestCategory,
   aiCategoryLoading,
   isAdmin = true,
+  onRemoveTags,
+  onSetReadingStatus,
 }: BatchToolbarProps) {
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [batchDeleteFiles, setBatchDeleteFiles] = useState(false);
+  const [showRemoveTagInput, setShowRemoveTagInput] = useState(false);
+  const [removeTagInput, setRemoveTagInput] = useState("");
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
   const t = useTranslation();
   const { categories } = useCategories();
 
@@ -278,6 +287,69 @@ export default function BatchToolbar({
           </div>
         )}
       </div>
+
+
+        {/* Remove Tags Input */}
+        {showRemoveTagInput && onRemoveTags && (
+          <div className="mx-auto mt-3 max-w-[1800px]">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={removeTagInput}
+                onChange={(e) => setRemoveTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && removeTagInput.trim()) {
+                    onRemoveTags(removeTagInput.split(",").map((t) => t.trim()).filter(Boolean));
+                    setRemoveTagInput("");
+                    setShowRemoveTagInput(false);
+                  }
+                }}
+                placeholder="输入要移除的标签，多个用逗号分隔"
+                className="flex-1 rounded-lg bg-card px-3 py-2 text-sm text-foreground placeholder-muted/50 outline-none focus:ring-1 focus:ring-orange-500/50"
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  if (removeTagInput.trim()) {
+                    onRemoveTags(removeTagInput.split(",").map((t) => t.trim()).filter(Boolean));
+                    setRemoveTagInput("");
+                    setShowRemoveTagInput(false);
+                  }
+                }}
+                disabled={!removeTagInput.trim()}
+                className="rounded-lg bg-orange-500 px-4 py-2 text-sm text-white disabled:opacity-50"
+              >
+                移除
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Reading Status Picker */}
+        {showStatusPicker && onSetReadingStatus && (
+          <div className="mx-auto mt-3 max-w-[1800px]">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: "want", label: "想读", color: "text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/50" },
+                { key: "reading", label: "在读", color: "text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/50" },
+                { key: "finished", label: "已完成", color: "text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50" },
+                { key: "shelved", label: "搁置", color: "text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50" },
+                { key: "", label: "清除状态", color: "text-muted hover:bg-card-hover" },
+              ].map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => {
+                    onSetReadingStatus(s.key);
+                    setShowStatusPicker(false);
+                  }}
+                  className={`flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors ${s.color}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
       {/* Delete Confirm Modal */}
       {showDeleteConfirm && (

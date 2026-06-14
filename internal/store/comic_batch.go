@@ -151,19 +151,7 @@ func BatchRemoveTags(comicIDs []string, tagNames []string) error {
 		return err
 	}
 
-	// 清理孤立标签
-	for _, name := range tagNames {
-		var tagID int
-		err := db.QueryRow(`SELECT "id" FROM "Tag" WHERE "name" = ?`, name).Scan(&tagID)
-		if err != nil {
-			continue // 标签不存在，跳过
-		}
-		var count int
-		_ = db.QueryRow(`SELECT COUNT(*) FROM "ComicTag" WHERE "tagId" = ?`, tagID).Scan(&count)
-		if count == 0 {
-			_, _ = db.Exec(`DELETE FROM "Tag" WHERE "id" = ?`, tagID)
-		}
-	}
+	// 注意：故意不清理孤立 Tag 记录。Tag 本身可能被管理页面使用，不应因移除关联而被删除。
 
 	return nil
 }

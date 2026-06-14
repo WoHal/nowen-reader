@@ -243,6 +243,8 @@ export default function Home() {
   const [readingStatusFilter, setReadingStatusFilter] = useState<string>(() => {
     return sessionStorage.getItem("homeFilter:readingStatus") || "";
   });
+  const [uncategorized, setUncategorized] = useState(() => sessionStorage.getItem("homeFilter:uncategorized") === "true");
+  const [untagged, setUntagged] = useState(() => sessionStorage.getItem("homeFilter:untagged") === "true");
   const [contentType, setContentType] = useState<"comic" | "novel">(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("homeFilter:contentType");
@@ -276,6 +278,8 @@ export default function Home() {
 
   useEffect(() => {
     sessionStorage.setItem("homeFilter:readingStatus", readingStatusFilter);
+  useEffect(() => { sessionStorage.setItem("homeFilter:uncategorized", String(uncategorized)); }, [uncategorized]);
+  useEffect(() => { sessionStorage.setItem("homeFilter:untagged", String(untagged)); }, [untagged]);
   }, [readingStatusFilter]);
 
   // AI 语义搜索 handler
@@ -460,6 +464,8 @@ export default function Home() {
     contentType: contentType || undefined,
     excludeGrouped: showGroupView || undefined,
     readingStatus: readingStatusFilter || undefined,
+    uncategorized: uncategorized || undefined,
+    untagged: untagged || undefined,
   });
   // 系列视图下加载系列级分类统计
   useEffect(() => {
@@ -935,6 +941,25 @@ export default function Home() {
     [selectedIds, exitBatchMode, refetch, refetchCategories, refetchGroupCategories, showGroupView, contentType]
   );
 
+
+  const handleBatchRemoveTags = useCallback(
+    async (tags: string[]) => {
+      await batchOperation("removeTags", Array.from(selectedIds), { tags });
+      exitBatchMode();
+      await refetch();
+    },
+    [selectedIds, exitBatchMode, refetch]
+  );
+
+  const handleBatchSetReadingStatus = useCallback(
+    async (status: string) => {
+      await batchOperation("setReadingStatus", Array.from(selectedIds), { readingStatus: status });
+      exitBatchMode();
+      await refetch();
+    },
+    [selectedIds, exitBatchMode, refetch]
+  );
+
   // 合并为合集
   const handleMergeToGroup = useCallback(
     async (groupName: string) => {
@@ -1248,6 +1273,30 @@ export default function Home() {
                   <option value="reading">{t.home.statusReading}</option>
                   <option value="finished">{t.home.statusFinished}</option>
                 </select>
+
+                {/* Uncategorized filter */}
+                <button
+                  onClick={() => { setUncategorized(!uncategorized); if (!uncategorized) setSelectedCategory(null); }}
+                  className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                    uncategorized
+                      ? "bg-orange-500/20 text-orange-400"
+                      : "bg-card text-muted hover:text-foreground"
+                  }`}
+                >
+                  未分类
+                </button>
+
+                {/* Untagged filter */}
+                <button
+                  onClick={() => { setUntagged(!untagged); if (!untagged) setSelectedTags([]); }}
+                  className={`flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-medium transition-all ${
+                    untagged
+                      ? "bg-orange-500/20 text-orange-400"
+                      : "bg-card text-muted hover:text-foreground"
+                  }`}
+                >
+                  无标签
+                </button>
 
                 {/* Sort selector */}
                 <select
@@ -1744,6 +1793,8 @@ export default function Home() {
           onUnfavorite={handleBatchUnfavorite}
           onAddTags={handleBatchAddTags}
           onSetCategory={handleBatchSetCategory}
+          onRemoveTags={handleBatchRemoveTags}
+          onSetReadingStatus={handleBatchSetReadingStatus}
           onMergeGroup={selectedIds.size >= 2 ? () => setShowMergeDialog(true) : undefined}
           onAddToGroup={() => setShowAddToGroup(true)}
           onAISuggestTags={aiConfigured ? handleAIBatchSuggestTags : undefined}
