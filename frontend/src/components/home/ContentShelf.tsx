@@ -46,7 +46,7 @@ export default function ContentShelf({
           </Link>
         )}
       </div>
-      <div className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className="scrollbar-hide -mx-1 flex gap-3 overflow-x-auto px-1 pb-2" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {children}
       </div>
     </section>
@@ -76,7 +76,7 @@ export function ShelfCard({
   badge,
   badgeColor = "bg-accent/10 text-accent",
   progress,
-  widthClass = "w-28 sm:w-32",
+  widthClass = "w-32 sm:w-36 lg:w-40",
 }: ShelfCardProps) {
   return (
     <Link

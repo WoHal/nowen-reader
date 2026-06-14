@@ -73,13 +73,13 @@ export default function Navbar({
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex h-12 sm:h-14 max-w-[1800px] items-center justify-between px-3 sm:px-6">
+      <div className="mx-auto flex h-14 sm:h-16 max-w-[1680px] items-center justify-between px-4 sm:px-6 lg:px-10">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {siteIcon ? (
-            <img src={`/api/site-settings/icon?t=${Date.now()}`} alt="Site Icon" className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg object-contain" />
+            <img src={`/api/site-settings/icon?t=${Date.now()}`} alt="Site Icon" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-contain" />
           ) : (
-            <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-accent">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-accent">
               <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
           )}
@@ -91,8 +91,8 @@ export default function Navbar({
         {/* Search Bar */}
         <div className="flex flex-1 items-center justify-center px-2 sm:px-8">
           <div
-            className={`relative flex w-full max-w-md items-center transition-all duration-300 ${
-              isSearchFocused ? "max-w-lg" : ""
+            className={`relative flex w-full max-w-lg lg:max-w-xl xl:max-w-2xl items-center transition-all duration-300 ${
+              isSearchFocused ? "max-w-xl lg:max-w-2xl xl:max-w-3xl" : ""
             }`}
           >
             {/* AI Search Toggle */}
@@ -121,7 +121,7 @@ export default function Navbar({
               onChange={(e) => onSearchChange(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
-              className={`h-9 sm:h-10 w-full rounded-xl border bg-card/50 ${onAiSearchModeChange ? "pl-16" : "pl-10"} pr-4 text-sm text-foreground placeholder:text-muted/60 outline-none transition-all duration-300 focus:bg-card focus:ring-2 ${
+              className={`h-10 sm:h-11 w-full rounded-xl border bg-card/50 ${onAiSearchModeChange ? "pl-16" : "pl-10"} pr-4 text-sm text-foreground placeholder:text-muted/60 outline-none transition-all duration-300 focus:bg-card focus:ring-2 ${
                 aiSearchMode
                   ? "border-purple-500/40 focus:border-purple-500/60 focus:ring-purple-500/20"
                   : "border-border/60 focus:border-accent/50 focus:ring-accent/20"

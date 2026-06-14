@@ -194,18 +194,18 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
           {spotlight && (
             <Link
               href={`/comic/${spotlight.id}`}
-              className="group relative sm:col-span-5 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
+              className="group relative sm:col-span-4 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
             >
               <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
                 {/* Cover */}
-                <div className="relative mx-auto sm:mx-0 w-32 sm:w-40 lg:w-44 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
+                <div className="relative mx-auto sm:mx-0 w-36 sm:w-44 lg:w-52 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
                   <div className="aspect-[5/7] relative bg-gradient-to-br from-muted/30 to-card dark:from-muted/20">
                     <Image
                       src={spotlight.coverUrl || "/api/placeholder/288/403"}
                       alt={spotlight.title}
                       fill
                       className="object-contain p-0.5 drop-shadow-lg"
-                      sizes="176px"
+                      sizes="208px"
                     />
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
 
           {/* Side covers — staggered grid */}
           {sideComics.length > 0 && (
-            <div className="sm:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-2">
+            <div className="sm:col-span-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
               {sideComics.map((comic, i) => (
                 <Link
                   key={comic.id}
@@ -276,7 +276,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
                       alt={comic.title}
                       fill
                       className="object-contain p-0.5 transition-transform duration-300 group-hover:scale-105"
-                      sizes={i === 0 ? "320px" : "120px"}
+                      sizes={i === 0 ? "400px" : "160px"}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-2">
