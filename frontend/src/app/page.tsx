@@ -278,9 +278,15 @@ export default function Home() {
 
   useEffect(() => {
     sessionStorage.setItem("homeFilter:readingStatus", readingStatusFilter);
-  useEffect(() => { sessionStorage.setItem("homeFilter:uncategorized", String(uncategorized)); }, [uncategorized]);
-  useEffect(() => { sessionStorage.setItem("homeFilter:untagged", String(untagged)); }, [untagged]);
   }, [readingStatusFilter]);
+
+  useEffect(() => {
+    sessionStorage.setItem("homeFilter:uncategorized", String(uncategorized));
+  }, [uncategorized]);
+
+  useEffect(() => {
+    sessionStorage.setItem("homeFilter:untagged", String(untagged));
+  }, [untagged]);
 
   // AI 语义搜索 handler
   const handleAiSearch = useCallback(async (query: string) => {
