@@ -29,7 +29,6 @@ import {
   Download,
   Upload,
   Eye,
-  Settings as SettingsIcon,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
