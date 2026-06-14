@@ -84,11 +84,11 @@ export function ShelfCard({
       className={`group flex-shrink-0 ${widthClass} transition-all duration-200 hover:-translate-y-0.5`}
     >
       <div className="relative overflow-hidden rounded-xl bg-muted">
-        <div className="aspect-[5/7] relative">
+        <div className="aspect-[5/7] relative bg-muted/20 dark:bg-muted/10">
           <img
             src={coverUrl || "/api/placeholder/160/224"}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-contain p-0.5 transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
           {/* Progress bar */}

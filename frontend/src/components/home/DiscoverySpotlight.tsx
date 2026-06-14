@@ -200,12 +200,12 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
               <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
                 {/* Cover */}
                 <div className="relative mx-auto sm:mx-0 w-28 sm:w-36 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
-                  <div className="aspect-[5/7] relative bg-muted">
+                  <div className="aspect-[5/7] relative bg-muted/20 dark:bg-muted/10">
                     <Image
                       src={spotlight.coverUrl || "/api/placeholder/288/403"}
                       alt={spotlight.title}
                       fill
-                      className="object-cover"
+                      className="object-contain p-0.5"
                       sizes="144px"
                     />
                   </div>
@@ -271,12 +271,12 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
                     i === 0 ? "sm:col-span-2" : ""
                   }`}
                 >
-                  <div className={`${i === 0 ? "aspect-[16/7]" : "aspect-[5/7]"} relative bg-muted`}>
+                  <div className={`${i === 0 ? "aspect-[16/7]" : "aspect-[5/7]"} relative bg-muted/20 dark:bg-muted/10`}>
                     <Image
                       src={comic.coverUrl || "/api/placeholder/160/224"}
                       alt={comic.title}
                       fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-contain p-0.5 transition-transform duration-300 group-hover:scale-105"
                       sizes={i === 0 ? "320px" : "120px"}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />

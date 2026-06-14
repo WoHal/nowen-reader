@@ -1081,17 +1081,6 @@ export default function Home() {
             {/* Discovery Spotlight — personalized discovery stage */}
             <DiscoverySpotlight comics={apiComics} contentType={contentType} totalItems={apiTotal} />
 
-            {/* Quick actions bar */}
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <button onClick={handleUpload} disabled={uploading} className="motion-button inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60">
-                <Upload className="h-3.5 w-3.5" />
-                {uploading ? '上传中…' : '上传'}
-              </button>
-              <button onClick={handleScanLibrary} disabled={scanningLibrary} className="motion-button inline-flex items-center gap-1.5 rounded-xl border border-border/40 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-card disabled:opacity-60">
-                {scanningLibrary ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
-                扫描
-              </button>
-            </div>
 
             {/* 内容类型 Tab + 视图切换 */}
             <div className="flex items-center justify-between gap-1 sm:gap-1.5 mb-4">
