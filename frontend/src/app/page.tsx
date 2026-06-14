@@ -1009,7 +1009,7 @@ export default function Home() {
       />
 
       {/* Main Content */}
-      <main className={`mx-auto max-w-[1680px] px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 ${batchMode ? "pb-32" : "pb-20 sm:pb-12"}`}>
+      <main className={`mx-auto max-w-[1760px] px-6 sm:px-8 lg:px-10 2xl:px-12 pt-20 sm:pt-24 ${batchMode ? "pb-32" : "pb-20 sm:pb-12"}`}>
         {/* Data Source Indicator — 空库提示 */}
         {!loading && displayComics.length === 0 && apiTotal === 0 && !debouncedSearch && selectedTags.length === 0 && !favoritesOnly && !selectedCategory && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
@@ -1694,7 +1694,7 @@ export default function Home() {
         <div className={`fixed left-0 right-0 z-50 border-t border-border/50 bg-background/95 px-3 sm:px-6 py-2 sm:py-3 backdrop-blur-xl ${
           selectedIds.size > 0 ? "bottom-[52px] sm:bottom-[56px]" : "bottom-0 safe-bottom"
         }`}>
-          <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-2">
+          <div className="mx-auto flex max-w-[1760px] flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3">
               <Layers className="h-4 w-4 text-accent" />
               <span className="text-sm font-medium text-foreground">

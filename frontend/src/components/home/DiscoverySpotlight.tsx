@@ -128,8 +128,14 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
 
   if (loading || comics.length === 0) return null;
 
+  // Bento data
+  const unreadCount = comics.filter(c => c.type !== 'dir' && calculateReadingProgress(c.lastReadPage, c.pageCount) === 0).length;
+  const latestComics = [...comics.filter(c => c.type !== 'dir')].sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime()).slice(0, 4);
+  const randomPool = comics.filter(c => c.type !== 'dir');
+  const randomComics = randomPool.sort(() => Math.random() - 0.5).slice(0, 4);
+
   return (
-    <section className="relative mb-4 overflow-hidden rounded-3xl border border-border/30 bg-card/70 backdrop-blur-xl shadow-lg">
+    <section className="relative mb-6 overflow-hidden rounded-3xl border border-border/30 bg-card/70 backdrop-blur-xl shadow-lg">
       {/* Background: blurred cover */}
       {spotlight?.coverUrl && (
         <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
@@ -143,152 +149,167 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
       )}
 
       <div className="relative z-10 p-4 sm:p-5 lg:p-6">
-        {/* Main spotlight area — 3-column: text | cover | side covers */}
+        {/* Bento Grid: 12 cols */}
         <div className={`grid grid-cols-1 gap-3 sm:grid-cols-12 transition-all duration-300 ease-out ${animClass}`}>
-          {/* Left: greeting + mood chips + actions */}
-          <div className="sm:col-span-3 flex flex-col justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-foreground sm:text-xl">
-                今天想看点什么？
-              </h2>
-              <p className="mt-0.5 text-xs text-muted sm:text-sm">
-                {getMoodHint(mood)}
-                {totalItems ? ` · ${totalItems} 项内容` : ""}{comics.length > 0 ? ` · ${comics.filter(c => !c.lastReadPage || c.lastReadPage === 0).length} 本未读` : ""}
-              </p>
-            </div>
-            <div className="mt-3">
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {MOODS.map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => setMood(m.key)}
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
-                      mood === m.key
-                        ? "bg-accent text-white shadow-sm shadow-accent/25"
-                        : "bg-background/50 border border-border/30 text-muted hover:text-foreground hover:border-border/50"
-                    }`}
-                  >
-                    <span className="text-[10px]">{m.icon}</span>
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleRandomOne}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
-                >
-                  <Shuffle className="h-3 w-3" />
-                  随机一本
-                </button>
-                <button
-                  onClick={handleShuffle}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/40 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-colors"
-                >
-                  换一批
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Main spotlight card */}
+
+          {/* Main Spotlight Card: col-span-7 */}
           {spotlight && (
             <Link
               href={`/comic/${spotlight.id}`}
-              className="group relative sm:col-span-4 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
+              className="group relative sm:col-span-7 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
             >
-              <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
-                {/* Cover */}
-                <div className="relative mx-auto sm:mx-0 w-36 sm:w-44 lg:w-52 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
+              <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5 lg:p-6 h-full">
+                {/* Cover - big */}
+                <div className="relative mx-auto sm:mx-0 w-40 sm:w-52 lg:w-60 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
                   <div className="aspect-[5/7] relative bg-gradient-to-br from-muted/30 to-card dark:from-muted/20">
                     <Image
-                      src={spotlight.coverUrl || "/api/placeholder/288/403"}
+                      src={spotlight.coverUrl || '/api/placeholder/288/403'}
                       alt={spotlight.title}
                       fill
                       className="object-contain p-0.5 drop-shadow-lg"
-                      sizes="208px"
+                      sizes="240px"
                     />
                   </div>
                 </div>
 
-                {/* Info */}
+                {/* Info panel */}
                 <div className="flex flex-1 flex-col justify-center min-w-0">
+                  <p className="text-xs text-muted mb-1">今天想看点什么？</p>
+
                   <div className="flex flex-wrap items-center gap-1.5 mb-2">
                     <span className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                      {contentType === "novel" ? "小说" : "漫画"}
+                      {contentType === 'novel' ? '小说' : '漫画'}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                       {getStatusLabel(spotlight)}
                     </span>
-                    {spotlight.isFavorite && (
-                      <span className="text-xs">❤️</span>
-                    )}
-                    {spotlight.pageCount > 0 && (
-                      <span className="text-[10px] text-muted">{spotlight.pageCount} 页</span>
-                    )}
+                    {spotlight.isFavorite && <span className="text-xs">❤️</span>}
+                    {spotlight.pageCount > 0 && <span className="text-[10px] text-muted">{spotlight.pageCount} 页</span>}
                   </div>
-                  <h3 className="text-base font-bold text-foreground line-clamp-2 sm:text-lg lg:text-xl">
+
+                  <h3 className="text-lg font-bold text-foreground line-clamp-2 sm:text-xl lg:text-2xl">
                     {spotlight.title}
                   </h3>
-                  {spotlight.author && (
-                    <p className="mt-1 text-sm text-muted">{spotlight.author}</p>
-                  )}
+                  {spotlight.author && <p className="mt-1 text-sm text-muted">{spotlight.author}</p>}
+
                   {spotlight.tags && spotlight.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {spotlight.tags.slice(0, 5).map((tag) => (
-                        <span
-                          key={tag.name}
-                          className="rounded-full bg-background/60 px-2 py-0.5 text-[10px] text-muted"
-                        >
-                          {tag.name}
-                        </span>
+                        <span key={tag.name} className="rounded-full bg-background/60 px-2 py-0.5 text-[10px] text-muted">{tag.name}</span>
                       ))}
                     </div>
                   )}
+
+                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted">
+                    {totalItems ? <span>{totalItems} 项内容</span> : null}
+                    {unreadCount > 0 ? <span>· {unreadCount} 本未读</span> : null}
+                    <span>· {getMoodHint(mood)}</span>
+                  </div>
+
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover">
                       <Play className="h-4 w-4" />
-                      {calculateReadingProgress(spotlight.lastReadPage, spotlight.pageCount) > 0 ? "继续阅读" : "开始阅读"}
+                      {calculateReadingProgress(spotlight.lastReadPage, spotlight.pageCount) > 0 ? '继续阅读' : '开始阅读'}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-border/40 px-4 py-2 text-sm text-muted hover:text-foreground transition-colors">
-                      <Eye className="h-4 w-4" />
-                      详情
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-border/40 px-5 py-2.5 text-sm text-muted hover:text-foreground transition-colors">
+                      <Eye className="h-4 w-4" /> 详情
                     </span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {MOODS.map((m) => (
+                      <button
+                        key={m.key}
+                        onClick={(e) => { e.preventDefault(); setMood(m.key); }}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                          mood === m.key
+                            ? 'bg-accent text-white shadow-sm shadow-accent/25'
+                            : 'bg-background/50 border border-border/30 text-muted hover:text-foreground hover:border-border/50'
+                        }`}
+                      >
+                        <span className="text-[10px]">{m.icon}</span>
+                        {m.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             </Link>
           )}
 
-          {/* Side covers — staggered grid */}
-          {sideComics.length > 0 && (
-            <div className="sm:col-span-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {sideComics.map((comic, i) => (
-                <Link
-                  key={comic.id}
-                  href={`/comic/${comic.id}`}
-                  className={`group relative overflow-hidden rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
-                    i === 0 ? "sm:col-span-2" : ""
-                  }`}
-                >
-                  <div className={`${i === 0 ? "aspect-[16/7]" : "aspect-[5/7]"} relative bg-gradient-to-br from-muted/20 to-card dark:from-muted/10`}>
-                    <Image
-                      src={comic.coverUrl || "/api/placeholder/160/224"}
-                      alt={comic.title}
-                      fill
-                      className="object-contain p-0.5 transition-transform duration-300 group-hover:scale-105"
-                      sizes={i === 0 ? "400px" : "160px"}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <p className="text-xs font-medium text-white line-clamp-2 leading-tight">
-                        {comic.title}
-                      </p>
+          {/* Right Bento Grid: col-span-5 */}
+          <div className="sm:col-span-5 grid grid-cols-2 gap-2 auto-rows-fr">
+            {/* Bento: Random - wide card */}
+            <button
+              onClick={handleRandomOne}
+              className="group relative col-span-2 overflow-hidden rounded-xl bg-gradient-to-br from-accent/5 to-card border border-border/20 p-3 text-left transition-all hover:shadow-lg hover:border-border/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-4">
+                  {randomComics.slice(0, 3).map((comic, i) => (
+                    <div key={comic.id} className="relative w-12 h-[68px] rounded-lg overflow-hidden shadow-md border border-border/20 flex-shrink-0" style={{ zIndex: 3 - i }}>
+                      <Image src={comic.coverUrl || '/api/placeholder/96/128'} alt="" fill className="object-contain" sizes="48px" />
                     </div>
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Shuffle className="h-3.5 w-3.5 text-accent" />
+                    <span className="text-sm font-semibold text-foreground">随机盲盒</span>
                   </div>
-                </Link>
-              ))}
+                  <p className="text-xs text-muted mt-0.5">看看命运给你安排了什么</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted flex-shrink-0" />
+              </div>
+            </button>
+
+            {/* Bento: Unread treasures */}
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-muted/10 to-card border border-border/20 p-3 transition-all hover:shadow-lg hover:border-border/40">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">📚</span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">未读宝藏</p>
+                  <p className="text-[11px] text-muted">{unreadCount} 本等待打开</p>
+                </div>
+              </div>
+              <div className="flex -space-x-2">
+                {randomPool.filter(c => calculateReadingProgress(c.lastReadPage, c.pageCount) === 0).slice(0, 3).map((comic, i) => (
+                  <div key={comic.id} className="relative w-8 h-11 rounded-md overflow-hidden shadow-sm border border-border/20 flex-shrink-0" style={{ zIndex: 3 - i }}>
+                    <Image src={comic.coverUrl || '/api/placeholder/64/96'} alt="" fill className="object-contain" sizes="32px" />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
+
+            {/* Bento: Latest arrivals */}
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-muted/10 to-card border border-border/20 p-3 transition-all hover:shadow-lg hover:border-border/40">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🆕</span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">最近入库</p>
+                  <p className="text-[11px] text-muted">刚到书库的新鲜内容</p>
+                </div>
+              </div>
+              <div className="flex -space-x-2">
+                {latestComics.slice(0, 3).map((comic, i) => (
+                  <div key={comic.id} className="relative w-8 h-11 rounded-md overflow-hidden shadow-sm border border-border/20 flex-shrink-0" style={{ zIndex: 3 - i }}>
+                    <Image src={comic.coverUrl || '/api/placeholder/64/96'} alt="" fill className="object-contain" sizes="32px" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bento: Quick actions bar */}
+            <div className="col-span-2 flex items-center justify-between gap-2 rounded-xl bg-background/40 border border-border/20 px-3 py-2">
+              <button onClick={handleShuffle} className="inline-flex items-center gap-1.5 rounded-full border border-border/40 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-colors">
+                <Shuffle className="h-3 w-3" /> 换一批
+              </button>
+              <div className="text-[11px] text-muted">
+                {totalItems ? `共 ${totalItems} 项` : ''}
+                {unreadCount > 0 ? ` · ${unreadCount} 未读` : ''}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

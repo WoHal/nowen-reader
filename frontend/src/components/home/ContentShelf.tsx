@@ -76,7 +76,7 @@ export function ShelfCard({
   badge,
   badgeColor = "bg-accent/10 text-accent",
   progress,
-  widthClass = "w-32 sm:w-36 lg:w-40",
+  widthClass = "w-36 sm:w-40 lg:w-44",
 }: ShelfCardProps) {
   return (
     <Link

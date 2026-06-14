@@ -73,7 +73,7 @@ export default function Navbar({
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex h-14 sm:h-16 max-w-[1680px] items-center justify-between px-4 sm:px-6 lg:px-10">
+      <div className="mx-auto flex h-14 sm:h-16 max-w-[1760px] items-center justify-between px-6 sm:px-8 lg:px-12">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {siteIcon ? (
@@ -91,8 +91,8 @@ export default function Navbar({
         {/* Search Bar */}
         <div className="flex flex-1 items-center justify-center px-2 sm:px-8">
           <div
-            className={`relative flex w-full max-w-lg lg:max-w-xl xl:max-w-2xl items-center transition-all duration-300 ${
-              isSearchFocused ? "max-w-xl lg:max-w-2xl xl:max-w-3xl" : ""
+            className={`relative flex w-full max-w-xl lg:max-w-2xl xl:max-w-3xl items-center transition-all duration-300 ${
+              isSearchFocused ? "max-w-2xl lg:max-w-3xl xl:max-w-4xl" : ""
             }`}
           >
             {/* AI Search Toggle */}
