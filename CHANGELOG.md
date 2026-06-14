@@ -9,8 +9,13 @@
 - 安全修复执行 API（`POST /api/admin/data-qa/fix`）：支持 4 类安全 issue 的真实修复，需 `confirm: true`
 - Data QA 管理页面（`/data-qa`）：summary 卡片、issue 列表、筛选、dry-run 预览、执行修复、二次确认
 - 支持真实修复的 issue 类型：TOTAL_TIME_ZERO、UCS_TOTAL_TIME_ZERO、ORPHAN_TAG、ORPHAN_CATEGORY
-- 暂不支持真实修复的 issue 类型：PAGE_COUNT_ZERO、PAGE_COUNT_NEGATIVE、SESSION_ORPHAN、SESSION_ZERO_DURATION（仅支持 dry-run 预览）
+- PAGE_COUNT_ZERO / PAGE_COUNT_NEGATIVE 仅支持 dry-run 预览和重扫触发，不直接修改 pageCount
 - 修复执行安全机制：admin 权限、事务保护、幂等校验、孤儿确认后再删除、totalReadTime 仅更新 ≤ 0 的行
+- SESSION_ORPHAN 安全关闭策略：标记 endedAt=startedAt / duration=0，不累加阅读时长，保留审计记录
+- SESSION_ZERO_DURATION 反算修复：从时间戳计算 duration，安全范围校验（2s-12h），重聚合 totalReadTime
+- PAGE_COUNT 重扫触发 API（`POST /api/admin/data-qa/pagecount-rescan`）：列出需要重扫的漫画，复用已有 scanner
+- `/data-qa` 管理页面集成高风险操作按钮（PageCount Rescan）
+- 所有 8 类 issue 现在均有 dry-run 支持，6 类支持真实修复
 
 - 上传功能支持选择目标书库：管理员可在首页上传区域选择目标书库，文件直接写入该书库的 rootPath
 - `POST /api/upload` 新增可选参数 `libraryId`，传入时上传到对应书库，不传时兼容旧 `comicsDir` / `novelsDir` 逻辑
