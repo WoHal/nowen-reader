@@ -34,3 +34,23 @@ func (h *DataQAHandler) GetIssues(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"issues": issues})
 }
+
+// FixPreview returns a dry-run fix preview without modifying any data.
+func (h *DataQAHandler) FixPreview(c *gin.Context) {
+	var body struct {
+		IssueTypes []string `json:"issueTypes"`
+		IssueIDs   []string `json:"issueIds"`
+		FixAll     bool     `json:"fixAll"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	result, err := service.BuildFixPreview(body.IssueTypes, body.IssueIDs, body.FixAll)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fix preview failed: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
