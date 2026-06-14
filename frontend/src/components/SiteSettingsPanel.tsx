@@ -111,6 +111,7 @@ export function SiteSettingsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 高亮锚点（用于从 Navbar 灰显入口跳转过来时闪烁提示）
   const scraperRef = useRef<HTMLDivElement>(null);
@@ -162,21 +163,36 @@ export function SiteSettingsPanel() {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetch("/api/site-settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setConfig({
-          extraComicsDirs: [],
-          extraNovelsDirs: [],
-          ebookTypeAutoDetect: "comics",
-          ...data,
-        });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-    loadThumbStats();
+  const loadConfig = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/site-settings", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load site settings: ${res.status}`);
+      }
+      const data = await res.json();
+      setConfig({
+        extraComicsDirs: [],
+        extraNovelsDirs: [],
+        ebookTypeAutoDetect: "comics",
+        ...data,
+      });
+    } catch (err) {
+      console.error("[SiteSettingsPanel] load failed:", err);
+      setError(err instanceof Error ? err.message : "加载站点设置失败");
+      setConfig(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadConfig();
+    loadThumbStats();
+  }, [loadConfig]);
 
   const loadThumbStats = () => {
     fetch("/api/thumbnails/manage", {
@@ -484,7 +500,34 @@ export function SiteSettingsPanel() {
     );
   }
 
-  if (!config) return null;
+  if (error || !config) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          <Globe className="h-5 w-5 text-accent" />
+          <h3 className="text-sm font-medium text-foreground">
+            {t.siteSettings?.title || "Site Settings"}
+          </h3>
+        </div>
+        <div className="rounded-2xl border border-border/40 bg-card p-6 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground">站点设置加载失败</h3>
+          <p className="mt-1 text-xs text-muted">
+            {error || "未获取到站点配置，请检查接口或登录状态。"}
+          </p>
+          <button
+            onClick={loadConfig}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          >
+            <RefreshCw className="h-4 w-4" />
+            重试
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const siteT = t.siteSettings;
 
