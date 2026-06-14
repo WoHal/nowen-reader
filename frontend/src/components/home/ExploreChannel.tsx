@@ -79,9 +79,9 @@ export default function ExploreChannel({ comics, contentType }: ExploreChannelPr
   if (comics.length === 0) return null;
 
   return (
-    <section className="mb-6">
+    <section className="mb-4">
       {/* Tab header */}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-1">
           <h3 className="mr-2 text-sm font-semibold text-foreground sm:text-base">
             探索频道

@@ -129,7 +129,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
   if (loading || comics.length === 0) return null;
 
   return (
-    <section className="relative mb-6 overflow-hidden rounded-3xl border border-border/30 bg-card/70 backdrop-blur-xl shadow-lg">
+    <section className="relative mb-4 overflow-hidden rounded-3xl border border-border/30 bg-card/70 backdrop-blur-xl shadow-lg">
       {/* Background: blurred cover */}
       {spotlight?.coverUrl && (
         <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
@@ -142,71 +142,70 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
         </div>
       )}
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
-        {/* Top: greeting + mood chips */}
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-foreground sm:text-xl">
-              今天想看点什么？
-            </h2>
-            <p className="mt-0.5 text-xs text-muted sm:text-sm">
-              {getMoodHint(mood)}
-              {totalItems ? ` · ${totalItems} 项内容` : ""}
-            </p>
+      <div className="relative z-10 p-4 sm:p-5 lg:p-6">
+        {/* Main spotlight area — 3-column: text | cover | side covers */}
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-12 transition-all duration-300 ease-out ${animClass}`}>
+          {/* Left: greeting + mood chips + actions */}
+          <div className="sm:col-span-3 flex flex-col justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-foreground sm:text-xl">
+                今天想看点什么？
+              </h2>
+              <p className="mt-0.5 text-xs text-muted sm:text-sm">
+                {getMoodHint(mood)}
+                {totalItems ? ` · ${totalItems} 项内容` : ""}{comics.length > 0 ? ` · ${comics.filter(c => !c.lastReadPage || c.lastReadPage === 0).length} 本未读` : ""}
+              </p>
+            </div>
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {MOODS.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => setMood(m.key)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                      mood === m.key
+                        ? "bg-accent text-white shadow-sm shadow-accent/25"
+                        : "bg-background/50 border border-border/30 text-muted hover:text-foreground hover:border-border/50"
+                    }`}
+                  >
+                    <span className="text-[10px]">{m.icon}</span>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRandomOne}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
+                >
+                  <Shuffle className="h-3 w-3" />
+                  随机一本
+                </button>
+                <button
+                  onClick={handleShuffle}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/40 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-colors"
+                >
+                  换一批
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRandomOne}
-              className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
-            >
-              <Shuffle className="h-3 w-3" />
-              随机一本
-            </button>
-            <button
-              onClick={handleShuffle}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/40 px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground transition-colors"
-            >
-              换一批
-            </button>
-          </div>
-        </div>
-
-        {/* Mood chips */}
-        <div className="mb-5 flex flex-wrap gap-1.5">
-          {MOODS.map((m) => (
-            <button
-              key={m.key}
-              onClick={() => setMood(m.key)}
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                mood === m.key
-                  ? "bg-accent text-white shadow-sm shadow-accent/25"
-                  : "bg-background/50 border border-border/30 text-muted hover:text-foreground hover:border-border/50"
-              }`}
-            >
-              <span className="text-[11px]">{m.icon}</span>
-              {m.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Main spotlight area */}
-        <div className={`grid grid-cols-1 gap-4 sm:grid-cols-12 transition-all duration-300 ease-out ${animClass}`}>
           {/* Main spotlight card */}
           {spotlight && (
             <Link
               href={`/comic/${spotlight.id}`}
-              className="group relative sm:col-span-7 lg:col-span-8 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
+              className="group relative sm:col-span-5 overflow-hidden rounded-2xl bg-background/40 backdrop-blur-sm border border-border/20 transition-all duration-300 hover:shadow-xl hover:border-border/40"
             >
               <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
                 {/* Cover */}
-                <div className="relative mx-auto sm:mx-0 w-28 sm:w-36 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
-                  <div className="aspect-[5/7] relative bg-muted/20 dark:bg-muted/10">
+                <div className="relative mx-auto sm:mx-0 w-32 sm:w-40 lg:w-44 flex-shrink-0 overflow-hidden rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-[1.03]">
+                  <div className="aspect-[5/7] relative bg-gradient-to-br from-muted/30 to-card dark:from-muted/20">
                     <Image
                       src={spotlight.coverUrl || "/api/placeholder/288/403"}
                       alt={spotlight.title}
                       fill
-                      className="object-contain p-0.5"
-                      sizes="144px"
+                      className="object-contain p-0.5 drop-shadow-lg"
+                      sizes="176px"
                     />
                   </div>
                 </div>
@@ -262,7 +261,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
 
           {/* Side covers — staggered grid */}
           {sideComics.length > 0 && (
-            <div className="sm:col-span-5 lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-2 auto-rows-fr">
+            <div className="sm:col-span-4 grid grid-cols-2 sm:grid-cols-2 gap-2">
               {sideComics.map((comic, i) => (
                 <Link
                   key={comic.id}
@@ -271,7 +270,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
                     i === 0 ? "sm:col-span-2" : ""
                   }`}
                 >
-                  <div className={`${i === 0 ? "aspect-[16/7]" : "aspect-[5/7]"} relative bg-muted/20 dark:bg-muted/10`}>
+                  <div className={`${i === 0 ? "aspect-[16/7]" : "aspect-[5/7]"} relative bg-gradient-to-br from-muted/20 to-card dark:from-muted/10`}>
                     <Image
                       src={comic.coverUrl || "/api/placeholder/160/224"}
                       alt={comic.title}

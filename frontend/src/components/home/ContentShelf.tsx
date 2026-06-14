@@ -30,8 +30,8 @@ export default function ContentShelf({
   className = "",
 }: ContentShelfProps) {
   return (
-    <section className={`mb-6 ${className}`}>
-      <div className="mb-3 flex items-center justify-between">
+    <section className={`mb-4 ${className}`}>
+      <div className="mb-2 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground sm:text-base">
           {icon}
           {title}
@@ -46,7 +46,7 @@ export default function ContentShelf({
           </Link>
         )}
       </div>
-      <div className="scrollbar-hide -mx-1 flex gap-3 overflow-x-auto px-1 pb-2" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1.5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {children}
       </div>
     </section>
@@ -84,7 +84,7 @@ export function ShelfCard({
       className={`group flex-shrink-0 ${widthClass} transition-all duration-200 hover:-translate-y-0.5`}
     >
       <div className="relative overflow-hidden rounded-xl bg-muted">
-        <div className="aspect-[5/7] relative bg-muted/20 dark:bg-muted/10">
+        <div className="aspect-[5/7] relative bg-gradient-to-br from-muted/20 to-card dark:from-muted/10">
           <img
             src={coverUrl || "/api/placeholder/160/224"}
             alt={title}
