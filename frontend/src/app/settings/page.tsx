@@ -25,6 +25,11 @@ import {
   Shield,
   Search,
   X,
+  RefreshCw,
+  Download,
+  Upload,
+  Eye,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
@@ -108,6 +113,9 @@ type SettingsTab =
   | "libraries"
   | "user-groups"
   | "diagnostics"
+  | "reader"
+  | "data-qa"
+  | "sync-backup"
   | "about";
 
 interface TabDef {
@@ -144,7 +152,7 @@ export default function SettingsPage() {
   const validTabs: SettingsTab[] = [
     "account",
     ...(isAdmin
-      ? ["site" as const, "ai" as const, "scan-rules" as const, "users" as const, "stats" as const, "file-stats" as const, "logs" as const, "libraries" as const, "user-groups" as const, "diagnostics" as const]
+      ? ["site" as const, "ai" as const, "scan-rules" as const, "users" as const, "stats" as const, "file-stats" as const, "logs" as const, "libraries" as const, "user-groups" as const, "diagnostics" as const, "reader" as const, "data-qa" as const, "sync-backup" as const]
       : []),
     "about",
   ];
@@ -200,6 +208,7 @@ export default function SettingsPage() {
               { id: "libraries" as const, label: "书库管理", icon: <BookOpen className="h-[18px] w-[18px]" />, desc: "目录、权限、公开策略", keywords: ["书库", "目录", "权限", "library"] },
               { id: "user-groups" as const, label: "用户组", icon: <Users className="h-[18px] w-[18px]" />, desc: "批量管理用户权限", keywords: ["用户组", "权限", "group"] },
               { id: "diagnostics" as const, label: "系统诊断", icon: <Shield className="h-[18px] w-[18px]" />, desc: "环境检查、权限、工具", keywords: ["诊断", "检查", "权限", "diagnostics"] },
+              { id: "reader" as const, label: "阅读器偏好", icon: <Eye className="h-[18px] w-[18px]" />, desc: "方向、缩放、翻页、背景", keywords: ["reader", "reading", "page", "zoom", "direction", "animation", "progress", "阅读器", "阅读", "方向", "缩放", "翻页", "页码", "进度"] },
             ]
           : []),
       ],
@@ -214,6 +223,8 @@ export default function SettingsPage() {
               { id: "logs" as const, label: tAny.errorLogs?.title || "错误日志", icon: <AlertTriangle className="h-[18px] w-[18px]" />, desc: "接口异常记录", keywords: ["日志", "错误", "异常", "logs", "error"] },
             ]
           : []),
+        { id: "data-qa" as const, label: "数据巡检", icon: <Database className="h-[18px] w-[18px]" />, desc: "一致性检查、安全修复", keywords: ["data", "qa", "health", "repair", "scan", "fix", "dry-run", "数据", "巡检", "修复", "扫描", "异常", "健康"] },
+        { id: "sync-backup" as const, label: "同步与备份", icon: <RefreshCw className="h-[18px] w-[18px]" />, desc: "备份、导入、导出", keywords: ["sync", "backup", "export", "import", "restore", "同步", "备份", "导出", "导入", "恢复"] },
         { id: "about", label: t.settings?.about || "关于", icon: <Info className="h-[18px] w-[18px]" />, desc: t.settings?.aboutDesc || "版本与项目信息", keywords: ["关于", "版本", "about", "version"] },
       ],
     },
@@ -449,6 +460,9 @@ export default function SettingsPage() {
               {activeTab === "libraries" && <LibraryManagementPanel />}
               {activeTab === "user-groups" && <UserGroupManagementPanel />}
               {activeTab === "diagnostics" && <NASDiagnosticsPanel />}
+              {activeTab === "reader" && <ReaderPreferencesPanel />}
+              {activeTab === "data-qa" && <DataQASettingsPanel />}
+              {activeTab === "sync-backup" && <SyncBackupPanel />}
               {activeTab === "stats" && <StatsPanel />}
               {activeTab === "file-stats" && <FileStatsPanel />}
               {activeTab === "logs" && <LogsPanel />}
@@ -456,6 +470,289 @@ export default function SettingsPage() {
             </div>
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+/* ── Reader Preferences Panel ── */
+function ReaderPreferencesPanel() {
+  const [direction, setDirection] = useState<'ltr' | 'rtl' | 'vertical'>('ltr');
+  const [zoom, setZoom] = useState<'fit-width' | 'fit-height' | 'original'>('fit-width');
+  const [animation, setAnimation] = useState<'none' | 'fade' | 'slide'>('fade');
+  const [background, setBackground] = useState<'system' | 'light' | 'dark' | 'paper'>('system');
+  const [showProgress, setShowProgress] = useState(true);
+  const [showPageNumber, setShowPageNumber] = useState(true);
+  const [autoSave, setAutoSave] = useState(true);
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-accent/5 via-card to-card p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <Eye className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">阅读器偏好</h2>
+            <p className="text-xs text-muted">调整阅读方向、缩放、翻页与阅读背景，先以本地预览形式呈现。</p>
+          </div>
+        </div>
+        <p className="mt-3 rounded-xl bg-card/60 p-3 text-xs text-muted/80 border border-border/30">
+          当前为界面预览设置，后续会接入真实用户配置 API。
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+        <div className="divide-y divide-border/25">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <div className="text-sm font-medium text-foreground">默认阅读方向</div>
+              <div className="text-xs text-muted">控制漫画翻页和小说排版的主要阅读流向。</div>
+            </div>
+            <select
+              value={direction}
+              onChange={(e) => setDirection(e.target.value as typeof direction)}
+              className="h-9 w-full rounded-lg border border-border/50 bg-card/60 px-3 text-sm outline-none focus:border-accent/40 sm:w-56"
+            >
+              <option value="ltr">从左到右</option>
+              <option value="rtl">从右到左</option>
+              <option value="vertical">垂直滚动</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <div className="text-sm font-medium text-foreground">默认缩放模式</div>
+              <div className="text-xs text-muted">决定打开阅读器时的默认页面适配方式。</div>
+            </div>
+            <select
+              value={zoom}
+              onChange={(e) => setZoom(e.target.value as typeof zoom)}
+              className="h-9 w-full rounded-lg border border-border/50 bg-card/60 px-3 text-sm outline-none focus:border-accent/40 sm:w-56"
+            >
+              <option value="fit-width">适应宽度</option>
+              <option value="fit-height">适应高度</option>
+              <option value="original">原始大小</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <div className="text-sm font-medium text-foreground">翻页动画</div>
+              <div className="text-xs text-muted">选择更克制或更流畅的页面切换体验。</div>
+            </div>
+            <select
+              value={animation}
+              onChange={(e) => setAnimation(e.target.value as typeof animation)}
+              className="h-9 w-full rounded-lg border border-border/50 bg-card/60 px-3 text-sm outline-none focus:border-accent/40 sm:w-56"
+            >
+              <option value="none">关闭</option>
+              <option value="fade">淡入</option>
+              <option value="slide">滑动</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <div className="text-sm font-medium text-foreground">阅读背景</div>
+              <div className="text-xs text-muted">为长时间阅读选择更舒适的背景主题。</div>
+            </div>
+            <select
+              value={background}
+              onChange={(e) => setBackground(e.target.value as typeof background)}
+              className="h-9 w-full rounded-lg border border-border/50 bg-card/60 px-3 text-sm outline-none focus:border-accent/40 sm:w-56"
+            >
+              <option value="system">跟随主题</option>
+              <option value="light">浅色</option>
+              <option value="dark">暗色</option>
+              <option value="paper">纸张色</option>
+            </select>
+          </div>
+
+          {[
+            { label: '显示阅读进度', desc: '在阅读器中展示当前章节 / 全书进度。', checked: showProgress, onChange: setShowProgress },
+            { label: '显示页码', desc: '在底部状态栏或工具栏显示当前页码。', checked: showPageNumber, onChange: setShowPageNumber },
+            { label: '自动保存阅读进度', desc: '关闭阅读器时自动记录最后阅读位置。', checked: autoSave, onChange: setAutoSave },
+          ].map((item) => (
+            <div key={item.label} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div>
+                <div className="text-sm font-medium text-foreground">{item.label}</div>
+                <div className="text-xs text-muted">{item.desc}</div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={item.checked}
+                onClick={() => item.onChange(!item.checked)}
+                className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${item.checked ? 'bg-accent' : 'bg-muted/40'}`}
+              >
+                <span
+                  aria-hidden
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${item.checked ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Data QA Settings Panel ── */
+function DataQASettingsPanel() {
+  const router = useRouter();
+
+  const capabilities = [
+    { icon: <Eye className="h-3.5 w-3.5" />, text: '只读扫描：检查 pageCount、阅读时长、孤儿标签 / 分类、异常 session' },
+    { icon: <Wand2 className="h-3.5 w-3.5" />, text: 'dry-run 预览：先查看修复计划，不直接修改数据' },
+    { icon: <Shield className="h-3.5 w-3.5" />, text: '安全修复：仅在 confirm:true 时执行低风险修复' },
+    { icon: <AlertTriangle className="h-3.5 w-3.5" />, text: '高风险问题仅 skipped / 半自动策略，避免误伤数据' },
+  ];
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-accent/5 via-card to-card p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <Database className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">数据巡检</h2>
+            <p className="text-xs text-muted">用于检查 pageCount、阅读时长、孤儿标签、孤儿分类、异常 session 等问题。</p>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-muted/80">
+          如果需要执行真实扫描、预览修复计划或执行安全修复，请前往独立的 Data QA 管理页。
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border/30">
+          <h3 className="text-sm font-semibold text-foreground">能力总览</h3>
+        </div>
+        <div className="divide-y divide-border/20">
+          {capabilities.map((item) => (
+            <div key={item.text} className="flex items-start gap-3 px-5 py-3.5">
+              <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                {item.icon}
+              </span>
+              <p className="text-sm text-muted">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => router.push('/data-qa')}
+          className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+        >
+          <ExternalLink className="h-4 w-4" />
+          打开 Data QA 管理页
+        </button>
+        <span className="text-xs text-muted/60">独立页面中包含 summary、issues、fix-preview、真实修复和 pagecount-rescan。</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Sync & Backup Panel ── */
+function SyncBackupPanel() {
+  const [autoBackup, setAutoBackup] = useState(false);
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <div className="rounded-2xl border border-border/40 bg-gradient-to-br from-accent/5 via-card to-card p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <HardDrive className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">同步与备份</h2>
+            <p className="text-xs text-muted">管理自动备份、导入导出与阅读数据备份能力，当前为本地管理预留入口。</p>
+          </div>
+        </div>
+        <p className="mt-3 rounded-xl bg-card/60 p-3 text-xs text-muted/80 border border-border/30">
+          以下功能为后续真实备份 API 预留，当前按钮与状态仅做占位展示。
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+        <div className="divide-y divide-border/25">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <div className="text-sm font-medium text-foreground">自动备份</div>
+              <div className="text-xs text-muted">启用后将按固定策略备份应用配置与阅读数据。</div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoBackup}
+              onClick={() => setAutoBackup(!autoBackup)}
+              className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${autoBackup ? 'bg-accent' : 'bg-muted/40'}`}
+            >
+              <span
+                aria-hidden
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${autoBackup ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4">
+            <div className="text-sm font-medium text-foreground">备份路径</div>
+            <div className="rounded-lg border border-dashed border-border/50 bg-card/60 px-3 py-2 text-xs text-muted">
+              /data/backup
+            </div>
+            <p className="text-[11px] text-muted/60">后续将展示真实备份目录与最近一次写入状态。</p>
+          </div>
+
+          <div className="p-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5 text-sm text-muted transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                导出配置
+              </button>
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5 text-sm text-muted transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Upload className="h-4 w-4" />
+                导入配置
+              </button>
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-card px-4 py-2.5 text-sm text-muted transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                导出阅读数据
+              </button>
+            </div>
+            <p className="mt-3 text-[11px] text-muted/60">导入导出按钮暂时置灰，待后续接口就绪后启用。</p>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4">
+            <div className="text-sm font-medium text-foreground">同步阅读进度</div>
+            <p className="text-xs text-muted">
+              后续可用于跨设备同步阅读进度、书签与阅读历史。当前版本暂未开放自动同步。
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4">
+            <div className="text-sm font-medium text-foreground">最近备份时间</div>
+            <div className="text-xs text-muted">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-600 dark:text-amber-400">
+        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+        <div>
+          当前为本地管理阶段，备份、导入、导出与同步能力需要接入真实 API 后才能正式使用。
+        </div>
       </div>
     </div>
   );
