@@ -54,3 +54,29 @@ func (h *DataQAHandler) FixPreview(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
+// Fix executes real data fixes. Requires confirm=true.
+func (h *DataQAHandler) Fix(c *gin.Context) {
+	var body struct {
+		IssueTypes []string `json:"issueTypes"`
+		IssueIDs   []string `json:"issueIds"`
+		FixAll     bool     `json:"fixAll"`
+		Confirm    bool     `json:"confirm"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	if !body.Confirm {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "confirm must be true to execute fixes"})
+		return
+	}
+
+	result, err := service.ExecuteFix(body.IssueTypes, body.IssueIDs, body.FixAll)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Fix execution failed: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
