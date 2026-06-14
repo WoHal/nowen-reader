@@ -994,19 +994,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Hidden file input for upload — accept 跟随当前页面切换 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept={
-          contentType === "novel"
-            ? ".txt,.epub,.mobi,.azw3,.html,.htm,.pdf"
-            : ".zip,.cbz,.cbr,.rar,.7z,.cb7,.pdf"
-        }
-        className="hidden"
-        onChange={handleFileChange}
-      />
 
       <Navbar
         searchQuery={searchQuery}
@@ -1021,29 +1008,6 @@ export default function Home() {
 
       {/* Main Content */}
       <main className={`mx-auto max-w-[1800px] px-3 sm:px-6 pt-20 sm:pt-24 ${batchMode ? "pb-32" : "pb-20 sm:pb-12"}`}>
-        {/* Upload library selector — admin only, shared across all upload entry points */}
-        {isAdmin && libraries.length > 0 && (
-          <div className="mb-3 flex items-center gap-2">
-            <label className="text-xs text-muted">上传到:</label>
-            <select
-              value={selectedLibraryId}
-              onChange={(e) => setSelectedLibraryId(e.target.value)}
-              className="rounded-lg border border-border/60 bg-card px-2 py-1 text-xs text-foreground"
-              title="选择上传目标书库"
-            >
-              <option value="">{contentType === "novel" ? "默认目录(小说)" : "默认目录(漫画)"}</option>
-              {libraries
-                .filter((lib) => lib.enabled && lib.rootPath && (
-                  lib.type === "mixed" || lib.type === contentType
-                ))
-                .map((lib) => (
-                  <option key={lib.id} value={lib.id}>
-                    {lib.name} ({lib.type})
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
         {/* Data Source Indicator — 空库提示 */}
         {!loading && displayComics.length === 0 && apiTotal === 0 && !debouncedSearch && selectedTags.length === 0 && !favoritesOnly && !selectedCategory && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
