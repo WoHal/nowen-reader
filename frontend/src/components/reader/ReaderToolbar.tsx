@@ -160,16 +160,16 @@ export default function ReaderToolbar({
             : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex h-12 sm:h-14 items-center justify-between bg-black/70 px-3 sm:px-4 backdrop-blur-xl border-b border-white/5">
+        <div className="flex h-12 sm:h-14 items-center justify-between reader-toolbar-surface border-b px-3 sm:px-4">
           {/* Left: Back + Title */}
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onBack}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="reader-toolbar-button h-9 w-9 shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <h1 className="truncate text-sm font-medium text-white/90">
+            <h1 className="truncate text-sm font-medium reader-text-primary">
               {title}
             </h1>
           </div>
@@ -182,7 +182,7 @@ export default function ReaderToolbar({
                 onClick={onToggleBookmark}
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
                   isBookmarked
-                    ? "text-amber-400 hover:bg-amber-400/20"
+                    ? "reader-toolbar-button-active !text-amber-400 hover:bg-amber-400/20"
                     : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`}
                 title={isBookmarked ? t.readerToolbar.bookmarked : t.readerToolbar.bookmark}
@@ -194,7 +194,7 @@ export default function ReaderToolbar({
             {onShowSettings && (
               <button
                 onClick={onShowSettings}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="reader-toolbar-button h-9 w-9 shrink-0"
                 title={t.readerToolbar.settings}
               >
                 <Settings className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function ReaderToolbar({
             {onShowInfo && (
               <button
                 onClick={onShowInfo}
-                className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="hidden sm:flex reader-toolbar-button h-9 w-9 shrink-0"
               >
                 <Info className="h-4 w-4" />
               </button>
@@ -213,7 +213,7 @@ export default function ReaderToolbar({
             {onShowBookmarks && bookmarkCount != null && bookmarkCount > 0 && (
               <button
                 onClick={onShowBookmarks}
-                className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="hidden sm:flex reader-toolbar-button h-9 w-9 shrink-0"
                 title={t.readerBookmarks.title}
               >
                 <List className="h-4 w-4" />
@@ -222,7 +222,7 @@ export default function ReaderToolbar({
             {/* Fullscreen — desktop only */}
             <button
               onClick={onToggleFullscreen}
-              className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="hidden sm:flex reader-toolbar-button h-9 w-9 shrink-0"
             >
               {isFullscreen ? (
                 <Minimize className="h-4 w-4" />
@@ -233,7 +233,7 @@ export default function ReaderToolbar({
             {/* More menu — mobile only */}
             <button
               onClick={() => setShowMoreMenu((v) => !v)}
-              className="flex sm:hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              className="reader-toolbar-button sm:hidden h-9 w-9 shrink-0"
               title={t.readerToolbar.more}
             >
               <MoreHorizontal className="h-5 w-5" />
@@ -242,11 +242,11 @@ export default function ReaderToolbar({
             {showMoreMenu && (
               <>
                 <div className="fixed inset-0 z-[60]" onClick={() => setShowMoreMenu(false)} />
-                <div className="motion-menu surface-menu absolute right-0 top-full mt-1 z-[61] w-44 overflow-hidden">
+                <div className="motion-menu reader-panel-surface absolute right-0 top-full mt-1 z-[61] w-44 overflow-hidden">
                   {onShowInfo && (
                     <button
                       onClick={() => { onShowInfo(); setShowMoreMenu(false); }}
-                      className="motion-button flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      className="motion-button flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
                       <Info className="h-4 w-4" />
                       <span>{t.readerToolbar.moreInfo}</span>
@@ -310,13 +310,13 @@ export default function ReaderToolbar({
             : "translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="bg-black/70 px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-xl border-t border-white/5">
+        <div className="reader-toolbar-surface px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] border-t">
           {/* Page Slider */}
           <div className="flex items-center gap-3 sm:gap-4 py-2 sm:py-3">
             <button
               onClick={() => onPageChange(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}
-              className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
+              className="reader-toolbar-button h-9 w-9 sm:h-8 sm:w-8 shrink-0 disabled:opacity-30"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -340,13 +340,13 @@ export default function ReaderToolbar({
             <button
               onClick={() => onPageChange(Math.min(totalPages - 1, currentPage + 1))}
               disabled={currentPage >= totalPages - 1}
-              className="flex h-9 w-9 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
+              className="reader-toolbar-button h-9 w-9 sm:h-8 sm:w-8 shrink-0 disabled:opacity-30"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
 
             <span
-              className="shrink-0 min-w-[60px] text-center text-xs font-mono text-white/70 cursor-pointer hover:text-white active:text-accent transition-colors"
+              className="shrink-0 min-w-[60px] text-center text-xs font-mono reader-text-secondary cursor-pointer hover:text-white active:text-accent transition-colors"
               onClick={() => {
                 setPageInputValue(String(displayPage + 1));
                 setShowPageInput(true);
@@ -368,13 +368,13 @@ export default function ReaderToolbar({
                 onKeyDown={(e) => e.key === "Enter" && handlePageInputSubmit()}
                 placeholder={`1-${totalPages}`}
                 autoFocus
-                className="w-20 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs text-white text-center font-mono placeholder:text-white/30 outline-none focus:ring-1 focus:ring-accent/50"
+                className="w-20 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-xs text-white text-center font-mono placeholder:text-white/30 outline-none reader-focus-ring"
                 onFocus={() => onInteracting?.(true)}
                 onBlur={() => { onInteracting?.(false); setTimeout(() => setShowPageInput(false), 200); }}
               />
               <button
                 onClick={handlePageInputSubmit}
-                className="motion-button rounded-lg bg-accent/20 px-3 py-1.5 text-xs text-accent hover:bg-accent/30 transition-colors"
+                className="motion-button rounded-lg bg-accent/15 px-3 py-1.5 text-xs text-accent hover:bg-accent/25 transition-colors"
               >
                 跳转
               </button>
@@ -382,17 +382,17 @@ export default function ReaderToolbar({
           )}
 
           {/* Mode & Settings */}
-          <div className="flex items-center justify-between border-t border-white/10 py-2 sm:py-3">
+          <div className="flex items-center justify-between border-t reader-divider py-2 sm:py-3">
             {/* Reading Mode */}
-            <div className="flex items-center gap-0.5 sm:gap-1 rounded-xl bg-white/5 p-1">
+            <div className="reader-mode-segment">
               {modeOptions.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => onModeChange(opt.value)}
-                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
+                  className={`reader-mode-segment-item gap-1 sm:gap-1.5 px-2 sm:px-3 ${
                     mode === opt.value
-                      ? "bg-accent text-white shadow-sm"
-                      : "text-white/60 hover:text-white hover:bg-white/10"
+                      ? "reader-mode-segment-item reader-mode-segment-item-active gap-1 sm:gap-1.5 px-2 sm:px-3"
+                      : ""
                   }`}
                 >
                   {opt.icon}
@@ -409,10 +409,10 @@ export default function ReaderToolbar({
                   const next = direction === "ltr" ? "rtl" : "ltr";
                   onDirectionChange(next);
                 }}
-                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
+                className={`reader-mode-segment-item gap-1 sm:gap-1.5 px-2 sm:px-3 ${
                   direction === "rtl"
-                    ? "bg-amber-500/20 text-amber-400"
-                    : "text-white/60 hover:text-white hover:bg-white/10"
+                    ? "reader-toolbar-button-active !text-amber-400"
+                    : ""
                 }`}
               >
                 <ArrowLeftRight className="h-4 w-4" />
@@ -424,10 +424,10 @@ export default function ReaderToolbar({
               {onToggleAutoPage && autoPageInterval != null && autoPageInterval > 0 && mode !== "webtoon" && (
                 <button
                   onClick={onToggleAutoPage}
-                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
+                  className={`reader-mode-segment-item gap-1 sm:gap-1.5 px-2 sm:px-3 ${
                     autoPageActive
-                      ? "bg-green-500/20 text-green-400 animate-pulse"
-                      : "text-white/60 hover:text-white hover:bg-white/10"
+                      ? "reader-toolbar-button-active !text-green-400 animate-pulse"
+                      : ""
                   }`}
                   title={autoPageActive ? t.readerToolbar.autoPageStop : t.readerToolbar.autoPage}
                 >
@@ -442,10 +442,10 @@ export default function ReaderToolbar({
 
               <button
                 onClick={onToggleTheme}
-                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
+                className={`reader-mode-segment-item gap-1 sm:gap-1.5 px-2 sm:px-3 ${
                   readerTheme === "day"
-                    ? "bg-amber-500/20 text-amber-400"
-                    : "text-white/60 hover:text-white hover:bg-white/10"
+                    ? "reader-toolbar-button-active !text-amber-400"
+                    : ""
                 }`}
               >
                 {readerTheme === "day" ? (

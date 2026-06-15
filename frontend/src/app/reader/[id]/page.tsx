@@ -711,9 +711,12 @@ export default function ReaderPage() {
   }
 
   return (
-    <div className={`relative h-dvh w-full overflow-hidden overflow-x-hidden transition-colors duration-300 ${immersiveMode ? "cursor-none " : ""}${
-      readerTheme === "day" ? "bg-gray-100" : "bg-[#0a0a0a]"
+    <div className={`reader-shell h-dvh w-full overflow-hidden overflow-x-hidden transition-colors duration-300 ${immersiveMode ? "cursor-none " : ""}${
+      readerTheme === "day" ? "bg-gray-100" : "bg-[#050505]"
     }`}>
+      {/* Immersive ambient background — 沉浸阅读舱氛围 */}
+      {readerTheme !== "day" && <div className="reader-ambient-bg" />}
+
       {/* Reading View */}
       {usePdfView && effectiveMode === "single" ? (
         <PdfView

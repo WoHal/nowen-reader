@@ -328,6 +328,211 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
 }
 
 /* ===================================================================
+   READER-VISION-01-B: Immersive Reader Visual Tokens
+   电影级沉浸阅读舱 — 设计基建
+   =================================================================== */
+
+/* ── Reader Shell: 阅读器根容器 ── */
+.reader-shell {
+  position: relative;
+  overflow: hidden;
+  background: #050505;
+}
+
+/* ── Reader Ambient Background: 沉浸阅读舱氛围背景 ── */
+.reader-ambient-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 8%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 60%, rgba(139, 92, 246, 0.04) 0%, transparent 40%),
+    linear-gradient(180deg, #07070a 0%, #050505 50%, #030303 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Reader Glass: 通用毛玻璃表面 ── */
+.reader-glass {
+  background: rgba(8, 8, 12, 0.55);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+
+/* ── Reader Glass Soft: 轻薄毛玻璃 ── */
+.reader-glass-soft {
+  background: rgba(8, 8, 12, 0.35);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* ── Reader Glass Strong: 强毛玻璃（面板/弹窗） ── */
+.reader-glass-strong {
+  background: rgba(12, 12, 18, 0.85);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+}
+
+/* ── Reader Toolbar Surface: 工具栏容器 ── */
+.reader-toolbar-surface {
+  background: rgba(8, 8, 12, 0.45);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Reader Toolbar Button: 工具栏按钮 ── */
+.reader-toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  color: rgba(255, 255, 255, 0.65);
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reader-toolbar-button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.reader-toolbar-button:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.96);
+}
+
+/* ── Reader Toolbar Button Active: 工具栏按钮激活态 ── */
+.reader-toolbar-button-active {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+}
+
+.reader-toolbar-button-active:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+/* ── Reader Panel Surface: 面板容器 ── */
+.reader-panel-surface {
+  background: rgba(12, 12, 18, 0.9);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* ── Reader Panel Border: 面板边框 ── */
+.reader-panel-border {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ── Reader Progress Track: 进度条轨道 ── */
+.reader-progress-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+
+/* ── Reader Progress Fill: 进度条填充 ── */
+.reader-progress-fill {
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 9999px;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/* ── Reader Focus Ring: 阅读器焦点环 ── */
+.reader-focus-ring:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
+
+/* ── Reader Shadow Soft: 柔和投影 ── */
+.reader-shadow-soft {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Reader Shadow Glow: 微光投影 ── */
+.reader-shadow-glow {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Reader Text: 阅读器文字层级 ── */
+.reader-text-primary {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.reader-text-secondary {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.reader-text-muted {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Reader Mode Segmented: 模式切换分段控件 ── */
+.reader-mode-segment {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.25rem;
+}
+
+.reader-mode-segment-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.reader-mode-segment-item:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.reader-mode-segment-item-active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.2);
+}
+
+/* ── Reader Divider: 分割线 ── */
+.reader-divider {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ── 移动端优化：降低 blur 开销 ── */
+@media (max-width: 767px) {
+  .reader-glass {
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+  .reader-glass-soft {
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  }
+  .reader-glass-strong {
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  }
+  .reader-toolbar-surface {
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .reader-panel-surface {
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  }
+}
+
+/* ===================================================================
 
 /* ===================================================================
    UI-M1: Motion Design System — Utility Classes
