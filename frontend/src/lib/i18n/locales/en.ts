@@ -257,6 +257,7 @@ const en: Translations = {
     fullscreen: "Fullscreen",
     infoPanel: "Info Panel",
     goBack: "Back",
+    mobileAutoSingle: "Switched to single page on mobile",
     reachedLastPage: "Reached the last page",
     loading: "Loading...",
     loadError: "Failed to load",

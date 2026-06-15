@@ -95,7 +95,7 @@ export default function ReaderPage() {
   const [mode, setMode] = useState<ComicReadingMode>("single");
   const [isSmallScreen, setIsSmallScreen] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
   useEffect(() => {
-    const mql = window.matchMedia("(max-width: 639px)");
+    const mql = window.matchMedia("(max-width: 767px)");
     const handler = (e: MediaQueryListEvent) => setIsSmallScreen(e.matches);
     mql.addEventListener("change", handler);
     setIsSmallScreen(mql.matches);
@@ -104,7 +104,7 @@ export default function ReaderPage() {
   const effectiveMode: ComicReadingMode = isSmallScreen && mode === "double" ? "single" : mode;
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const isMobile = window.matchMedia("(max-width: 639px)").matches;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
     if (!isMobile) return;
     const KEY = "nowen-reader:gesture-hint-seen";
     if (localStorage.getItem(KEY)) return;
@@ -124,6 +124,7 @@ export default function ReaderPage() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(false);
   const [autoPageActive, setAutoPageActive] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [rating, setRating] = useState<number>(0);
@@ -430,6 +431,8 @@ export default function ReaderPage() {
         toggleFullscreen();
       } else if (e.key === "i") {
         setShowInfoPanel((v) => !v);
+      } else if (e.key === "?") {
+        setShowShortcutsHelp((v) => !v);
       }
     },
     [direction, mode, effectiveMode, pages.length, isFullscreen, router, showInfoPanel, showOptionsPanel, currentPage, handleBoundaryReached, seriesGroupId]
@@ -439,6 +442,37 @@ export default function ReaderPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+
+  // Mouse wheel page turning — only for non-webtoon modes
+  const wheelThrottleRef = useRef(false);
+  useEffect(() => {
+    if (mode === "webtoon") return;
+    const handleWheel = (e: WheelEvent) => {
+      if (showInfoPanel || showOptionsPanel || toolbarInteracting) return;
+      if (wheelThrottleRef.current) return;
+      const delta = e.deltaY;
+      if (Math.abs(delta) < 30) return;
+      wheelThrottleRef.current = true;
+      setTimeout(() => { wheelThrottleRef.current = false; }, 300);
+      const step = effectiveMode === "double" ? 2 : 1;
+      if (delta > 0) {
+        if (currentPage >= pages.length - 1) {
+          handleBoundaryReached("next");
+        } else {
+          setCurrentPage((p) => { const n = Math.min(pages.length - 1, p + step); currentPageRef.current = n; return n; });
+        }
+      } else {
+        if (currentPage <= 0) {
+          handleBoundaryReached("prev");
+        } else {
+          setCurrentPage((p) => { const n = Math.max(0, p - step); currentPageRef.current = n; return n; });
+        }
+      }
+    };
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [mode, effectiveMode, currentPage, pages.length, showInfoPanel, showOptionsPanel, toolbarInteracting, handleBoundaryReached]);
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -801,6 +835,7 @@ export default function ReaderPage() {
             onToggleBookmark={() => toggleBookmark(currentPage)}
             onShowBookmarks={() => setShowBookmarkPanel(true)}
             bookmarkCount={bookmarks.length}
+            onShowShortcutsHelp={() => setShowShortcutsHelp(true)}
       />
 
       {/* Page number indicator (页码指示器可见性控制) */}
@@ -1208,6 +1243,47 @@ export default function ReaderPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Shortcuts help panel */}
+      {showShortcutsHelp && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowShortcutsHelp(false)}>
+          <div className="mx-4 w-full max-w-xs rounded-2xl bg-zinc-900/95 border border-white/[0.08] shadow-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white/90">{t.reader.shortcuts}</h3>
+              <button onClick={() => setShowShortcutsHelp(false)} className="text-white/40 hover:text-white/70 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              {[
+                [t.reader.turnPage, "← → / A D / Scroll"],
+                [t.reader.fullscreen, "F"],
+                [t.reader.infoPanel, "I"],
+                [t.reader.shortcuts, "?"],
+                [t.reader.goBack, "Esc"],
+              ].map(([label, keys]) => (
+                <div key={label as string} className="flex items-center justify-between">
+                  <span className="text-white/50">{label}</span>
+                  <span className="font-mono text-white/80 bg-white/5 rounded px-1.5 py-0.5">{keys}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile auto-single hint */}
+      {isSmallScreen && mode === "double" && effectiveMode === "single" && (
+        <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className={`rounded-xl px-4 py-2.5 text-xs font-medium shadow-lg backdrop-blur-sm ${
+            readerTheme === "day"
+              ? "bg-blue-50 text-blue-700 border border-blue-200"
+              : "bg-blue-500/15 text-blue-300 border border-blue-500/20"
+          }`}>
+            📱 {t.reader.mobileAutoSingle}
+          </div>
+        </div>
       )}
     </div>
   );

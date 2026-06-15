@@ -59,6 +59,8 @@ interface ReaderToolbarProps {
   onShowBookmarks?: () => void;
   /** 书签数量 */
   bookmarkCount?: number;
+  /** 打开快捷键帮助 */
+  onShowShortcutsHelp?: () => void;
 }
 
 export default function ReaderToolbar({
@@ -86,6 +88,7 @@ export default function ReaderToolbar({
   onToggleBookmark,
   onShowBookmarks,
   bookmarkCount,
+  onShowShortcutsHelp,
 }: ReaderToolbarProps) {
   const t = useTranslation();
   const [showPageInput, setShowPageInput] = useState(false);
@@ -252,6 +255,15 @@ export default function ReaderToolbar({
                       <span>{t.readerBookmarks.title}{bookmarkCount != null && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}</span>
                     </button>
                   )}
+                  {onShowShortcutsHelp && (
+                    <button
+                      onClick={() => { onShowShortcutsHelp(); setShowMoreMenu(false); }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <span className="font-mono text-xs">?</span>
+                      <span>{t.reader.shortcuts}</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => { onToggleFullscreen(); setShowMoreMenu(false); }}
                     className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
@@ -353,7 +365,7 @@ export default function ReaderToolbar({
                 <button
                   key={opt.value}
                   onClick={() => onModeChange(opt.value)}
-                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
                     mode === opt.value
                       ? "bg-accent text-white shadow-sm"
                       : "text-white/60 hover:text-white hover:bg-white/10"
@@ -373,7 +385,7 @@ export default function ReaderToolbar({
                   const next = direction === "ltr" ? "rtl" : "ltr";
                   onDirectionChange(next);
                 }}
-                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
                   direction === "rtl"
                     ? "bg-amber-500/20 text-amber-400"
                     : "text-white/60 hover:text-white hover:bg-white/10"
@@ -388,7 +400,7 @@ export default function ReaderToolbar({
               {onToggleAutoPage && autoPageInterval != null && autoPageInterval > 0 && mode !== "webtoon" && (
                 <button
                   onClick={onToggleAutoPage}
-                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
                     autoPageActive
                       ? "bg-green-500/20 text-green-400 animate-pulse"
                       : "text-white/60 hover:text-white hover:bg-white/10"
@@ -406,7 +418,7 @@ export default function ReaderToolbar({
 
               <button
                 onClick={onToggleTheme}
-                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-2 sm:py-1.5 min-h-[44px] text-xs font-medium transition-all duration-200 ${
                   readerTheme === "day"
                     ? "bg-amber-500/20 text-amber-400"
                     : "text-white/60 hover:text-white hover:bg-white/10"
