@@ -1,6 +1,15 @@
 # Changelog
 
 ## Unreleased
+### Added (阅读器体验增强 READER-UX-01)
+
+- 阅读器交互小修：鼠标滚轮翻页（单页/双页模式）、页码输入跳页、快捷键帮助面板（`?` 键）、移动端 double 自动降级 single（<768px）
+- 移动端阅读体验优化：顶部工具栏压缩（h-12）、底部安全区适配（env(safe-area-inset-bottom)）、横屏检测与页码指示器隐藏、Webtoon 图片 block display
+- 图片加载/错误重试优化：修正 SinglePageView 误导性 PDF 错误文案、新增 retry 计数器、DoublePageView/WebtoonView retry 按钮触控友好化（min-h-[44px]）
+- 沉浸模式：`I` 键或 More 菜单切换，cursor-none，工具栏自动隐藏，ESC 退出
+- 缩略图导航：`T` 键或 More 菜单打开，4/5 列网格，当前页高亮，点击跳页，lazy loading，移动端底部 sheet 布局
+- 快捷键新增：`I` 沉浸模式、`T` 缩略图导航、`?` 快捷键帮助
+
 
 ### Added
 
