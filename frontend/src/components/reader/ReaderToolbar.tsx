@@ -180,10 +180,10 @@ export default function ReaderToolbar({
             {onToggleBookmark && (
               <button
                 onClick={onToggleBookmark}
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                className={`reader-toolbar-button h-9 w-9 shrink-0 ${
                   isBookmarked
                     ? "reader-toolbar-button-active !text-amber-400 hover:bg-amber-400/20"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    : ""
                 }`}
                 title={isBookmarked ? t.readerToolbar.bookmarked : t.readerToolbar.bookmark}
               >
@@ -255,7 +255,7 @@ export default function ReaderToolbar({
                   {onShowBookmarks && (
                     <button
                       onClick={() => { onShowBookmarks(); setShowMoreMenu(false); }}
-                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
                       <List className="h-4 w-4" />
                       <span>{t.readerBookmarks.title}{bookmarkCount != null && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}</span>
@@ -264,7 +264,7 @@ export default function ReaderToolbar({
                   {onShowShortcutsHelp && (
                     <button
                       onClick={() => { onShowShortcutsHelp(); setShowMoreMenu(false); }}
-                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
                       <span className="font-mono text-xs">?</span>
                       <span>{t.reader.shortcuts}</span>
@@ -273,7 +273,7 @@ export default function ReaderToolbar({
                                     {onShowThumbnails && (
                     <button
                       onClick={() => { onShowThumbnails(); setShowMoreMenu(false); }}
-                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                       <span>缩略图</span>
@@ -282,7 +282,7 @@ export default function ReaderToolbar({
                   {onToggleImmersive && (
                     <button
                       onClick={() => { onToggleImmersive(); setShowMoreMenu(false); }}
-                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                     >
                       <span className="font-mono text-xs">I</span>
                       <span>{isImmersive ? "退出沉浸" : "沉浸模式"}</span>
@@ -290,7 +290,7 @@ export default function ReaderToolbar({
                   )}
 <button
                     onClick={() => { onToggleFullscreen(); setShowMoreMenu(false); }}
-                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm reader-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors"
                   >
                     {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                     <span>{isFullscreen ? t.readerToolbar.exitFullscreen : t.readerToolbar.fullscreen}</span>
