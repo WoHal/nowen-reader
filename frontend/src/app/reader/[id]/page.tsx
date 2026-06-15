@@ -133,6 +133,8 @@ export default function ReaderPage() {
   const [showGestureHint, setShowGestureHint] = useState(false);
   const [autoPageActive, setAutoPageActive] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [immersiveMode, setImmersiveMode] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [rating, setRating] = useState<number>(0);
@@ -354,12 +356,16 @@ export default function ReaderPage() {
     } catch {}
   }, []);
 
-  // Auto-hide toolbar (不在选项面板打开 / 正在交互时隐藏)
+  //   // Auto-hide toolbar (immersive mode: hide immediately)
   useEffect(() => {
+    if (immersiveMode) {
+      setToolbarVisible(false);
+      return;
+    }
     if (!toolbarVisible || showOptionsPanel || toolbarInteracting) return;
     const timer = setTimeout(() => setToolbarVisible(false), 4000);
     return () => clearTimeout(timer);
-  }, [toolbarVisible, currentPage, showOptionsPanel, toolbarInteracting]);
+  }, [toolbarVisible, currentPage, showOptionsPanel, toolbarInteracting, immersiveMode]);
 
   // 系列导航辅助函数
   const currentVolumeIdx = seriesVolumes.findIndex(v => v.comicId === comicId);
@@ -386,12 +392,13 @@ export default function ReaderPage() {
   }, [nextVolume, prevVolume, router, t.series.nextVolume, t.series.prevVolume]);
 
   // Keyboard navigation
+  // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Don't handle if info/options panel is open
-      if (showInfoPanel || showOptionsPanel) return;
+      // Don't handle if panels are open
+      if (showInfoPanel || showOptionsPanel || showThumbnails) return;
 
-      if (mode === "webtoon") return;
+      if (mode === "webtoon" && !immersiveMode) return;
 
       const isForward =
         direction === "ltr"
@@ -424,10 +431,15 @@ export default function ReaderPage() {
       } else if (e.key === "Escape") {
         if (showInfoPanel) {
           setShowInfoPanel(false);
+        } else if (showThumbnails) {
+          setShowThumbnails(false);
+        } else if (showShortcutsHelp) {
+          setShowShortcutsHelp(false);
+        } else if (immersiveMode) {
+          setImmersiveMode(false);
         } else if (isFullscreen) {
           document.exitFullscreen?.();
         } else {
-          // 与工具栏返回按钮保持一致：优先 replace 到系列详情页，避免历史栈循环
           finishSessionRef.current?.();
           if (seriesGroupId) {
             router.replace(`/group/${seriesGroupId}`);
@@ -438,12 +450,14 @@ export default function ReaderPage() {
       } else if (e.key === "f") {
         toggleFullscreen();
       } else if (e.key === "i") {
-        setShowInfoPanel((v) => !v);
+        setImmersiveMode((v) => !v);
+      } else if (e.key === "t") {
+        setShowThumbnails((v) => !v);
       } else if (e.key === "?") {
         setShowShortcutsHelp((v) => !v);
       }
     },
-    [direction, mode, effectiveMode, pages.length, isFullscreen, router, showInfoPanel, showOptionsPanel, currentPage, handleBoundaryReached, seriesGroupId]
+    [direction, mode, effectiveMode, pages.length, isFullscreen, router, showInfoPanel, showOptionsPanel, currentPage, handleBoundaryReached, seriesGroupId, immersiveMode, showThumbnails, showShortcutsHelp]
   );
 
   useEffect(() => {
@@ -697,7 +711,7 @@ export default function ReaderPage() {
   }
 
   return (
-    <div className={`relative h-dvh w-full overflow-hidden overflow-x-hidden transition-colors duration-300 ${
+    <div className={`relative h-dvh w-full overflow-hidden overflow-x-hidden transition-colors duration-300 ${immersiveMode ? "cursor-none " : ""}${
       readerTheme === "day" ? "bg-gray-100" : "bg-[#0a0a0a]"
     }`}>
       {/* Reading View */}
@@ -844,6 +858,9 @@ export default function ReaderPage() {
             onShowBookmarks={() => setShowBookmarkPanel(true)}
             bookmarkCount={bookmarks.length}
             onShowShortcutsHelp={() => setShowShortcutsHelp(true)}
+            isImmersive={immersiveMode}
+            onToggleImmersive={() => setImmersiveMode((v) => !v)}
+            onShowThumbnails={() => setShowThumbnails(true)}
       />
 
       {/* Page number indicator (页码指示器可见性控制) */}
@@ -1293,6 +1310,34 @@ export default function ReaderPage() {
           </div>
         </div>
       )}
+      {/* Thumbnail navigation panel */}
+      {showThumbnails && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowThumbnails(false)}>
+          <div className="w-full sm:w-[32rem] max-h-[80vh] bg-zinc-900/95 border border-white/[0.08] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+              <h3 className="text-sm font-semibold text-white/90">{t.reader.thumbnailNav || "缩略图"}</h3>
+              <span className="text-xs text-white/50">{currentPage + 1} / {pages.length}</span>
+              <button onClick={() => setShowThumbnails(false)} className="text-white/40 hover:text-white/70 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[70vh]">
+              {pages.map((url, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => { handlePageChange(idx); setShowThumbnails(false); }}
+                  className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all ${idx === currentPage ? "border-accent shadow-lg shadow-accent/20 scale-[1.02]" : "border-transparent hover:border-white/20"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Page ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <span className={`absolute bottom-0.5 right-0.5 text-[9px] font-mono px-1 rounded ${idx === currentPage ? "bg-accent text-white" : "bg-black/60 text-white/70"}`}>{idx + 1}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

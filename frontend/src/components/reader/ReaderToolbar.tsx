@@ -61,6 +61,9 @@ interface ReaderToolbarProps {
   bookmarkCount?: number;
   /** 打开快捷键帮助 */
   onShowShortcutsHelp?: () => void;
+  isImmersive?: boolean;
+  onToggleImmersive?: () => void;
+  onShowThumbnails?: () => void;
 }
 
 export default function ReaderToolbar({
@@ -89,6 +92,9 @@ export default function ReaderToolbar({
   onShowBookmarks,
   bookmarkCount,
   onShowShortcutsHelp,
+  isImmersive,
+  onToggleImmersive,
+  onShowThumbnails,
 }: ReaderToolbarProps) {
   const t = useTranslation();
   const [showPageInput, setShowPageInput] = useState(false);
@@ -264,7 +270,25 @@ export default function ReaderToolbar({
                       <span>{t.reader.shortcuts}</span>
                     </button>
                   )}
-                  <button
+                                    {onShowThumbnails && (
+                    <button
+                      onClick={() => { onShowThumbnails(); setShowMoreMenu(false); }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                      <span>缩略图</span>
+                    </button>
+                  )}
+                  {onToggleImmersive && (
+                    <button
+                      onClick={() => { onToggleImmersive(); setShowMoreMenu(false); }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      <span className="font-mono text-xs">I</span>
+                      <span>{isImmersive ? "退出沉浸" : "沉浸模式"}</span>
+                    </button>
+                  )}
+<button
                     onClick={() => { onToggleFullscreen(); setShowMoreMenu(false); }}
                     className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                   >

@@ -258,6 +258,7 @@ const en: Translations = {
     infoPanel: "Info Panel",
     goBack: "Back",
     mobileAutoSingle: "Switched to single page on mobile",
+    thumbnailNav: "Thumbnail Navigation",
     reachedLastPage: "Reached the last page",
     loading: "Loading...",
     loadError: "Failed to load",
