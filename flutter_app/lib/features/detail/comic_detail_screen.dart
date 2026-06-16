@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -291,13 +291,9 @@ class _ComicDetailScreenState extends ConsumerState<ComicDetailScreen> {
                               ),
                             );
                           } else if (comic.isPdf) {
-                            context.push(
-                              '/pdf/?page=',
-                            );
+                            context.push('/pdf/${comic.id}?page=${comic.lastReadPage}');
                           } else {
-                            context.push(
-                              '/reader/?page=',
-                            );
+                            context.push('/reader/${comic.id}?page=${comic.lastReadPage}');
                           }
                         },
                         child: Row(
