@@ -67,6 +67,7 @@ interface ReaderToolbarProps {
   realisticFlipEnabled?: boolean;
   canUseRealisticFlip?: boolean;
   onToggleRealisticFlip?: () => void;
+  realisticFlipDisabledReason?: string | null;
   onShowThumbnails?: () => void;
 }
 
@@ -101,6 +102,7 @@ export default function ReaderToolbar({
   realisticFlipEnabled,
   canUseRealisticFlip,
   onToggleRealisticFlip,
+  realisticFlipDisabledReason,
   onShowThumbnails,
 }: ReaderToolbarProps) {
   const t = useTranslation();
@@ -309,10 +311,15 @@ export default function ReaderToolbar({
                     <button
                       onClick={() => { if (canUseRealisticFlip) { onToggleRealisticFlip(); setShowMoreMenu(false); } }}
                       disabled={!canUseRealisticFlip && !realisticFlipEnabled}
-                      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors ${canUseRealisticFlip || realisticFlipEnabled ? "reader-text-secondary hover:bg-white/[0.06] hover:text-white" : "reader-text-secondary/40 cursor-not-allowed"}`}
+                      title={realisticFlipDisabledReason || undefined}
                     >
                       <span className="font-mono text-xs">~</span>
                       <span>{realisticFlipEnabled ? (t.readerToolbar?.exitRealisticFlip || "关闭真实翻页") : (t.readerToolbar?.realisticFlip || "真实翻页（实验）")}</span>
+                      {realisticFlipDisabledReason && !canUseRealisticFlip && !realisticFlipEnabled && (
+                        <span className="ml-auto text-[10px] text-white/35 truncate max-w-[140px]" title={realisticFlipDisabledReason}>
+                          {realisticFlipDisabledReason}
+                        </span>
+                      )}
                     </button>
                   )}
                   <button

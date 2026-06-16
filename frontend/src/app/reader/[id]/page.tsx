@@ -622,14 +622,37 @@ export default function ReaderPage() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const canUseRealisticFlip =
-    !isNovel &&
-    !isPdf &&
-    !usePdfView &&
-    (effectiveMode === "single" || effectiveMode === "double") &&
-    pages.length > 1 &&
-    !isSmallScreen &&
-    !reducedMotion;
+
+  const realisticFlipDisabledReason = useMemo(() => {
+    if (isNovel) return t.readerToolbar?.realisticFlipDisabledNovel || "小说暂不支持真实翻页";
+    if (isPdf || usePdfView) return t.readerToolbar?.realisticFlipDisabledPdf || "PDF 暂不支持真实翻页";
+    if (effectiveMode === "webtoon") return t.readerToolbar?.realisticFlipDisabledWebtoon || "长条模式暂不支持真实翻页";
+    if (pages.length <= 1) return t.readerToolbar?.realisticFlipDisabledInsufficientPages || "页数不足，无法使用真实翻页";
+    if (isSmallScreen) return t.readerToolbar?.realisticFlipDisabledSmallScreen || "小屏设备暂不支持真实翻页";
+    if (reducedMotion) return t.readerToolbar?.realisticFlipDisabledReducedMotion || "系统已开启减少动态效果";
+    return null;
+  }, [isNovel, isPdf, usePdfView, effectiveMode, pages.length, isSmallScreen, reducedMotion, t]);
+
+  const canUseRealisticFlip = realisticFlipDisabledReason === null;
+
+  // Debug log for realistic flip conditions (dev only)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.debug("[realisticFlip]", {
+        isNovel,
+        isPdf,
+        usePdfView,
+        mode,
+        effectiveMode,
+        pagesLength: pages.length,
+        isSmallScreen,
+        reducedMotion,
+        pageFlipEffect: readerOpts.pageFlipEffect,
+        canUseRealisticFlip,
+        disabledReason: realisticFlipDisabledReason,
+      });
+    }
+  }, [isNovel, isPdf, usePdfView, mode, effectiveMode, pages.length, isSmallScreen, reducedMotion, readerOpts.pageFlipEffect, canUseRealisticFlip, realisticFlipDisabledReason]);
 
   // Auto-disable realistic flip if conditions become invalid
   useEffect(() => {
@@ -924,6 +947,7 @@ export default function ReaderPage() {
             realisticFlipEnabled={realisticFlipEnabled}
             canUseRealisticFlip={canUseRealisticFlip}
             onToggleRealisticFlip={() => setRealisticFlipSessionOverride((v) => v === null ? !preferredRealisticFlip : !v)}
+            realisticFlipDisabledReason={realisticFlipDisabledReason}
       />
 
       {/* Page number indicator (页码指示器可见性控制) */}
@@ -1406,3 +1430,4 @@ export default function ReaderPage() {
     </div>
   );
 }
+

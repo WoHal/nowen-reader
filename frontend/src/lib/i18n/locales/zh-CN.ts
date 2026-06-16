@@ -347,6 +347,12 @@ const zhCN = {
     exitFullscreen: "退出全屏",
     realisticFlip: "真实翻页（实验）",
     exitRealisticFlip: "关闭真实翻页",
+    realisticFlipDisabledNovel: "小说暂不支持真实翻页",
+    realisticFlipDisabledPdf: "PDF 暂不支持真实翻页",
+    realisticFlipDisabledWebtoon: "长条模式暂不支持真实翻页",
+    realisticFlipDisabledInsufficientPages: "页数不足",
+    realisticFlipDisabledSmallScreen: "小屏设备暂不支持",
+    realisticFlipDisabledReducedMotion: "系统已开启减少动态效果",
     gestureHint: "双击放大，双指缩放，放大后可拖拽移动",
   },
 
@@ -1596,6 +1602,12 @@ export interface Translations {
     exitFullscreen: string;
     realisticFlip: string;
     exitRealisticFlip: string;
+    realisticFlipDisabledNovel: string;
+    realisticFlipDisabledPdf: string;
+    realisticFlipDisabledWebtoon: string;
+    realisticFlipDisabledInsufficientPages: string;
+    realisticFlipDisabledSmallScreen: string;
+    realisticFlipDisabledReducedMotion: string;
     gestureHint: string;
   };
   readerBookmarks: {
