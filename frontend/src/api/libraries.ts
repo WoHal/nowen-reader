@@ -24,6 +24,16 @@ export interface Library {
   comicCount: number;
 }
 
+export interface LibraryDeleteResult {
+  success: boolean;
+  libraryId: string;
+  libraryName: string;
+  deletedContents: number;
+  thumbnailCacheDeleted: number;
+  pageCacheDeleted: number;
+  deleteSourceFiles: false;
+}
+
 export interface UserLibraryAccess {
   libraryId: string;
   canView: boolean;
@@ -96,8 +106,8 @@ export async function updateLibrary(
   return data.library;
 }
 
-// 删除书库
-export async function deleteLibrary(id: string): Promise<void> {
+// 删除书库：删除书库记录、内容索引和派生缓存，不删除本地原始文件。
+export async function deleteLibrary(id: string): Promise<LibraryDeleteResult> {
   const res = await fetch(`/api/admin/libraries/${id}`, {
     method: "DELETE",
   });
@@ -105,6 +115,7 @@ export async function deleteLibrary(id: string): Promise<void> {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `HTTP ${res.status}`);
   }
+  return res.json() as Promise<LibraryDeleteResult>;
 }
 
 // 获取用户的书库访问权限
