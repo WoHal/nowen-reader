@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"path/filepath"
@@ -336,4 +337,57 @@ func GetLibraryContentCounts(libraryID string) (comicCount int, novelCount int, 
 	}
 	totalCount = comicCount
 	return comicCount, novelCount, totalCount, nil
+}
+
+
+// AccessibleLibrary is a lightweight library representation for the accessible-libraries API.
+type AccessibleLibrary struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	Enabled       bool   `json:"enabled"`
+	DefaultAccess string `json:"defaultAccess"`
+	ComicCount    int    `json:"comicCount"`
+}
+
+// GetAccessibleLibrariesWithCount returns all libraries the user can access,
+// enriched with the comic count for each library.
+func GetAccessibleLibrariesWithCount(userID string) ([]AccessibleLibrary, error) {
+	ids, err := GetUserAccessibleLibraryIDs(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return []AccessibleLibrary{}, nil
+	}
+
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	in := strings.Join(placeholders, ",")
+
+	rows, err := db.Query(`SELECT "id", "name", "type", "enabled", COALESCE("defaultAccess", "private") FROM "Library" WHERE "id" IN (`+in+`) ORDER BY "sortOrder", "name"`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []AccessibleLibrary
+	for rows.Next() {
+		var lib AccessibleLibrary
+		if err := rows.Scan(&lib.ID, &lib.Name, &lib.Type, &lib.Enabled, &lib.DefaultAccess); err != nil {
+			continue
+		}
+		count, _ := GetLibraryComicCount(lib.ID)
+		lib.ComicCount = count
+		result = append(result, lib)
+	}
+	if result == nil {
+		return []AccessibleLibrary{}, nil
+	}
+	return result, rows.Err()
 }

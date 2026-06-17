@@ -236,6 +236,26 @@ func (h *LibraryHandler) DeleteLibrary(c *gin.Context) {
 	})
 }
 
+// ============================================================
+// GET /api/libraries/accessible — List libraries the current user can access
+// ============================================================
+
+func (h *LibraryHandler) ListAccessibleLibraries(c *gin.Context) {
+	uid := getUserID(c)
+	if uid == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Login required"})
+		return
+	}
+
+	libraries, err := store.GetAccessibleLibrariesWithCount(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch accessible libraries"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"libraries": libraries})
+}
+
 func cleanupLibraryContentCaches(comicIDs map[string]struct{}) (thumbnailDeleted int, pageDeleted int) {
 	if len(comicIDs) == 0 {
 		return 0, 0

@@ -21,6 +21,13 @@ func registerLibraryRoutes(api *gin.RouterGroup) {
 		libraryGroup.POST("/:id/delete-preview", library.DeletePreview)
 	}
 
+	// Accessible libraries for the current user (any logged-in user)
+	accessibleGroup := api.Group("/libraries")
+	accessibleGroup.Use(middleware.AuthRequired())
+	{
+		accessibleGroup.GET("/accessible", library.ListAccessibleLibraries)
+	}
+
 	// User library access management (admin only)
 	userLibraryGroup := api.Group("/admin/users")
 	userLibraryGroup.Use(middleware.AdminRequired())

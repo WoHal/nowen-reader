@@ -152,3 +152,11 @@ export async function setUserLibraryAccess(
     throw new Error(data.error || `HTTP ${res.status}`);
   }
 }
+
+
+// 获取当前用户可访问的书库（非 admin 接口）
+export async function fetchAccessibleLibraries(): Promise<Library[]> {
+  const res = await fetch("/api/libraries/accessible");
+  const data = await safeJson<{ libraries: Library[] }>(res);
+  return data.libraries || [];
+}

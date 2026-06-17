@@ -53,6 +53,7 @@ export function useComics(options?: {
   uncategorized?: boolean;
   untagged?: boolean;
   fetchAll?: boolean; // 获取全部漫画（不分页，用于客户端合并分页）
+  libraryIds?: string[]; // 首页书库 Tab 多选筛选
 }) {
   const [comics, setComics] = useState<ApiComic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +89,7 @@ export function useComics(options?: {
     if (options?.readingStatus) params.set("readingStatus", options.readingStatus);
     if (options?.uncategorized) params.set("uncategorized", "true");
     if (options?.untagged) params.set("untagged", "true");
+    if (options?.libraryIds?.length) params.set("libraryIds", options.libraryIds.join(","));
 
     const qs = params.toString();
     const cacheKey = qs || "__default__";

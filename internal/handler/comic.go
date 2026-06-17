@@ -51,11 +51,26 @@ func (h *ComicHandler) ListComics(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "0"))
 
-	// 书库权限过滤：普通用户只能看到被授权的书库下的漫画
+	// 书库权限过滤：先获取用户可访问书库，再支持前端子集筛选
 	var libraryIDs []string
 	if uid := getUserID(c); uid != "" {
-		if ids, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
-			libraryIDs = ids
+		if accessibleIDs, err := store.GetUserAccessibleLibraryIDs(uid); err == nil {
+			// 前端传了 libraryIds 时，与可访问书库取交集（缩小范围，不越权）
+			if requestedParam := c.Query("libraryIds"); requestedParam != "" {
+				requested := strings.Split(requestedParam, ",")
+				allowed := make(map[string]struct{}, len(accessibleIDs))
+				for _, id := range accessibleIDs {
+					allowed[id] = struct{}{}
+				}
+				for _, id := range requested {
+					id = strings.TrimSpace(id)
+					if _, ok := allowed[id]; ok {
+						libraryIDs = append(libraryIDs, id)
+					}
+				}
+			} else {
+				libraryIDs = accessibleIDs
+			}
 		}
 	}
 
