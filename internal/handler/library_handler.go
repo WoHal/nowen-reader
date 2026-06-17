@@ -182,7 +182,7 @@ func (h *LibraryHandler) UpdateLibrary(c *gin.Context) {
 }
 
 // ============================================================
-// DELETE /api/admin/libraries/:id — Delete library
+// DELETE /api/admin/libraries/:id — Delete library and its indexed contents/cache
 // ============================================================
 
 func (h *LibraryHandler) DeleteLibrary(c *gin.Context) {
@@ -198,12 +198,82 @@ func (h *LibraryHandler) DeleteLibrary(c *gin.Context) {
 		return
 	}
 
-	if err := store.DeleteLibrary(id); err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+	comicIDs, err := store.GetComicIDsByLibraryID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch library contents"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	ids := make([]string, 0, len(comicIDs))
+	for comicID := range comicIDs {
+		ids = append(ids, comicID)
+	}
+
+	thumbnailCacheDeleted, pageCacheDeleted := cleanupLibraryContentCaches(comicIDs)
+
+	deletedContents := int64(0)
+	if len(ids) > 0 {
+		deletedContents, err = store.BatchDeleteComicsWithFiles(ids, nil, false)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete library contents"})
+			return
+		}
+	}
+
+	if err := store.DeleteLibrary(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete library"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":               true,
+		"libraryId":             existing.ID,
+		"libraryName":           existing.Name,
+		"deletedContents":       deletedContents,
+		"thumbnailCacheDeleted": thumbnailCacheDeleted,
+		"pageCacheDeleted":      pageCacheDeleted,
+		"deleteSourceFiles":     false,
+	})
+}
+
+func cleanupLibraryContentCaches(comicIDs map[string]struct{}) (thumbnailDeleted int, pageDeleted int) {
+	if len(comicIDs) == 0 {
+		return 0, 0
+	}
+
+	tw := config.GetThumbnailWidth()
+	th := config.GetThumbnailHeight()
+	thumbsDir := config.GetThumbnailsDir()
+	pagesDir := config.GetPagesCacheDir()
+
+	for comicID := range comicIDs {
+		thumbName := filepath.Base(filepath.Clean(comicID)) + "_" + fmt.Sprintf("%d", tw) + "x" + fmt.Sprintf("%d", th) + ".webp"
+		if err := os.Remove(filepath.Join(thumbsDir, thumbName)); err == nil {
+			thumbnailDeleted++
+		}
+
+		if pageCachePath, ok := safeCachePath(pagesDir, comicID); ok {
+			if _, err := os.Stat(pageCachePath); err == nil {
+				if err := os.RemoveAll(pageCachePath); err == nil {
+					pageDeleted++
+				}
+			}
+		}
+	}
+
+	return thumbnailDeleted, pageDeleted
+}
+
+func safeCachePath(root string, name string) (string, bool) {
+	if strings.TrimSpace(root) == "" || strings.TrimSpace(name) == "" {
+		return "", false
+	}
+	candidate := filepath.Join(root, filepath.Clean(name))
+	rel, err := filepath.Rel(root, candidate)
+	if err != nil || rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+		return "", false
+	}
+	return candidate, true
 }
 
 // ============================================================
@@ -272,8 +342,10 @@ func (h *LibraryHandler) DeletePreview(c *gin.Context) {
 				if _, err := os.Stat(filepath.Join(thumbsDir, thumbName)); err == nil {
 					thumbnailCacheCount++
 				}
-				if _, err := os.Stat(filepath.Join(pagesDir, comicID)); err == nil {
-					pageCacheCount++
+				if pageCachePath, ok := safeCachePath(pagesDir, comicID); ok {
+					if _, err := os.Stat(pageCachePath); err == nil {
+						pageCacheCount++
+					}
 				}
 			}
 		}
