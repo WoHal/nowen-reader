@@ -16,12 +16,6 @@ const typeIcons: Record<string, typeof Library> = {
   mixed: Layers,
 };
 
-const typeLabels: Record<string, string> = {
-  comic: "漫画",
-  novel: "小说",
-  mixed: "混合",
-};
-
 function LibraryChip({
   label,
   count,

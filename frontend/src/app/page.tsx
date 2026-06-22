@@ -135,7 +135,9 @@ export default function Home() {
     if (typeof window === "undefined") return [];
     try {
       const saved = localStorage.getItem("home:selectedLibraryIds");
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
     } catch { return []; }
   });
 
