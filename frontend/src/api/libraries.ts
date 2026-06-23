@@ -93,7 +93,7 @@ export async function updateLibrary(
     name: string;
     type: "comic" | "novel" | "mixed";
     rootPath: string;
-    rootPaths: string[];
+    rootPaths?: string[];
     enabled: boolean;
     sortOrder: number;
     defaultAccess: "public" | "private";

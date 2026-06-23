@@ -453,6 +453,7 @@
         <a href="#endpoints-browse" class="nav-group" data-group="browse">Browse</a>
         <a href="#endpoints-cache" class="nav-group" data-group="cache">Cache</a>
         <a href="#endpoints-data-admin" class="nav-group" data-group="data-admin">Data Admin</a>
+        <a href="#endpoints-library" class="nav-group" data-group="library">Library Management</a>
         <a href="#endpoints-goals" class="nav-group" data-group="goals">Goals</a>
         <a href="#endpoints-export" class="nav-group" data-group="export">Export</a>
         <a href="#endpoints-logs" class="nav-group" data-group="logs">Logs</a>
@@ -2726,8 +2727,272 @@
 </div>
     </div>
 
+    <div id="endpoints-library" class="endpoint-group">
+    <h2 class="group-title">13. Library Management <span class="group-badge">9 endpoints</span></h2>
+<div class="endpoint admin-only" data-search="GET /api/admin/libraries List all libraries" id="get-api-admin-libraries">
+  <div class="endpoint-header">
+    <span class="method method-GET">GET</span>
+    <span class="path">/api/admin/libraries</span>
+    <span class="summary">List all libraries</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Returns all libraries with comic count, root paths, and scan status.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "libraries": [
+    {
+      "id": "string",
+      "name": "string",
+      "type": "comic|novel|mixed",
+      "rootPath": "string",
+      "rootPaths": ["string"],
+      "enabled": true,
+      "sortOrder": 0,
+      "defaultAccess": "public|private",
+      "scanEnabled": true,
+      "lastScanAt": "2024-01-01T00:00:00Z",
+      "lastScanAdded": 0,
+      "lastScanTotal": 0,
+      "comicCount": 0,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="POST /api/admin/libraries Create a new library" id="post-api-admin-libraries">
+  <div class="endpoint-header">
+    <span class="method method-POST">POST</span>
+    <span class="path">/api/admin/libraries</span>
+    <span class="summary">Create a new library</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Create a new library with one or more root directories. Supports multi-directory libraries via rootPaths.</p>
+
+    <h4>Request Body</h4>
+    <pre class="code-block"><code>{
+  "name": "string (required)",
+  "type": "comic|novel|mixed (required)",
+  "rootPath": "string (optional, use rootPaths instead)",
+  "rootPaths": ["string"] (at least one path required),
+  "defaultAccess": "public|private (default: private)",
+  "scanEnabled": true
+}</code></pre>
+
+    <h4>Response <span class="status-code">201</span></h4>
+    <pre class="code-block"><code>{
+  "library": {Library}
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="PUT /api/admin/libraries/:id Update library" id="put-api-admin-libraries-id">
+  <div class="endpoint-header">
+    <span class="method method-PUT">PUT</span>
+    <span class="path">/api/admin/libraries/:id</span>
+    <span class="summary">Update library</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Update library properties. Use rootPaths to set multiple directories (first path becomes primary).</p>
+
+    <h4>Request Body</h4>
+    <pre class="code-block"><code>{
+  "name": "string",
+  "type": "comic|novel|mixed",
+  "rootPath": "string",
+  "rootPaths": ["string"],
+  "enabled": true,
+  "sortOrder": 0,
+  "defaultAccess": "public|private",
+  "scanEnabled": true
+}</code></pre>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "library": {Library}
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="DELETE /api/admin/libraries/:id Delete library" id="delete-api-admin-libraries-id">
+  <div class="endpoint-header">
+    <span class="method method-DELETE">DELETE</span>
+    <span class="path">/api/admin/libraries/:id</span>
+    <span class="summary">Delete library</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Delete a library and all its contents, tags, categories, reading states, and cache. Source files are preserved.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "success": true,
+  "libraryId": "string",
+  "libraryName": "string",
+  "deletedContents": 0,
+  "thumbnailCacheDeleted": 0,
+  "pageCacheDeleted": 0,
+  "deleteSourceFiles": false
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="POST /api/admin/libraries/:id/scan Scan library" id="post-api-admin-libraries-id-scan">
+  <div class="endpoint-header">
+    <span class="method method-POST">POST</span>
+    <span class="path">/api/admin/libraries/:id/scan</span>
+    <span class="summary">Scan library</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Trigger a scan of all root directories in the library. Discovers new files and adds them to the database.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "added": 0,
+  "library": {Library}
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="POST /api/admin/libraries/:id/delete-preview Delete preview (dry-run)" id="post-api-admin-libraries-id-delete-preview">
+  <div class="endpoint-header">
+    <span class="method method-POST">POST</span>
+    <span class="path">/api/admin/libraries/:id/delete-preview</span>
+    <span class="summary">Delete preview (dry-run)</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Preview what would be deleted when removing a library, without actually deleting anything.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "libraryId": "string",
+  "libraryName": "string",
+  "isDefaultLibrary": false,
+  "comicCount": 0,
+  "novelCount": 0,
+  "contentCount": 0,
+  "thumbnailCacheCount": 0,
+  "pageCacheCount": 0,
+  "deleteSourceFiles": false,
+  "willDelete": ["library record", "comic records", ...],
+  "willKeep": ["source files", "user accounts", ...],
+  "warnings": ["string"]
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint auth-required" data-search="GET /api/libraries/accessible List accessible libraries" id="get-api-libraries-accessible">
+  <div class="endpoint-header">
+    <span class="method method-GET">GET</span>
+    <span class="path">/api/libraries/accessible</span>
+    <span class="summary">List accessible libraries</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Returns all libraries the current user can access, based on public access, direct grants, and group inheritance.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "libraries": [
+    {
+      "id": "string",
+      "name": "string",
+      "type": "comic|novel|mixed",
+      "enabled": true,
+      "defaultAccess": "public|private",
+      "comicCount": 0
+    }
+  ]
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="GET /api/admin/users/:id/library-access Get user library access" id="get-api-admin-users-id-library-access">
+  <div class="endpoint-header">
+    <span class="method method-GET">GET</span>
+    <span class="path">/api/admin/users/:id/library-access</span>
+    <span class="summary">Get user library access</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Get library access permissions for a specific user. Admin users have access to all libraries.</p>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "userId": "string",
+  "libraries": [
+    {
+      "id": "string",
+      "name": "string",
+      "type": "comic|novel|mixed",
+      "rootPath": "string",
+      "rootPaths": ["string"],
+      "canView": true
+    }
+  ]
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div class="endpoint admin-only" data-search="PUT /api/admin/users/:id/library-access Set user library access" id="put-api-admin-users-id-library-access">
+  <div class="endpoint-header">
+    <span class="method method-PUT">PUT</span>
+    <span class="path">/api/admin/users/:id/library-access</span>
+    <span class="summary">Set user library access</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="description">Set library access permissions for a user. Cannot modify admin users (they have full access).</p>
+
+    <h4>Request Body</h4>
+    <pre class="code-block"><code>{
+  "libraryIds": ["string"]
+}</code></pre>
+
+    <h4>Response <span class="status-code">200</span></h4>
+    <pre class="code-block"><code>{
+  "success": true
+}</code></pre>
+    <div class="badges">
+      <span class="badge badge-auth">Auth Required</span>
+      <span class="badge badge-admin">Admin Only</span>
+    </div>
+  </div>
+</div>
+    </div>
+
     <div id="endpoints-goals" class="endpoint-group">
-    <h2 class="group-title">13. Goals <span class="group-badge">3 endpoints</span></h2>
+    <h2 class="group-title">14. Goals <span class="group-badge">3 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/goals Get all goals" id="get-api-goals">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -2813,7 +3078,7 @@
     </div>
 
     <div id="endpoints-export" class="endpoint-group">
-    <h2 class="group-title">14. Export <span class="group-badge">3 endpoints</span></h2>
+    <h2 class="group-title">15. Export <span class="group-badge">3 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/export/json Export all data as JSON" id="get-api-export-json">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -2887,7 +3152,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-logs" class="endpoint-group">
-    <h2 class="group-title">15. Logs <span class="group-badge">4 endpoints</span></h2>
+    <h2 class="group-title">16. Logs <span class="group-badge">4 endpoints</span></h2>
 <div class="endpoint admin-only" data-search="GET /api/logs List error logs" id="get-api-logs">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -3008,7 +3273,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-sync" class="endpoint-group">
-    <h2 class="group-title">16. Sync <span class="group-badge">5 endpoints</span></h2>
+    <h2 class="group-title">17. Sync <span class="group-badge">5 endpoints</span></h2>
 <div class="endpoint admin-only" data-search="GET /api/sync/status Get sync status" id="get-api-sync-status">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -3146,7 +3411,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-scan-rules" class="endpoint-group">
-    <h2 class="group-title">17. Scan Rules <span class="group-badge">7 endpoints</span></h2>
+    <h2 class="group-title">18. Scan Rules <span class="group-badge">7 endpoints</span></h2>
 <div class="endpoint admin-only" data-search="GET /api/scan-rules List all scan rules configuration and running status" id="get-api-scan-rules">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -3329,7 +3594,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-thumbnails" class="endpoint-group">
-    <h2 class="group-title">18. Thumbnails <span class="group-badge">1 endpoint</span></h2>
+    <h2 class="group-title">19. Thumbnails <span class="group-badge">1 endpoint</span></h2>
 <div class="endpoint admin-only" data-search="POST /api/thumbnails/manage generate missing regenerate stats" id="post-api-thumbnails-manage">
   <div class="endpoint-header">
     <span class="method method-POST">POST</span>
@@ -3368,7 +3633,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-groups" class="endpoint-group">
-    <h2 class="group-title">19. Groups <span class="group-badge">35 endpoints</span></h2>
+    <h2 class="group-title">20. Groups <span class="group-badge">35 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/groups List groups" id="get-api-groups">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -4058,7 +4323,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-metadata" class="endpoint-group">
-    <h2 class="group-title">20. Metadata <span class="group-badge">17 endpoints</span></h2>
+    <h2 class="group-title">21. Metadata <span class="group-badge">17 endpoints</span></h2>
 <div class="endpoint admin-only" data-search="GET /api/metadata/search Search metadata online" id="get-api-metadata-search">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -4533,7 +4798,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-ai" class="endpoint-group">
-    <h2 class="group-title">21. AI <span class="group-badge">30 endpoints</span></h2>
+    <h2 class="group-title">22. AI <span class="group-badge">30 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/ai/status AI status" id="get-api-ai-status">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -5335,7 +5600,7 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     </div>
 
     <div id="endpoints-opds" class="endpoint-group">
-    <h2 class="group-title">22. OPDS <span class="group-badge">6 endpoints</span></h2>
+    <h2 class="group-title">23. OPDS <span class="group-badge">6 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/opds OPDS catalog root" id="get-api-opds">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -5514,7 +5779,7 @@ Content-Type: varies by file type (e.g. application/zip, application/pdf, applic
     </div>
 
     <div id="endpoints-recommendations" class="endpoint-group">
-    <h2 class="group-title">23. Recommendations <span class="group-badge">2 endpoints</span></h2>
+    <h2 class="group-title">24. Recommendations <span class="group-badge">2 endpoints</span></h2>
 <div class="endpoint auth-required" data-search="GET /api/recommendations Get personalized recommendations" id="get-api-recommendations">
   <div class="endpoint-header">
     <span class="method method-GET">GET</span>
@@ -5585,7 +5850,7 @@ Content-Type: varies by file type (e.g. application/zip, application/pdf, applic
     </div>
 
     <div id="endpoints-translate" class="endpoint-group">
-    <h2 class="group-title">24. Tag Translate / Translate Engine <span class="group-badge">9 endpoints</span></h2>
+    <h2 class="group-title">25. Tag Translate / Translate Engine <span class="group-badge">9 endpoints</span></h2>
 <div class="endpoint admin-only" data-search="POST /api/tags/translate translate all tags" id="post-api-tags-translate">
   <div class="endpoint-header">
     <span class="method method-POST">POST</span>

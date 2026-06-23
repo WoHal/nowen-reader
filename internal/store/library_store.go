@@ -32,9 +32,12 @@ func GetAllLibraries() ([]model.Library, error) {
 		}
 		lib.CreatedAt = createdAt
 		lib.UpdatedAt = updatedAt
-		// 填充 rootPaths
-		rootPaths, _ := GetLibraryRootPaths(lib.ID)
-		lib.RootPaths = rootPaths
+		// 填充 rootPaths（主路径 + 额外路径）
+		extraPaths, err := GetLibraryRootPaths(lib.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get root paths for library %s: %w", lib.ID, err)
+		}
+		lib.RootPaths = append([]string{lib.RootPath}, extraPaths...)
 		libraries = append(libraries, lib)
 	}
 	return libraries, nil
@@ -55,9 +58,12 @@ func GetLibraryByID(id string) (*model.Library, error) {
 	}
 	lib.CreatedAt = createdAt
 	lib.UpdatedAt = updatedAt
-	// 填充 rootPaths
-	rootPaths, _ := GetLibraryRootPaths(lib.ID)
-	lib.RootPaths = rootPaths
+	// 填充 rootPaths（主路径 + 额外路径）
+	extraPaths, err := GetLibraryRootPaths(lib.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get root paths for library %s: %w", lib.ID, err)
+	}
+	lib.RootPaths = append([]string{lib.RootPath}, extraPaths...)
 	return &lib, nil
 }
 

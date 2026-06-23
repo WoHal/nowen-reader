@@ -1332,22 +1332,28 @@ func SyncLibraryByID(libraryID string) (int, error) {
 
 	useFolderComics := lib.Type != "novel"
 
-	// 收集所有根目录路径（主路径 + 额外路径）
-	rootPaths := []string{lib.RootPath}
-	if len(lib.RootPaths) > 0 {
-		// 使用 RootPaths 中除主路径外的额外路径
-		for _, p := range lib.RootPaths {
-			if p != lib.RootPath {
-				rootPaths = append(rootPaths, p)
-			}
-		}
+	// 收集所有根目录路径（RootPaths 已包含主路径和额外路径）
+	rootPaths := lib.RootPaths
+	if len(rootPaths) == 0 {
+		rootPaths = []string{lib.RootPath}
 	}
 
 	// 遍历所有根目录收集文件
 	var allFiles []diskFile
+	var missingPaths []string
 	for _, rootPath := range rootPaths {
+		// 检查路径是否存在
+		info, err := os.Stat(rootPath)
+		if err != nil || !info.IsDir() {
+			missingPaths = append(missingPaths, rootPath)
+			continue
+		}
 		files := walkDirRecursive(rootPath, useFolderComics)
 		allFiles = append(allFiles, files...)
+	}
+	// 如果有缺失的路径，记录警告但不中断扫描
+	if len(missingPaths) > 0 {
+		fmt.Printf("[WARN] Library %s: %d root path(s) not found or not a directory: %v\n", libraryID, len(missingPaths), missingPaths)
 	}
 
 	if len(allFiles) == 0 {
