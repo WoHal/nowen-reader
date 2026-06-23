@@ -61,18 +61,6 @@ export default function Navbar({
   const { batchRunning } = useScraperStore();
   const { siteName, siteIcon, scraperEnabled } = useSiteSettings();
 
-  // Update favicon dynamically
-  useEffect(() => {
-    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-    if (!link) return;
-
-    if (siteIcon) {
-      link.href = `/api/site-settings/icon?t=${Date.now()}`;
-    } else {
-      link.href = "/icons/icon-192.png";
-    }
-  }, [siteIcon]);
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-14 sm:h-16 max-w-[1760px] items-center justify-between px-6 sm:px-8 lg:px-12">
