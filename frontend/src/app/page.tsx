@@ -335,6 +335,9 @@ export default function Home() {
     localStorage.setItem("home:selectedLibraryIds", JSON.stringify(selectedLibraryIds));
   }, [selectedLibraryIds]);
 
+  // 书库筛选状态
+  const isLibraryFiltered = selectedLibraryIds.length > 0;
+
   // AI 语义搜索 handler
   const handleAiSearch = useCallback(async (query: string) => {
     if (!query.trim() || aiSearchLoading) return;
@@ -1159,8 +1162,10 @@ export default function Home() {
 
         {!loading && (
           <>
-            {/* Discovery Spotlight — personalized discovery stage */}
-            <DiscoverySpotlight comics={apiComics} contentType={contentType} totalItems={apiTotal} />
+            {/* Discovery Spotlight — 个性匑现阶段，书库筛选时隐藏 */}
+            {!isLibraryFiltered && (
+              <DiscoverySpotlight comics={apiComics} contentType={contentType} totalItems={apiTotal} />
+            )}
 
 
             {/* 内容类型 Tab + 视图切换 */}
@@ -1219,16 +1224,22 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 继续阅读横条 */}
-            <ContinueReading contentType={contentType} />
+            {/* 继续阅读横条，书库筛选时隐藏 */}
+            {!isLibraryFiltered && (
+              <ContinueReading contentType={contentType} />
+            )}
 
-            {/* Recommendations */}
-            <RecommendationStrip contentType={contentType} />
+            {/* Recommendations，书库筛选时隐藏 */}
+            {!isLibraryFiltered && (
+              <RecommendationStrip contentType={contentType} />
+            )}
 
             {/* Recently Added shelf */}
 
-            {/* Explore Channel — merged shelves */}
-            <ExploreChannel comics={apiComics} contentType={contentType} />
+            {/* Explore Channel，书库筛选时隐藏 */}
+            {!isLibraryFiltered && (
+              <ExploreChannel comics={apiComics} contentType={contentType} />
+            )}
 
             {/* Random Discovery shelf */}
 
