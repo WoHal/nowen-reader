@@ -1375,6 +1375,12 @@ func SyncLibraryByID(libraryID string) (int, error) {
 		return 0, fmt.Errorf("failed to query existing comics: %w", err)
 	}
 
+	// 获取所有已存在的漫画ID及其当前书库
+	allExisting, err := store.GetAllComicIDsAndLibraryIDs()
+	if err != nil {
+		return 0, fmt.Errorf("failed to query all comics: %w", err)
+	}
+
 	fileMap := make(map[string]diskFile, len(allFiles))
 	for _, f := range allFiles {
 		fileMap[f.ID] = f
@@ -1386,15 +1392,22 @@ func SyncLibraryByID(libraryID string) (int, error) {
 		Title    string
 		FileSize int64
 	}
+	var toMove []string // 已在其他书库中的文件ID，需要移动到当前书库
 
 	for id, f := range fileMap {
 		if _, ok := existing[id]; !ok {
-			toAdd = append(toAdd, struct{
-				ID       string
-				Filename string
-				Title    string
-				FileSize int64
-			}{ID: f.ID, Filename: f.Filename, Title: f.Title, FileSize: f.FileSize})
+			if otherLib, existsInOther := allExisting[id]; existsInOther && otherLib != "" && otherLib != libraryID {
+				// 文件在其他书库中，需要移动
+				toMove = append(toMove, id)
+			} else {
+				// 文件不存在，需要新增
+				toAdd = append(toAdd, struct{
+					ID       string
+					Filename string
+					Title    string
+					FileSize int64
+				}{ID: f.ID, Filename: f.Filename, Title: f.Title, FileSize: f.FileSize})
+			}
 		}
 	}
 
@@ -1416,11 +1429,23 @@ func SyncLibraryByID(libraryID string) (int, error) {
 		}
 	}
 
-	if err := store.UpdateLibraryScanStatus(libraryID, len(toAdd), len(allFiles)); err != nil {
-		return len(toAdd), fmt.Errorf("failed to update library scan status: %w", err)
+	// 移动已在其他书库中的文件到当前书库
+	if len(toMove) > 0 {
+		comicType := "comic"
+		if lib.Type == "novel" {
+			comicType = "novel"
+		}
+		if err := store.BulkUpdateComicLibraryID(toMove, libraryID, comicType); err != nil {
+			return 0, fmt.Errorf("failed to move comics to library: %w", err)
+		}
 	}
 
-	return len(toAdd), nil
+	totalAdded := len(toAdd) + len(toMove)
+	if err := store.UpdateLibraryScanStatus(libraryID, totalAdded, len(allFiles)); err != nil {
+		return totalAdded, fmt.Errorf("failed to update library scan status: %w", err)
+	}
+
+	return totalAdded, nil
 }
 
 
