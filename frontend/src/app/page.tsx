@@ -26,7 +26,6 @@ import GroupCard from "@/components/GroupCard";
 import MergeGroupDialog from "@/components/MergeGroupDialog";
 import UploadDialog from "@/components/UploadDialog";
 import DiscoverySpotlight from "@/components/home/DiscoverySpotlight";
-import { LibraryTabsBar } from "@/components/home/LibraryTabsBar";
 import ExploreChannel from "@/components/home/ExploreChannel";
 import PersonalSidebar from "@/components/home/PersonalSidebar";
 
@@ -39,7 +38,7 @@ import { useAIStatus } from "@/hooks/useAIStatus";
 import type { ComicGroup } from "@/hooks/useComicTypes";
 import { fetchGroups, fetchGroupedComicMap, createGroup, updateGroup, deleteGroup } from "@/api/groups";
 import { toggleComicFavorite, deleteComicById } from "@/api/comics";
-import { fetchLibraries, fetchAccessibleLibraries, type Library } from "@/api/libraries";
+import { fetchLibraries, type Library } from "@/api/libraries";
 import { useAuth } from "@/lib/auth-context";
 import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 
@@ -147,40 +146,6 @@ export default function Home() {
       .catch(() => {});
   }, [isAdmin]);
 
-  // Accessible libraries for homepage tabs (all logged-in users)
-  const [accessibleLibraries, setAccessibleLibraries] = useState<Library[]>([]);
-  const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = localStorage.getItem("home:selectedLibraryIds");
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-    } catch { return []; }
-  });
-
-  useEffect(() => {
-    fetchAccessibleLibraries()
-      .then((libs) => {
-        setAccessibleLibraries(libs);
-        // Clean up stale selectedLibraryIds against accessible list
-        const accessibleIds = new Set(libs.map((l) => l.id));
-        setSelectedLibraryIds((prev) => {
-          const cleaned = prev.filter((id) => accessibleIds.has(id));
-          if (cleaned.length !== prev.length) {
-            localStorage.setItem("home:selectedLibraryIds", JSON.stringify(cleaned));
-          }
-          return cleaned;
-        });
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleLibraryTabsChange = useCallback((ids: string[]) => {
-    setSelectedLibraryIds(ids);
-    localStorage.setItem("home:selectedLibraryIds", JSON.stringify(ids));
-    setCurrentPage(1);
-  }, []);
   const [scanningLibrary, setScanningLibrary] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(() => {
     if (typeof window !== "undefined") {
@@ -1169,15 +1134,6 @@ export default function Home() {
 
         {!loading && (
           <>
-            {/* Library Tabs — accessible library filter */}
-            {accessibleLibraries.length > 1 && (
-              <LibraryTabsBar
-                libraries={accessibleLibraries}
-                selectedIds={selectedLibraryIds}
-                onChange={handleLibraryTabsChange}
-              />
-            )}
-
             {/* Discovery Spotlight — personalized discovery stage */}
             <DiscoverySpotlight comics={apiComics} contentType={contentType} totalItems={apiTotal} />
 
