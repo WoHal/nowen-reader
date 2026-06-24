@@ -12,7 +12,7 @@ import { calculateReadingProgress } from "@/lib/progress";
 
 interface ExploreChannelProps {
   comics: ApiComic[];
-  contentType: string;
+  contentType?: string;
 }
 
 type ExploreTab = "latest" | "unread" | "random" | "short";

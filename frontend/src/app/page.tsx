@@ -326,13 +326,6 @@ export default function Home() {
   });
   const [uncategorized, setUncategorized] = useState(() => sessionStorage.getItem("homeFilter:uncategorized") === "true");
   const [untagged, setUntagged] = useState(() => sessionStorage.getItem("homeFilter:untagged") === "true");
-  const [contentType, setContentType] = useState<"comic" | "novel">(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("homeFilter:contentType");
-      if (saved === "comic" || saved === "novel") return saved;
-    }
-    return "comic";
-  });
 
   // 筛选条件变更时同步到 sessionStorage
   useEffect(() => {
@@ -353,9 +346,6 @@ export default function Home() {
   useEffect(() => {
     sessionStorage.setItem("homeFilter:category", selectedCategory || "");
   }, [selectedCategory]);
-  useEffect(() => {
-    sessionStorage.setItem("homeFilter:contentType", contentType);
-  }, [contentType]);
 
   useEffect(() => {
     sessionStorage.setItem("homeFilter:readingStatus", readingStatusFilter);
@@ -449,19 +439,19 @@ export default function Home() {
 
   const { categories, groupCategories, refetch: refetchCategories, refetchGroupCategories, initCategories } = useCategories();
 
-  // 加载合集数据（按 contentType 过滤）
+  // 加载合集数据
   const loadGroups = useCallback(async () => {
     const [grps, gmap] = await Promise.all([
-      fetchGroups(contentType || undefined, selectedCategory || undefined, selectedTags.length > 0 ? selectedTags : undefined, favoritesOnly || undefined),
+      fetchGroups(undefined, selectedCategory || undefined, selectedTags.length > 0 ? selectedTags : undefined, favoritesOnly || undefined, selectedLibraryIds.length > 0 ? selectedLibraryIds : undefined),
       fetchGroupedComicMap(),
     ]);
     setGroups(grps);
     setGroupedComicMap(gmap);
     // 合集数据变化后刷新系列级分类统计
     if (showGroupView) {
-      refetchGroupCategories(contentType || undefined);
+      refetchGroupCategories();
     }
-  }, [contentType, selectedCategory, selectedTags, favoritesOnly, showGroupView, refetchGroupCategories]);
+  }, [selectedCategory, selectedTags, favoritesOnly, selectedLibraryIds, showGroupView, refetchGroupCategories]);
 
   // 搜索过滤合集（前端过滤，匹配名称、作者、描述、标签；隐藏空合集）
   const filteredGroups = useMemo(() => {
@@ -557,7 +547,6 @@ export default function Home() {
     sortBy: isUnifiedView ? undefined : (sortBy || undefined),
     sortOrder: isUnifiedView ? undefined : (sortOrder || undefined),
     category: selectedCategory || undefined,
-    contentType: contentType || undefined,
     excludeGrouped: showGroupView || undefined,
     readingStatus: readingStatusFilter || undefined,
     uncategorized: uncategorized || undefined,
@@ -567,9 +556,9 @@ export default function Home() {
   // 系列视图下加载系列级分类统计
   useEffect(() => {
     if (showGroupView) {
-      refetchGroupCategories(contentType || undefined);
+      refetchGroupCategories();
     }
-  }, [showGroupView, contentType, refetchGroupCategories]);
+  }, [showGroupView, refetchGroupCategories]);
 
   // 只显示有内容的分类（count > 0）
   const effectiveCategories = showGroupView ? groupCategories.filter(c => c.count > 0) : categories.filter(c => c.count > 0);
@@ -580,15 +569,15 @@ export default function Home() {
 
   // Reset to page 1 when filters change（使用受保护的 setter，在挂载保护期内不会重置页码）
   const filterKeyRef = useRef(
-    JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, readingStatusFilter])
+    JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, readingStatusFilter])
   );
   useEffect(() => {
-    const newKey = JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, readingStatusFilter, selectedLibraryIds]);
+    const newKey = JSON.stringify([debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, readingStatusFilter, selectedLibraryIds]);
     if (filterKeyRef.current === newKey) return; // 值没变，不重置
     filterKeyRef.current = newKey;
     safeSetCurrentPage(1);
     safeSetGroupPage(1);
-  }, [debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, contentType, readingStatusFilter, selectedLibraryIds, safeSetCurrentPage, safeSetGroupPage]);
+  }, [debouncedSearch, selectedTags, favoritesOnly, selectedCategory, sortBy, sortOrder, readingStatusFilter, selectedLibraryIds, safeSetCurrentPage, safeSetGroupPage]);
 
   // 视图模式切换时重置分页（使用受保护的 setter，挂载保护期内不会重置）
   useEffect(() => {
@@ -784,10 +773,8 @@ export default function Home() {
 
       setUploading(true);
       try {
-        // 把当前页面（漫画/电子书）作为类别提示传给后端，
-        // 后端会按文件扩展名自动分流，仅在歧义扩展名（如 .azw3）时使用此提示。
         const libId = selectedLibraryId || undefined;
-        const result = await uploadComics(files, contentType, libId);
+        const result = await uploadComics(files, undefined, libId);
         if (result.success) {
           // 触发后端扫描，确保新文件入库
           try {
@@ -809,7 +796,7 @@ export default function Home() {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [refetch, toast, t, contentType, selectedLibraryId]
+    [refetch, toast, t, selectedLibraryId]
   );
 
   // Batch selection handlers
@@ -1019,13 +1006,13 @@ export default function Home() {
       exitBatchMode();
       await refetch();
       refetchCategories();
-      if (showGroupView) refetchGroupCategories(contentType || undefined);
+      if (showGroupView) refetchGroupCategories();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "AI category failed");
     } finally {
       setAiCategoryLoading(false);
     }
-  }, [selectedIds, exitBatchMode, refetch, refetchCategories, refetchGroupCategories, showGroupView, contentType, toast, t, locale]);
+  }, [selectedIds, exitBatchMode, refetch, refetchCategories, refetchGroupCategories, showGroupView, toast, t, locale]);
 
   const handleBatchSetCategory = useCallback(
     async (categorySlugs: string[]) => {
@@ -1033,9 +1020,9 @@ export default function Home() {
       exitBatchMode();
       await refetch();
       refetchCategories();
-      if (showGroupView) refetchGroupCategories(contentType || undefined);
+      if (showGroupView) refetchGroupCategories();
     },
-    [selectedIds, exitBatchMode, refetch, refetchCategories, refetchGroupCategories, showGroupView, contentType]
+    [selectedIds, exitBatchMode, refetch, refetchCategories, refetchGroupCategories, showGroupView]
   );
 
 
@@ -1139,18 +1126,10 @@ export default function Home() {
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
             <span className="text-sm text-amber-400">
               {t.home.mockDataNotice}{" "}
-              {contentType === "novel" ? (
-                <>
-                  <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.epub</code>{" / "}
-                  <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.mobi</code>{" / "}
-                  <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.txt</code>
-                </>
-              ) : (
-                <>
-                  <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.zip</code>{" / "}
-                  <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.cbz</code>
-                </>
-              )}{" "}
+              <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.zip</code>{" / "}
+              <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.cbz</code>{" / "}
+              <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.epub</code>{" / "}
+              <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">.txt</code>{" "}
               {t.home.mockDataNotice2}{" "}
               <code className="rounded bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs">
                 comics/
@@ -1204,46 +1183,28 @@ export default function Home() {
           <>
             {/* Discovery Spotlight — 个性匑现阶段，书库筛选时隐藏 */}
             {!isLibraryFiltered && (
-              <DiscoverySpotlight comics={apiComics} contentType={contentType} totalItems={apiTotal} />
+              <DiscoverySpotlight comics={apiComics} totalItems={apiTotal} />
             )}
 
 
-            {/* 内容类型 Tab + 视图切换 */}
+            {/* 书库筛选 + 视图切换 */}
             <div className="flex items-center justify-between gap-1 sm:gap-1.5 mb-4">
               <div className="flex items-center gap-1 sm:gap-1.5">
-                {([
-                  { key: "comic", label: t.contentTab.comic, icon: Image },
-                  { key: "novel", label: t.contentTab.novel, icon: BookOpen },
-                ] as const).map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setContentType(tab.key)}
-                    className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-200 ${
-                      contentType === tab.key
-                        ? "bg-accent text-white shadow-sm shadow-accent/25"
-                        : "bg-card text-muted hover:text-foreground hover:bg-card-hover"
-                    }`}
-                  >
-                    <tab.icon className="h-3.5 w-3.5" />
-                    {tab.label}
-                  </button>
-                ))}
+                {/* Library Tabs — accessible library filter */}
+                {visibleLibraries.length > 0 && (
+                  <LibraryTabsBar
+                    libraries={visibleLibraries}
+                    selectedIds={selectedLibraryIds}
+                    onChange={handleLibraryTabsChange}
+                    hiddenIds={hiddenLibraryIds}
+                    onToggleVisible={handleToggleLibraryVisible}
+                    onShowAll={handleShowAllLibraries}
+                    allLibraries={accessibleLibraries}
+                  />
+                )}
               </div>
 
-            {/* Library Tabs — accessible library filter */}
-            {visibleLibraries.length > 0 && (
-              <LibraryTabsBar
-                libraries={visibleLibraries}
-                selectedIds={selectedLibraryIds}
-                onChange={handleLibraryTabsChange}
-                hiddenIds={hiddenLibraryIds}
-                onToggleVisible={handleToggleLibraryVisible}
-                onShowAll={handleShowAllLibraries}
-                allLibraries={accessibleLibraries}
-              />
-            )}
-
-            {/* View Toggle — 在此处始终可见 */}
+              {/* View Toggle — 在此处始终可见 */}
               <div className="flex items-center rounded-lg border border-border/60 bg-card/50 p-0.5">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -1270,19 +1231,19 @@ export default function Home() {
 
             {/* 继续阅读横条，书库筛选时隐藏 */}
             {!isLibraryFiltered && (
-              <ContinueReading contentType={contentType} />
+              <ContinueReading />
             )}
 
             {/* Recommendations，书库筛选时隐藏 */}
             {!isLibraryFiltered && (
-              <RecommendationStrip contentType={contentType} />
+              <RecommendationStrip />
             )}
 
             {/* Recently Added shelf */}
 
             {/* Explore Channel，书库筛选时隐藏 */}
             {!isLibraryFiltered && (
-              <ExploreChannel comics={apiComics} contentType={contentType} />
+              <ExploreChannel comics={apiComics} />
             )}
 
             {/* Random Discovery shelf */}
@@ -1538,7 +1499,7 @@ export default function Home() {
             <div className="mt-6 mb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-1">
               <div>
                 <h2 className="text-base font-semibold text-foreground">
-                  {contentType === "novel" ? "全部小说" : "全部漫画"}
+                  全部内容
                 </h2>
                 <p className="text-[11px] text-muted mt-0.5">
                   {showGroupView
@@ -1565,7 +1526,6 @@ export default function Home() {
                     <GroupCard
                       group={group}
                       viewMode={viewMode}
-                      contentType={contentType}
                       batchMode={batchMode}
                       isSelected={selectedGroupIds.has(group.id)}
                       onSelect={toggleGroupSelect}
@@ -1610,7 +1570,6 @@ export default function Home() {
                     <GroupCard
                       group={item.data}
                       viewMode={viewMode}
-                      contentType={contentType}
                       batchMode={batchMode}
                       isSelected={selectedGroupIds.has(item.data.id)}
                       onSelect={toggleGroupSelect}
@@ -1653,15 +1612,13 @@ export default function Home() {
                   <span className="text-4xl">{favoritesOnly ? "❤️" : apiTotal === 0 ? "📚" : "🔍"}</span>
                 </div>
                 <h3 className="mb-2 text-lg font-medium text-foreground/80">
-                  {apiTotal === 0
-                    ? (contentType === "novel" ? t.home.emptyNovelLibrary : t.home.emptyLibrary)
-                    : (contentType === "novel" ? t.home.noMatchingNovels : t.home.noMatchingComics)}
+                  {apiTotal === 0 ? t.home.emptyLibrary : t.home.noMatchingComics}
                 </h3>
                 <p className="max-w-sm text-sm text-muted mb-5">
                   {apiTotal === 0
                     ? selectedLibraryIds.length > 0
-                      ? ("当前书库还没有内容，你可以切换到“全部”，或去书库管理中扫描 / 导入内容。")
-                      : (contentType === "novel" ? t.home.emptyNovelLibraryHint : t.home.emptyLibraryHint)
+                      ? "当前书库还没有内容，你可以切换到全部，或去书库管理中扫描/导入内容。"
+                      : t.home.emptyLibraryHint
                     : t.home.noMatchingHint}
                 </p>
                 {/* 引导性操作按钮 */}
@@ -1699,7 +1656,6 @@ export default function Home() {
                         setFavoritesOnly(false);
                         setSelectedCategory(null);
                         setSelectedLibraryIds([]);
-                        setContentType("comic");
                       }}
                       className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
                     >
@@ -1863,7 +1819,7 @@ export default function Home() {
       </main>
 
       {/* Personal Sidebar — desktop only */}
-      <PersonalSidebar comics={apiComics} contentType={contentType} totalItems={apiTotal} />
+      <PersonalSidebar comics={apiComics} totalItems={apiTotal} />
 
     </div>
 
@@ -1943,7 +1899,6 @@ export default function Home() {
       {showAddToGroup && (
         <AddToGroupDialog
           comicIds={Array.from(selectedIds)}
-          contentType={contentType}
           onClose={() => setShowAddToGroup(false)}
           onDone={() => {
             setShowAddToGroup(false);
@@ -2089,11 +2044,10 @@ export default function Home() {
         />
       )}
 
-      {/* 右键菜单“加入合集”弹窗 */}
+      {/* 右键菜单"加入合集"弹窗 */}
       {contextAddToGroupIds && (
         <AddToGroupDialog
           comicIds={contextAddToGroupIds}
-          contentType={contentType}
           onClose={() => setContextAddToGroupIds(null)}
           onDone={() => {
             setContextAddToGroupIds(null);
@@ -2114,7 +2068,6 @@ export default function Home() {
       <UploadDialog
         open={uploadDialogOpen}
         onClose={() => setUploadDialogOpen(false)}
-        contentType={contentType}
         defaultLibraryId={selectedLibraryId}
         onUploaded={async () => { await refetch(); }}
       />

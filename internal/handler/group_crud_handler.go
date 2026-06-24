@@ -47,6 +47,33 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 		}
 	}
 
+	// 前端传了 libraryIds 时，与可访问书库取交集（缩小范围，不越权）
+	if requestedParam := c.Query("libraryIds"); requestedParam != "" {
+		requested := strings.Split(requestedParam, ",")
+		if len(libraryIDs) > 0 {
+			// 非管理员：与可访问书库取交集
+			allowed := make(map[string]struct{}, len(libraryIDs))
+			for _, id := range libraryIDs {
+				allowed[id] = struct{}{}
+			}
+			var filtered []string
+			for _, id := range requested {
+				id = strings.TrimSpace(id)
+				if _, ok := allowed[id]; ok {
+					filtered = append(filtered, id)
+				}
+			}
+			libraryIDs = filtered
+		} else {
+			// 管理员：直接使用前端传入的书库ID
+			for _, id := range requested {
+				id = strings.TrimSpace(id)
+				if id != "" {
+					libraryIDs = append(libraryIDs, id)
+				}
+			}
+		}
+	}
 	groups, err := store.GetAllGroupsWithOptions(store.GroupListOptions{
 		UserID:        uid,
 		ContentType:   c.Query("contentType"),
