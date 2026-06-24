@@ -3641,13 +3641,14 @@ id,title,author,filename,fileSize,pageCount,tags,categories,favorite,rating
     <span class="summary">List groups</span>
   </div>
   <div class="endpoint-body">
-    <p class="description">Returns a list of groups, optionally filtered by content type, category, tags, or favorites.</p>
+    <p class="description">Returns a list of groups, optionally filtered by content type, category, tags, favorites, or library. Non-admin users are automatically filtered to their accessible libraries.</p>
     <h4>Query Parameters</h4>
     <table class="params-table"><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody>
       <tr><td>contentType</td><td>string</td><td>No</td><td>"comic" or "novel"</td></tr>
       <tr><td>category</td><td>string</td><td>No</td><td>Category slug</td></tr>
       <tr><td>tags</td><td>string</td><td>No</td><td>Comma-separated tag names</td></tr>
       <tr><td>favoritesOnly</td><td>string</td><td>No</td><td>"true" to filter</td></tr>
+      <tr><td>libraryIds</td><td>string</td><td>No</td><td>Comma-separated library IDs. For non-admin users, intersected with accessible libraries.</td></tr>
     </tbody></table>
     <h4>Response <span class="status-code">200</span></h4>
     <pre class="code-block"><code>{"groups": [GroupObject, ...]}</code></pre>
