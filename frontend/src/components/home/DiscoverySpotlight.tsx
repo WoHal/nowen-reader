@@ -13,7 +13,7 @@ import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 
 interface DiscoverySpotlightProps {
   comics: ApiComic[];
-  contentType: string;
+  contentType?: string;
   totalItems?: number;
   loading?: boolean;
 }

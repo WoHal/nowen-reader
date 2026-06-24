@@ -9,7 +9,7 @@ import { calculateReadingProgress } from "@/lib/progress";
 
 interface PersonalSidebarProps {
   comics: ApiComic[];
-  contentType: string;
+  contentType?: string;
   totalItems?: number;
 }
 
