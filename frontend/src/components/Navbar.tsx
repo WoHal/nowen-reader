@@ -73,7 +73,7 @@ export default function Navbar({
               <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
           )}
-          <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground">
+          <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground text-balance">
             {siteName}
           </span>
         </div>

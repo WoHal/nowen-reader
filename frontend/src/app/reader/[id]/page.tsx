@@ -731,13 +731,13 @@ export default function ReaderPage() {
           <div className="mt-4 flex gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="rounded-xl bg-accent px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
+              className="rounded-xl bg-accent px-5 py-2.5 min-h-[44px] text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.96]"
             >
               {t.reader.retry || "重试"}
             </button>
             <button
               onClick={() => router.push("/")}
-              className="rounded-xl bg-white/[0.06] border border-white/[0.08] px-5 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.10] transition-all duration-150 motion-button active:scale-[0.97]"
+              className="rounded-xl bg-white/[0.06] border border-white/[0.08] px-5 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.10] transition-all duration-150 motion-button active:scale-[0.96]"
             >
               {t.reader.backToShelf}
             </button>
@@ -757,7 +757,7 @@ export default function ReaderPage() {
           <p className="text-lg font-medium">{ t.reader.comicNotFound}</p>
           <button
             onClick={() => router.push("/")}
-            className="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
+            className="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.96]"
           >
             {t.reader.backToShelf}
           </button>
@@ -1002,8 +1002,8 @@ export default function ReaderPage() {
         >
           <div className="mx-4 max-w-sm rounded-2xl bg-zinc-900/95 p-6 text-center shadow-2xl border border-white/10 animate-modal-in">
             <div className="text-3xl mb-3">👆</div>
-            <h3 className="text-sm font-bold text-white mb-3">阅读手势指南</h3>
-            <div className="space-y-2 text-xs text-white/60 text-left">
+            <h3 className="text-sm font-bold text-white mb-3 text-balance">阅读手势指南</h3>
+            <div className="space-y-2 text-xs text-white/60 text-left text-pretty">
               <p>👈 <span className="text-white/80">点击左侧</span> — 上一页</p>
               <p>👉 <span className="text-white/80">点击右侧</span> — 下一页</p>
               <p>👆 <span className="text-white/80">点击中间</span> — 显示/隐藏菜单</p>

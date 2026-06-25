@@ -247,7 +247,7 @@ const ComicCard = memo(function ComicCard({
             >
               {/* Thumbnail */}
               <div className="relative h-20 w-14 sm:h-16 sm:w-12 flex-shrink-0 overflow-hidden rounded-lg">
-                <Image src={comic.coverUrl} alt={comic.title} fill unoptimized={isReal} className="object-cover" sizes="56px" />
+                <Image src={comic.coverUrl} alt={comic.title} fill unoptimized={isReal} className="object-cover image-outline" sizes="56px" />
                 {comic.isFavorite && (
                   <div className="absolute top-0.5 right-0.5 z-10">
                     <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
@@ -263,7 +263,7 @@ const ComicCard = memo(function ComicCard({
 
               {/* Info */}
               <div className="min-w-0 flex-1">
-                <h3 className="truncate text-sm font-medium text-foreground/90 group-hover:text-foreground">{comic.title}</h3>
+                <h3 className="truncate text-sm font-medium text-foreground/90 group-hover:text-foreground text-balance">{comic.title}</h3>
                 {/* 作者（如果有） */}
                 {comic.author && (
                   <p className="mt-0.5 truncate text-[11px] text-muted/60 sm:hidden">{comic.author}</p>
@@ -346,7 +346,7 @@ const ComicCard = memo(function ComicCard({
           {/* Batch Selection Overlay */}
           <div
             className={`relative overflow-hidden rounded-xl bg-card transition-all duration-300 ease-out ${
-              isSelected ? "ring-2 ring-accent scale-[0.97]" : "hover:scale-[1.03]"
+              isSelected ? "ring-2 ring-accent scale-[0.96]" : "hover:scale-[1.03]"
             }`}
           >
             {/* Checkbox */}
@@ -410,7 +410,7 @@ const ComicCard = memo(function ComicCard({
                   alt={comic.title}
                   fill
                   unoptimized={isReal}
-                  className={`${coverObjectFit} transition-all duration-500 group-hover:scale-110 ${
+                  className={`${coverObjectFit} image-outline transition-all duration-500 group-hover:scale-110 ${
                     coverLoaded ? "opacity-100" : "opacity-0"
                   }`}
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
@@ -452,14 +452,14 @@ const ComicCard = memo(function ComicCard({
               {isReal ? (
                 <Link
                   href={`/comic/${comic.id}`}
-                  className="mb-2 block truncate text-sm font-medium text-foreground/90 transition-colors hover:text-accent"
+                  className="mb-2 block truncate text-sm font-medium text-foreground/90 transition-colors hover:text-accent text-balance"
                   onClick={(e) => e.stopPropagation()}
                   title={comic.title}
                 >
                   {comic.title}
                 </Link>
               ) : (
-                <h3 className={`mb-2 text-sm font-medium text-foreground/90 ${titleMaxLines === 1 ? "truncate" : `line-clamp-${titleMaxLines}`}`}>{comic.title}</h3>
+                <h3 className={`mb-2 text-sm font-medium text-foreground/90 text-balance ${titleMaxLines === 1 ? "truncate" : `line-clamp-${titleMaxLines}`}`}>{comic.title}</h3>
               )}
               <div className="flex flex-wrap items-center gap-1.5">
                 {(comic.tags || []).slice(0, 3).map((tag) => (

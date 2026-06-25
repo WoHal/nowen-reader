@@ -227,10 +227,10 @@ export default function UploadDialog({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/30 px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
+            <h2 className="text-base font-semibold text-foreground text-balance">
               上传{contentType === "novel" ? "小说" : "漫画"}
             </h2>
-            <p className="text-xs text-muted">支持 zip、cbz、pdf、epub 等格式</p>
+            <p className="text-xs text-muted text-pretty">支持 zip、cbz、pdf、epub 等格式</p>
           </div>
           <button
             onClick={onClose}
@@ -281,10 +281,10 @@ export default function UploadDialog({
                 dragActive ? "text-accent scale-110" : "text-muted"
               }`}
             />
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-foreground text-balance">
               拖拽文件到这里上传
             </p>
-            <p className="mt-1 text-xs text-muted">或点击选择文件（支持多选）</p>
+            <p className="mt-1 text-xs text-muted text-pretty">或点击选择文件（支持多选）</p>
             <input
               ref={fileInputRef}
               type="file"

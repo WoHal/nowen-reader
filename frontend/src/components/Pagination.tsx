@@ -49,7 +49,7 @@ export function Pagination({
       {/* Left: total info + page size selector */}
       <div className="flex items-center gap-3 text-xs text-muted">
         <span>
-          {t.tagManager?.total || "共"} <span className="font-medium text-foreground">{totalItems}</span> {t.tagManager?.items || "项"}
+          {t.tagManager?.total || "共"} <span className="font-medium text-foreground tabular-nums">{totalItems}</span> {t.tagManager?.items || "项"}
         </span>
         <div className="flex items-center gap-1.5">
           <span>{t.tagManager?.perPage || "每页"}</span>
@@ -94,7 +94,7 @@ export function Pagination({
             <button
               key={p}
               onClick={() => onPageChange(p as number)}
-              className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg px-1.5 text-xs font-medium transition-colors ${
+              className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg px-1.5 text-xs font-medium transition-colors tabular-nums ${
                 currentPage === p
                   ? "bg-accent text-white"
                   : "text-muted hover:bg-card hover:text-foreground"

@@ -1498,7 +1498,7 @@ export default function Home() {
             {/* Library Content Header */}
             <div className="mt-6 mb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-1">
               <div>
-                <h2 className="text-base font-semibold text-foreground">
+                <h2 className="text-base font-semibold text-foreground text-balance">
                   全部内容
                 </h2>
                 <p className="text-[11px] text-muted mt-0.5">
@@ -1948,7 +1948,7 @@ export default function Home() {
             className="w-full max-w-sm rounded-2xl border border-border/60 bg-card p-6 shadow-2xl animate-modal-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-4 text-lg font-semibold text-foreground">
+            <h3 className="mb-4 text-lg font-semibold text-foreground text-balance">
               {t.contextMenu?.renameGroup || "重命名合集"}
             </h3>
             <input

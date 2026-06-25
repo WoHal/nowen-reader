@@ -17,14 +17,14 @@ export default function StatsBar({ totalComics, filteredCount }: StatsBarProps) 
         <div className="flex items-center gap-1.5 sm:gap-2 text-muted">
           <Library className="h-4 w-4" />
           <span className="text-xs sm:text-sm">
-            {t.statsBar.total} <span className="font-medium text-foreground">{totalComics}</span> {t.statsBar.unit}
+            {t.statsBar.total} <span className="font-medium text-foreground tabular-nums">{totalComics}</span> {t.statsBar.unit}
           </span>
         </div>
         {filteredCount !== totalComics && (
           <div className="flex items-center gap-1.5 sm:gap-2 text-muted">
             <BookOpen className="h-4 w-4" />
             <span className="text-xs sm:text-sm">
-              {t.statsBar.filtered} <span className="font-medium text-accent">{filteredCount}</span> {t.statsBar.unit}
+              {t.statsBar.filtered} <span className="font-medium text-accent tabular-nums">{filteredCount}</span> {t.statsBar.unit}
             </span>
           </div>
         )}
