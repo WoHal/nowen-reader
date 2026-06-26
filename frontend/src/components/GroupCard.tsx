@@ -158,7 +158,7 @@ const GroupCard = memo(function GroupCard({
           <div
             className={`relative overflow-hidden rounded-xl bg-card transition-all duration-300 ease-out ${
               isSelected
-                ? "ring-2 ring-accent scale-[0.97]"
+                ? "ring-2 ring-accent scale-[0.96]"
                 : "hover:scale-[1.03]"
             }`}
           >
@@ -169,7 +169,7 @@ const GroupCard = memo(function GroupCard({
                   alt={group.name}
                   fill
                   unoptimized
-                  className="object-cover"
+                  className="object-cover image-outline"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                 />
               ) : (
@@ -186,7 +186,7 @@ const GroupCard = memo(function GroupCard({
               </div>
             </div>
             <div className="p-3">
-              <h3 className="mb-1 truncate text-sm font-medium text-foreground/90">
+              <h3 className="mb-1 truncate text-sm font-medium text-foreground/90 text-balance">
                 {group.name}
               </h3>
               <p className="text-[10px] text-muted">

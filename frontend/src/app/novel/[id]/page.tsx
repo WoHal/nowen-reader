@@ -375,13 +375,13 @@ export default function NovelReaderPage() {
           <div className="mt-6 flex gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
+              className="rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.96]"
             >
               {t.reader.retry || "重试"}
             </button>
             <button
               onClick={() => router.push("/")}
-              className="rounded-xl bg-white/[0.06] border border-white/[0.08] px-5 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.10] transition-all duration-150 motion-button active:scale-[0.97]"
+              className="rounded-xl bg-white/[0.06] border border-white/[0.08] px-5 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.10] transition-all duration-150 motion-button active:scale-[0.96]"
             >
               {t.reader.backToShelf}
             </button>
@@ -401,7 +401,7 @@ export default function NovelReaderPage() {
           <p className="text-lg font-medium">{t.reader.comicNotFound}</p>
           <button
             onClick={() => router.push("/")}
-            className="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.97]"
+            className="mt-6 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-accent/25 transition-all duration-150 motion-button active:scale-[0.96]"
           >
             {t.reader.backToShelf}
           </button>
