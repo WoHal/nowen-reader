@@ -15,7 +15,7 @@ import (
 	"github.com/nowen-reader/nowen-reader/internal/store"
 )
 
-const opdsMIMEType = "application/atom+xml;profile=opds-catalog;kind=navigation"
+const opdsMIMEType = "application/atom+xml;profile=opds-catalog;kind=navigation;charset=utf-8"
 
 type OPDSHandler struct{}
 
