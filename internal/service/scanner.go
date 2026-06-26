@@ -578,86 +578,117 @@ func fullSync() {
 	var processed int64
 	var mu sync.Mutex
 
+	type updateItem struct {
+		ID  string
+		Val any
+	}
+
+	updates := map[int]map[string][]*updateItem{}
+
 	// 启动 worker
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		go func() {
+		updates[w] = map[string][]*updateItem{
+			"comicPageCount": make([]*updateItem, 0),
+			"comicType":      make([]*updateItem, 0),
+		}
+
+		go func(i int) {
+			comicPageCountList := updates[i]["comicPageCount"]
+			comicTypeList := updates[i]["comicType"]
 			defer wg.Done()
-			store.WithTransaction(func(tx *sql.Tx) {
-				for item := range jobs {
-					func() {
-						defer func() {
-							if r := recover(); r != nil {
-								log.Printf("[full-sync] PANIC processing %s: %v", item.Filename, r)
-								_ = store.UpdateComicPageCount(tx, item.ID, -1)
-							}
-						}()
-						// For ebook archives already marked as comic in DB, count images instead of chapters
-						archiveType := archive.DetectType(item.Path)
-						var pageCount int
-						var countErr error
-						if archive.IsEbookType(archiveType) {
-							// Check DB type: if comic, count embedded images; if novel, count chapters
-							comic, dbErr := store.GetComicByID(item.ID)
-							if dbErr == nil && comic != nil && comic.ComicType == "comic" {
-								pageCount, countErr = GetArchivePageCount(item.Path, true)
-							} else {
-								pageCount, countErr = GetArchivePageCount(item.Path)
-							}
+			for item := range jobs {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("[full-sync] PANIC processing %s: %v", item.Filename, r)
+							comicPageCountList = append(comicPageCountList, &updateItem{
+								ID:  item.ID,
+								Val: -1,
+							})
+						}
+					}()
+					// For ebook archives already marked as comic in DB, count images instead of chapters
+					archiveType := archive.DetectType(item.Path)
+					var pageCount int
+					var countErr error
+					if archive.IsEbookType(archiveType) {
+						// Check DB type: if comic, count embedded images; if novel, count chapters
+						comic, dbErr := store.GetComicByID(item.ID)
+						if dbErr == nil && comic != nil && comic.ComicType == "comic" {
+							pageCount, countErr = GetArchivePageCount(item.Path, true)
 						} else {
 							pageCount, countErr = GetArchivePageCount(item.Path)
 						}
+					} else {
+						pageCount, countErr = GetArchivePageCount(item.Path)
+					}
 
-						if countErr != nil || pageCount <= 0 {
-							log.Printf("[full-sync] Failed to parse %s: %v", item.Filename, countErr)
-							_ = store.UpdateComicPageCount(tx, item.ID, -1)
-							return
-						}
-						if err := store.UpdateComicPageCount(tx, item.ID, pageCount); err != nil {
-							log.Printf("[full-sync] Failed to update %s: %v", item.Filename, err)
-							_ = store.UpdateComicPageCount(tx, item.ID, -1)
-						} else {
-							mu.Lock()
-							processed++
-							mu.Unlock()
-						}
+					if countErr != nil || pageCount <= 0 {
+						log.Printf("[full-sync] Failed to parse %s: %v", item.Filename, countErr)
+						comicPageCountList = append(comicPageCountList, &updateItem{
+							ID:  item.ID,
+							Val: -1,
+						})
+						return
+					}
 
-						// 对 epub/mobi/azw3 文件检测内容类型：如果以图片为主则标记为漫画
-						// 注意：默认仅对"漫画目录"中的电子书做该检测，避免图文混排教材
-						// 被错误识别为漫画。可通过 ScannerConfig.EbookTypeAutoDetect 调整。
-						if archive.IsEbookType(archiveType) && shouldAutoDetectEbookType(item.Path) {
-							if archiveType == archive.TypeEpub {
-								if archive.IsImageHeavyEpub(item.Path) {
-									log.Printf("[full-sync] Detected image-heavy EPUB, marking as comic: %s", item.Filename)
-									_ = store.UpdateComicType(tx, item.ID, "comic")
-									// Recalculate page count: ebook page count is chapters,
-									// but comic mode needs image count
-									if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
-										_ = store.UpdateComicPageCount(tx, item.ID, imgCount)
-									}
+					comicPageCountList = append(comicPageCountList, &updateItem{
+						ID:  item.ID,
+						Val: pageCount,
+					})
+
+					mu.Lock()
+					processed++
+					mu.Unlock()
+
+					// 对 epub/mobi/azw3 文件检测内容类型：如果以图片为主则标记为漫画
+					// 注意：默认仅对"漫画目录"中的电子书做该检测，避免图文混排教材
+					// 被错误识别为漫画。可通过 ScannerConfig.EbookTypeAutoDetect 调整。
+					if archive.IsEbookType(archiveType) && shouldAutoDetectEbookType(item.Path) {
+						if archiveType == archive.TypeEpub {
+							if archive.IsImageHeavyEpub(item.Path) {
+								log.Printf("[full-sync] Detected image-heavy EPUB, marking as comic: %s", item.Filename)
+								comicTypeList = append(comicTypeList, &updateItem{
+									ID:  item.ID,
+									Val: "comic",
+								})
+								// Recalculate page count: ebook page count is chapters,
+								// but comic mode needs image count
+								if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
+									comicPageCountList = append(comicPageCountList, &updateItem{
+										ID:  item.ID,
+										Val: imgCount,
+									})
 								}
-							} else if archiveType == archive.TypeMobi || archiveType == archive.TypeAzw3 {
-								// mobi/azw3 使用纯 Go 解析器直接检测内容类型（无需 Calibre）
-								if archive.IsMobiImageHeavy(item.Path) {
-									log.Printf("[full-sync] Detected image-heavy %s, marking as comic: %s", archiveType, item.Filename)
-									_ = store.UpdateComicType(tx, item.ID, "comic")
-									// Recalculate page count: ebook page count is chapters,
-									// but comic mode needs image count
-									if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
-										_ = store.UpdateComicPageCount(tx, item.ID, imgCount)
-									}
+							}
+						} else if archiveType == archive.TypeMobi || archiveType == archive.TypeAzw3 {
+							// mobi/azw3 使用纯 Go 解析器直接检测内容类型（无需 Calibre）
+							if archive.IsMobiImageHeavy(item.Path) {
+								log.Printf("[full-sync] Detected image-heavy %s, marking as comic: %s", archiveType, item.Filename)
+								comicTypeList = append(comicTypeList, &updateItem{
+									ID:  item.ID,
+									Val: "comic",
+								})
+								// Recalculate page count: ebook page count is chapters,
+								// but comic mode needs image count
+								if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
+									comicPageCountList = append(comicPageCountList, &updateItem{
+										ID:  item.ID,
+										Val: imgCount,
+									})
 								}
 							}
 						}
-					}()
-				}
-			})
+					}
+				}()
+			}
 
 			if err != nil {
 				log.Printf("[full-sync] Transaction Failed: %v", err)
 			}
 
-		}()
+		}(w)
 	}
 
 	// 分发任务
@@ -686,6 +717,19 @@ func fullSync() {
 	}
 	close(jobs)
 	wg.Wait()
+
+	for _, update := range updates {
+		store.WithTransaction(func(tx *sql.Tx) {
+			for _, updateItem := range update["comicPageCount"] {
+				store.UpdateComicPageCount(tx, updateItem.ID, updateItem.Val.(int))
+			}
+		})
+		store.WithTransaction(func(tx *sql.Tx) {
+			for _, updateItem := range update["comicType"] {
+				store.UpdateComicPageCount(tx, updateItem.ID, updateItem.Val.(int))
+			}
+		})
+	}
 
 	if processed > 0 {
 		log.Printf("[full-sync] Processed %d/%d archives (workers: %d)", processed, len(comics), numWorkers)
@@ -730,86 +774,102 @@ func md5Sync() {
 	var processed int64
 	var mu sync.Mutex
 
+	type updateItem struct {
+		ID  string
+		Val any
+	}
+
+	updates := map[int][]*updateItem{}
+
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		go func() {
+		updates[w] = []*updateItem{}
+
+		go func(i int) {
 			defer wg.Done()
-			err := store.WithTransaction(func(tx *sql.Tx) {
-				for item := range jobs {
-					func() {
-						defer func() {
-							if r := recover(); r != nil {
-								log.Printf("[md5-sync] PANIC processing %s: %v", item.Filename, r)
-							}
-						}()
-						// 如果阅读开始了，立即停止 MD5 计算
-						if isReadingActive() {
-							log.Println("[md5-sync] Paused: active reading session detected")
-							return
-						}
-						f, err := os.Open(item.Path)
-						if err != nil {
-							log.Printf("[md5-sync] Failed to open %s: %v", item.Filename, err)
-							return
-						}
-						h := md5.New()
-						if _, err := io.Copy(h, f); err != nil {
-							f.Close()
-							log.Printf("[md5-sync] Failed to hash %s: %v", item.Filename, err)
-							return
-						}
-						f.Close()
-						hash := fmt.Sprintf("%x", h.Sum(nil))
-						if err := store.UpdateComicMD5Hash(tx, item.ID, hash); err != nil {
-							log.Printf("[md5-sync] Failed to update %s: %v", item.Filename, err)
-						} else {
-							mu.Lock()
-							processed++
-							mu.Unlock()
+
+			comicMD5List := updates[i]
+			for item := range jobs {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("[md5-sync] PANIC processing %s: %v", item.Filename, r)
 						}
 					}()
-				}
-			})
+					// 如果阅读开始了，立即停止 MD5 计算
+					if isReadingActive() {
+						log.Println("[md5-sync] Paused: active reading session detected")
+						return
+					}
+					f, err := os.Open(item.Path)
+					if err != nil {
+						log.Printf("[md5-sync] Failed to open %s: %v", item.Filename, err)
+						return
+					}
+					h := md5.New()
+					if _, err := io.Copy(h, f); err != nil {
+						f.Close()
+						log.Printf("[md5-sync] Failed to hash %s: %v", item.Filename, err)
+						return
+					}
+					f.Close()
+					hash := fmt.Sprintf("%x", h.Sum(nil))
+
+					comicMD5List = append(comicMD5List, &updateItem{
+						ID:  item.ID,
+						Val: hash,
+					})
+					mu.Lock()
+					processed++
+					mu.Unlock()
+				}()
+			}
 			if err != nil {
 				log.Printf("[md5-sync] Transaction Failed: %v", err)
 			}
-		}()
+		}(w)
 	}
 
-	store.WithTransaction(func(tx *sql.Tx) {
-		for _, c := range comics {
-			var foundPath string
-			for _, dir := range allDirs {
-				// 图片文件夹漫画：filename 以 "/" 结尾，跳过 MD5 计算
-				if strings.HasSuffix(c.Filename, "/") {
-					candidate := filepath.Join(dir, strings.TrimSuffix(c.Filename, "/"))
-					if info, err := os.Stat(candidate); err == nil && info.IsDir() {
-						foundPath = candidate
-						break
-					}
-				} else {
-					candidate := filepath.Join(dir, c.Filename)
-					if _, err := os.Stat(candidate); err == nil {
-						foundPath = candidate
-						break
-					}
+	for _, c := range comics {
+		var foundPath string
+		for _, dir := range allDirs {
+			// 图片文件夹漫画：filename 以 "/" 结尾，跳过 MD5 计算
+			if strings.HasSuffix(c.Filename, "/") {
+				candidate := filepath.Join(dir, strings.TrimSuffix(c.Filename, "/"))
+				if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+					foundPath = candidate
+					break
+				}
+			} else {
+				candidate := filepath.Join(dir, c.Filename)
+				if _, err := os.Stat(candidate); err == nil {
+					foundPath = candidate
+					break
 				}
 			}
-			if foundPath == "" {
-				continue
-			}
-			// 图片文件夹不计算 MD5（文件夹没有单一文件哈希的意义）
-			if strings.HasSuffix(c.Filename, "/") {
-				// 标记为特殊值，表示不需要 MD5
-				_ = store.UpdateComicMD5Hash(tx, c.ID, "folder")
-				continue
-			}
-			jobs <- workItem{ID: c.ID, Filename: c.Filename, Path: foundPath}
 		}
-	})
+		if foundPath == "" {
+			continue
+		}
+		// 图片文件夹不计算 MD5（文件夹没有单一文件哈希的意义）
+		if strings.HasSuffix(c.Filename, "/") {
+			// 标记为特殊值，表示不需要 MD5
+			_ = store.UpdateComicMD5Hash(store.DB(), c.ID, "folder")
+			continue
+		}
+		jobs <- workItem{ID: c.ID, Filename: c.Filename, Path: foundPath}
+	}
 
 	close(jobs)
 	wg.Wait()
+
+	for _, row := range updates {
+		store.WithTransaction(func(tx *sql.Tx) {
+			for _, item := range row {
+				store.UpdateComicMD5Hash(tx, item.ID, item.Val.(string))
+			}
+		})
+	}
 
 	if processed > 0 {
 		log.Printf("[md5-sync] Computed MD5 for %d/%d files (workers: %d)", processed, len(comics), numWorkers)
