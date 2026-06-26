@@ -2,6 +2,7 @@
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -20,18 +21,20 @@ const (
 // contextKey constants
 const (
 	ContextKeyUser = "auth_user"
-
-	OPDSUnanthedHeaderKey   = "WWW-Authenticate"
-	OPDSUnanthedHeaderValue = `Basic realm="OPDS Library"`
+	OPDSRealmName  = "OPDS Library"
 )
+
+// 无凭证，返回401，触发客户端弹账号密码框
+func setOPDSAbort(c *gin.Context) {
+	c.Header("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s"`, OPDSRealmName))
+	c.AbortWithStatus(401)
+}
 
 func OPDSRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			// 无凭证，返回401，触发客户端弹账号密码框
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 
@@ -39,15 +42,13 @@ func OPDSRequired() gin.HandlerFunc {
 		// base64解码
 		decoded, err := base64.StdEncoding.DecodeString(base64Str)
 		if err != nil {
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 
 		parts := strings.SplitN(string(decoded), ":", 2)
 		if len(parts) != 2 {
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 
@@ -55,20 +56,17 @@ func OPDSRequired() gin.HandlerFunc {
 		// 校验账号密码
 		user, err := store.GetUserByUsername(username)
 		if err != nil {
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 		if user == nil {
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 
 		// Verify password
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
-			c.AbortWithStatus(401)
+			setOPDSAbort(c)
 			return
 		}
 
