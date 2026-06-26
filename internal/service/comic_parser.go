@@ -196,6 +196,7 @@ type PagesResult struct {
 
 // GetComicPagesEx returns pages with extended info (chapter titles for novels).
 func GetComicPagesEx(comicID string) (*PagesResult, error) {
+	db := store.DB()
 	fp, _, err := FindComicFilePath(comicID)
 	if err != nil {
 		return nil, err
@@ -216,11 +217,11 @@ func GetComicPagesEx(comicID string) (*PagesResult, error) {
 				// 在首次打开时进行实时检测，如果是图片为主则自动修正类型（纯 Go，无需 Calibre）
 				if archive.IsMobiImageHeavy(fp) {
 					log.Printf("[pages] Auto-detected image-heavy %s, reclassifying as comic: %s", archiveType, comic.Filename)
-					_ = store.UpdateComicType(comicID, "comic")
+					_ = store.UpdateComicType(db, comicID, "comic")
 					// Recalculate page count: novel mode counts chapters,
 					// comic mode needs image count
 					if imgCount, err := GetArchivePageCount(fp, true); err == nil && imgCount > 0 {
-						_ = store.UpdateComicPageCount(comicID, imgCount)
+						_ = store.UpdateComicPageCount(db, comicID, imgCount)
 					}
 					isNovel = false
 				}

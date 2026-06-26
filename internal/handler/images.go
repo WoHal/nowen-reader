@@ -58,7 +58,6 @@ func (h *ImageHandler) GetPages(c *gin.Context) {
 		return
 	}
 
-
 	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
@@ -108,7 +107,7 @@ func (h *ImageHandler) GetPages(c *gin.Context) {
 	// Backfill pageCount if DB value is stale but we just resolved real count
 	totalPages := len(result.Entries)
 	if totalPages > 0 && comic.PageCount <= 0 {
-		_ = store.UpdateComicPageCount(id, totalPages)
+		_ = store.UpdateComicPageCount(store.DB(), id, totalPages)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -141,7 +140,6 @@ func (h *ImageHandler) GetPageImage(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
 		return
 	}
-
 
 	if err := checkComicAccess(c, id); err != nil {
 		return
@@ -200,7 +198,6 @@ func (h *ImageHandler) GetThumbnail(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
 		return
 	}
-
 
 	if err := checkComicAccess(c, id); err != nil {
 		return
@@ -294,7 +291,7 @@ func (h *ImageHandler) serveGroupCoverThumbnail(c *gin.Context, id string) {
 		case strings.HasPrefix(rawCoverURL, "data:image/"):
 			if err := service.CacheGroupCoverDataURL(groupID, rawCoverURL); err == nil {
 				if data, err := os.ReadFile(cachePath); err == nil && len(data) > 0 {
-							 c.Data(http.StatusOK, http.DetectContentType(data), data)
+					c.Data(http.StatusOK, http.DetectContentType(data), data)
 					return
 				}
 			}
@@ -543,7 +540,6 @@ func (h *ImageHandler) GetPdfFile(c *gin.Context) {
 		return
 	}
 
-
 	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
@@ -599,7 +595,6 @@ func (h *ImageHandler) GetChapterContent(c *gin.Context) {
 		return
 	}
 
-
 	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
@@ -645,7 +640,6 @@ func (h *ImageHandler) GetEpubResource(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
 		return
 	}
-
 
 	if err := checkComicAccess(c, id); err != nil {
 		return
@@ -738,7 +732,6 @@ func (h *ImageHandler) GetEmbeddedImages(c *gin.Context) {
 		return
 	}
 
-
 	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
@@ -775,7 +768,6 @@ func (h *ImageHandler) GetEmbeddedImage(c *gin.Context) {
 		return
 	}
 
-
 	if err := checkComicAccess(c, id); err != nil {
 		return
 	}
@@ -798,8 +790,3 @@ func (h *ImageHandler) GetEmbeddedImage(c *gin.Context) {
 	c.Header("ETag", etag)
 	c.Data(http.StatusOK, img.MimeType, img.Data)
 }
-
-
-
-
-

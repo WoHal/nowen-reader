@@ -265,7 +265,7 @@ func TestComicCRUD(t *testing.T) {
 	}
 
 	// Update page count
-	if err := UpdateComicPageCount(comics[0].ID, 50); err != nil {
+	if err := UpdateComicPageCount(db, comics[0].ID, 50); err != nil {
 		t.Fatalf("UpdateComicPageCount failed: %v", err)
 	}
 
@@ -459,7 +459,6 @@ func TestReadingSessionOperations(t *testing.T) {
 	}
 }
 
-
 func TestUpdateComicPageCount(t *testing.T) {
 	setupTestDB(t)
 
@@ -485,7 +484,7 @@ func TestUpdateComicPageCount(t *testing.T) {
 	}
 
 	// Update pageCount
-	if err := UpdateComicPageCount("pc-comic-1", 120); err != nil {
+	if err := UpdateComicPageCount(db, "pc-comic-1", 120); err != nil {
 		t.Fatalf("UpdateComicPageCount failed: %v", err)
 	}
 
@@ -504,7 +503,7 @@ func TestUpdateComicPageCount(t *testing.T) {
 	}
 
 	// UpdateComicPageCountIfStale SHOULD update when pageCount is 0
-	if err := UpdateComicPageCount("pc-comic-1", 0); err != nil {
+	if err := UpdateComicPageCount(db, "pc-comic-1", 0); err != nil {
 		t.Fatalf("Reset pageCount failed: %v", err)
 	}
 	if err := UpdateComicPageCountIfStale("pc-comic-1", 200); err != nil {

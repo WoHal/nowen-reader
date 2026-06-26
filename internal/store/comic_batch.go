@@ -165,11 +165,11 @@ func BatchSetReadingStatus(userID string, comicIDs []string, status string) erro
 
 	// 校验合法状态
 	validStatuses := map[string]bool{
-		"":        true, // 清空状态
-		"want":    true,
-		"reading": true,
+		"":         true, // 清空状态
+		"want":     true,
+		"reading":  true,
 		"finished": true,
-		"shelved": true,
+		"shelved":  true,
 	}
 	if !validStatuses[status] {
 		return fmt.Errorf("invalid reading status: %s", status)
@@ -341,7 +341,9 @@ func BulkCreateComicsWithSource(comics []struct {
 		}
 		libID := fileLibraryMap[c.ID]
 		relPath := c.Filename
-		if libID == "" { libID = "default" }
+		if libID == "" {
+			libID = "default"
+		}
 		if _, err := stmt.Exec(c.ID, c.Filename, c.Title, c.FileSize, comicType, libID, relPath, now, now); err != nil {
 		}
 	}
@@ -502,9 +504,10 @@ func GetComicsLibraryIDsByIDs(ids []string) (map[string]string, error) {
 	}
 	return result, nil
 }
+
 // UpdateComicPageCount 更新单个漫画的页数。
-func UpdateComicPageCount(comicID string, pageCount int) error {
-	_, err := db.Exec(`UPDATE "Comic" SET "pageCount" = ? WHERE "id" = ?`, pageCount, comicID)
+func UpdateComicPageCount(execer Execer, comicID string, pageCount int) error {
+	_, err := execer.Exec(`UPDATE "Comic" SET "pageCount" = ? WHERE "id" = ?`, pageCount, comicID)
 	return err
 }
 
@@ -519,14 +522,14 @@ func UpdateComicPageCountIfStale(comicID string, pageCount int) error {
 }
 
 // UpdateComicType 更新单个漫画的内容类型（comic/novel）。
-func UpdateComicType(comicID string, comicType string) error {
-	_, err := db.Exec(`UPDATE "Comic" SET "type" = ? WHERE "id" = ?`, comicType, comicID)
+func UpdateComicType(execer Execer, comicID string, comicType string) error {
+	_, err := execer.Exec(`UPDATE "Comic" SET "type" = ? WHERE "id" = ?`, comicType, comicID)
 	return err
 }
 
 // UpdateComicMD5Hash 更新单个漫画的 MD5 哈希值。
-func UpdateComicMD5Hash(comicID string, md5Hash string) error {
-	_, err := db.Exec(`UPDATE "Comic" SET "md5Hash" = ? WHERE "id" = ?`, md5Hash, comicID)
+func UpdateComicMD5Hash(execer Execer, comicID string, md5Hash string) error {
+	_, err := execer.Exec(`UPDATE "Comic" SET "md5Hash" = ? WHERE "id" = ?`, md5Hash, comicID)
 	return err
 }
 
@@ -837,9 +840,3 @@ func GetMissingComicIDsOlderThan(olderThan time.Duration) ([]string, error) {
 	}
 	return ids, nil
 }
-
-
-
-
-
-

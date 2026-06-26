@@ -10,6 +10,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type Execer interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
 var db *sql.DB
 
 // DB returns the global database connection.
@@ -75,6 +79,21 @@ func InitDB(dbPath string) error {
 	}
 
 	return nil
+}
+
+func WithTransaction(fn func(tx *sql.Tx)) error {
+	tx, err := db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	fn(tx)
+
+	err = tx.Commit()
+
+	return err
 }
 
 // autoRepairIndexes 检查数据库索引完整性，发现损坏时自动执行 REINDEX 修复。
