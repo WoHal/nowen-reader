@@ -10,7 +10,6 @@ import {
   Moon,
   Brain,
   Database,
-  Shield,
   Layers,
   RefreshCw,
   Tag,
@@ -18,9 +17,7 @@ import {
   Settings,
   LogOut,
   Globe,
-  HardDrive,
   Clock,
-  FileText,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
@@ -73,7 +70,7 @@ export default function Navbar({
               <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
           )}
-          <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground">
+          <span className="hidden sm:inline text-xs font-bold tracking-tight text-foreground text-balance">
             {siteName}
           </span>
         </div>
@@ -289,35 +286,6 @@ function MoreMenu({
                 <Clock className="h-4 w-4" />
                 阅读历史
               </button>
-
-              {/* 数据管理 */}
-              <button
-                onClick={() => handleAction(() => router.push("/data-admin"))}
-                className="w-full px-3 py-2.5 text-left text-sm text-muted hover:bg-card-hover hover:text-foreground flex items-center gap-2.5"
-              >
-                <HardDrive className="h-4 w-4" />
-                {((t as any).dataAdmin?.title) || "数据管理"}
-              </button>
-
-              {/* Data QA */}
-              <button
-                onClick={() => handleAction(() => router.push("/data-qa"))}
-                className="w-full px-3 py-2.5 text-left text-sm text-muted hover:bg-card-hover hover:text-foreground flex items-center gap-2.5"
-              >
-                <Shield className="h-4 w-4" />
-                Data QA
-              </button>
-
-              <a
-                href="/api-doc.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
-                className="w-full px-3 py-2.5 text-left text-sm text-muted hover:bg-card-hover hover:text-foreground flex items-center gap-2.5"
-              >
-                <FileText className="h-4 w-4" />
-                API Docs
-              </a>
 
               {/* 元数据刮削 — 启用时正常显示；未启用时灰显并跳转到设置 */}
               {scraperEnabled ? (

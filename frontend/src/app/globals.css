@@ -78,6 +78,12 @@ html.light {
   --shadow-cover-hover: 0 12px 36px rgba(0,0,0,0.12);
 }
 
+/* ── Font Smoothing (Principle #8) ── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 html, body {
   overflow-x: hidden;
   width: 100%;
@@ -88,6 +94,8 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Tabular numbers for dynamic counters (Principle #9) */
+  font-variant-numeric: tabular-nums;
 }
 
 /* Custom scrollbar */
@@ -487,7 +495,9 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
   font-size: 0.75rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.5);
-  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* Specific properties instead of 'all' (Principle #14) */
+  transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 200ms cubic-bezier(0.22, 1, 0.36, 1);
   min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
 }
@@ -594,7 +604,7 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
   transform: scale(1.03);
 }
 .motion-button:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 /* ── Motion: Cover Hover ── */
@@ -637,7 +647,7 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
   transform: scale(1.02);
 }
 .interactive-scale:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 
@@ -675,6 +685,36 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
     transform: none !important;
   }
 }
+/* ===================================================================
+   UI Polish — Principles #10 & #11
+   =================================================================== */
+
+/* ── Text Wrapping (Principle #10) ── */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* ── Image Outlines (Principle #11) ── */
+/* Dark mode: pure black outline */
+.image-outline {
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
+}
+
+/* Light mode: pure white outline */
+html.light .image-outline {
+  outline: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Tabular Numbers Utility (Principle #9) ── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ===================================================================
    P0 交互优化动画
    =================================================================== */
@@ -769,7 +809,7 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .btn-press:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 /* ===================================================================
@@ -816,7 +856,7 @@ html.light .tag-default { background: rgba(113, 113, 122, 0.1); color: #52525b; 
 }
 
 .drag-over-target {
-  transform: scale(0.97);
+  transform: scale(0.96);
   border: 2px dashed rgba(99, 102, 241, 0.5);
   border-radius: 12px;
   transition: transform 0.2s ease, border-color 0.2s ease;

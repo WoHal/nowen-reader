@@ -517,7 +517,7 @@ export default function StatsPanel() {
             </div>
             <span className="text-xs sm:text-sm">{t.stats.totalReadTime}</span>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground">
+          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground tabular-nums">
             {formatDuration(stats.totalReadTime)}
           </p>
         </div>
@@ -528,7 +528,7 @@ export default function StatsPanel() {
             </div>
             <span className="text-xs sm:text-sm">{t.stats.readingSessions}</span>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground">
+          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground tabular-nums">
             {stats.totalSessions}
           </p>
         </div>
@@ -539,7 +539,7 @@ export default function StatsPanel() {
             </div>
             <span className="text-xs sm:text-sm">{t.stats.comicsRead}</span>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground">
+          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground tabular-nums">
             {stats.totalComicsRead}
           </p>
         </div>
@@ -550,7 +550,7 @@ export default function StatsPanel() {
             </div>
             <span className="text-xs sm:text-sm">{t.statsEnhanced?.streak || "连续阅读"}</span>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground">
+          <p className="mt-2 sm:mt-3 text-xl sm:text-3xl font-bold text-foreground tabular-nums">
             {stats.currentStreak}{t.statsEnhanced?.days || "天"}
           </p>
           <p className="text-[10px] sm:text-xs text-muted mt-1">
