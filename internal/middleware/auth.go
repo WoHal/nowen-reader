@@ -1,6 +1,7 @@
 ﻿package middleware
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nowen-reader/nowen-reader/internal/model"
 	"github.com/nowen-reader/nowen-reader/internal/store"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -18,7 +20,70 @@ const (
 // contextKey constants
 const (
 	ContextKeyUser = "auth_user"
+
+	OPDSUnanthedHeaderKey   = "WWW-Authenticate"
+	OPDSUnanthedHeaderValue = `Basic realm="OPDS Library"`
 )
+
+func OPDSRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			// 无凭证，返回401，触发客户端弹账号密码框
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+
+		base64Str := authHeader[6:]
+		// base64解码
+		decoded, err := base64.StdEncoding.DecodeString(base64Str)
+		if err != nil {
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+
+		parts := strings.SplitN(string(decoded), ":", 2)
+		if len(parts) != 2 {
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+
+		username, password := parts[0], parts[1]
+		// 校验账号密码
+		user, err := store.GetUserByUsername(username)
+		if err != nil {
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+		if user == nil {
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+
+		// Verify password
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+			c.Header(OPDSUnanthedHeaderKey, OPDSUnanthedHeaderValue)
+			c.AbortWithStatus(401)
+			return
+		}
+
+		// 存入上下文，后续接口取用
+		authedUser := &model.AuthUser{
+			ID:        user.ID,
+			Username:  user.Username,
+			Nickname:  user.Nickname,
+			Role:      user.Role,
+			AiEnabled: user.AiEnabled,
+		}
+		c.Set(ContextKeyUser, authedUser)
+		c.Next()
+	}
+}
 
 // AuthRequired is a middleware that requires a valid session.
 func AuthRequired() gin.HandlerFunc {

@@ -92,6 +92,7 @@ func registerMetadataRoutes(api *gin.RouterGroup) {
 	// OPDS protocol — require auth (cookie or query token)
 	opds := NewOPDSHandler()
 	opdsGroup := api.Group("/opds")
+	opdsGroup.Use(middleware.OPDSRequired())
 	opdsGroup.Use(middleware.AuthRequired())
 	{
 		opdsGroup.GET("", opds.Root)
