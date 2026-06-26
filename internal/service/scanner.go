@@ -576,19 +576,19 @@ func fullSync() {
 	var wg sync.WaitGroup
 	var processed int64
 	var mu sync.Mutex
-	tx, err := store.DB().Begin()
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			log.Printf("[full-sync] Transaction Failed: %v", err)
-		}
-	}()
 
 	// 启动 worker
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			tx, err := store.DB().Begin()
+			defer func() {
+				if err != nil {
+					tx.Rollback()
+					log.Printf("[full-sync] Transaction Failed: %v", err)
+				}
+			}()
 			for item := range jobs {
 				func() {
 					defer func() {
@@ -656,6 +656,7 @@ func fullSync() {
 					}
 				}()
 			}
+			err = tx.Commit()
 		}()
 	}
 
@@ -685,8 +686,6 @@ func fullSync() {
 	}
 	close(jobs)
 	wg.Wait()
-
-	err = tx.Commit()
 
 	if processed > 0 {
 		log.Printf("[full-sync] Processed %d/%d archives (workers: %d)", processed, len(comics), numWorkers)
@@ -730,17 +729,18 @@ func md5Sync() {
 	var wg sync.WaitGroup
 	var processed int64
 	var mu sync.Mutex
-	tx, err := store.DB().Begin()
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			log.Printf("[md5-sync] Transaction Failed: %v", err)
-		}
-	}()
+
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			tx, err := store.DB().Begin()
+			defer func() {
+				if err != nil {
+					tx.Rollback()
+					log.Printf("[md5-sync] Transaction Failed: %v", err)
+				}
+			}()
 			for item := range jobs {
 				func() {
 					defer func() {
@@ -775,6 +775,7 @@ func md5Sync() {
 					}
 				}()
 			}
+			err = tx.Commit()
 		}()
 	}
 
@@ -809,8 +810,6 @@ func md5Sync() {
 	}
 	close(jobs)
 	wg.Wait()
-
-	err = tx.Commit()
 
 	if processed > 0 {
 		log.Printf("[md5-sync] Computed MD5 for %d/%d files (workers: %d)", processed, len(comics), numWorkers)
