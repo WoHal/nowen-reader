@@ -112,7 +112,9 @@ type DBStats struct {
 
 // GetDBStats 返回数据库状态信息。
 func GetDBStats() *DBStats {
-	if db == nil { return nil }
+	if db == nil {
+		return nil
+	}
 	var path string
 	if err := db.QueryRow(`PRAGMA database_list`).Scan(new(int), new(string), &path); err != nil {
 		return nil
@@ -511,6 +513,3 @@ func createTables() error {
 
 	return nil
 }
-
-
-

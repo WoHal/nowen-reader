@@ -184,11 +184,11 @@ func updateDirMtimes() {
 // ============================================================
 
 type diskFile struct {
-	ID       string
-	Filename string
-	Title    string
-	FileSize int64
-	Source   string // "comics" or "novels" — 来源目录类型
+	ID        string
+	Filename  string
+	Title     string
+	FileSize  int64
+	Source    string // "comics" or "novels" — 来源目录类型
 	LibraryID string // 书库ID
 }
 
@@ -375,7 +375,9 @@ func quickSync() (added, removed int) {
 		dirLibraryMap[dir] = lib.ID
 	}
 	for _, dir := range novelDirs {
-		if _, exists := dirLibraryMap[dir]; exists { continue }
+		if _, exists := dirLibraryMap[dir]; exists {
+			continue
+		}
 		lib, err := store.FindOrCreateLibrary(dir, "novel")
 		if err != nil {
 			log.Printf("[Sync] Warning: failed to find/create library for %s: %v", dir, err)
@@ -574,6 +576,13 @@ func fullSync() {
 	var wg sync.WaitGroup
 	var processed int64
 	var mu sync.Mutex
+	tx, err := store.DB().Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			log.Printf("[full-sync] Transaction Failed: %v", err)
+		}
+	}()
 
 	// 启动 worker
 	for w := 0; w < numWorkers; w++ {
@@ -677,6 +686,8 @@ func fullSync() {
 	close(jobs)
 	wg.Wait()
 
+	err = tx.Commit()
+
 	if processed > 0 {
 		log.Printf("[full-sync] Processed %d/%d archives (workers: %d)", processed, len(comics), numWorkers)
 	}
@@ -719,7 +730,13 @@ func md5Sync() {
 	var wg sync.WaitGroup
 	var processed int64
 	var mu sync.Mutex
-
+	tx, err := store.DB().Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			log.Printf("[md5-sync] Transaction Failed: %v", err)
+		}
+	}()
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
 		go func() {
@@ -793,6 +810,8 @@ func md5Sync() {
 	close(jobs)
 	wg.Wait()
 
+	err = tx.Commit()
+
 	if processed > 0 {
 		log.Printf("[md5-sync] Computed MD5 for %d/%d files (workers: %d)", processed, len(comics), numWorkers)
 	}
@@ -841,6 +860,7 @@ func repairMisclassifiedFolderComics() {
 
 	allDirs := config.GetAllScanDirs()
 	deleted := 0
+	tx, _ := store.DB().Begin()
 
 	for _, c := range folders {
 		// 还原磁盘路径：filename 形如 "TXT格式/1/"，需要拼接到某个根目录下
@@ -876,6 +896,10 @@ func repairMisclassifiedFolderComics() {
 				log.Printf("[repair-folder] 删除误折叠目录条目: %s (%s)", c.Filename, reason)
 			}
 		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("[repair-folder] Transaction Failed: %v", err)
 	}
 
 	if deleted > 0 {
@@ -916,6 +940,13 @@ func RedetectEbookTypes() int {
 	mode := config.GetSiteConfig().ScannerConfig.EbookAutoDetectMode()
 	allDirs := config.GetAllScanDirs()
 	fixed := 0
+	tx, err := store.DB().Begin()
+	defer func() {
+		if err != nil {
+			log.Printf("[redetect] Transaction Failed: %v", err)
+			tx.Rollback()
+		}
+	}()
 
 	// ---------------------------------------------------------
 	// 阶段 1：回滚误判 —— 把"在小说目录里却被标为 comic"的电子书改回 novel
@@ -1055,6 +1086,7 @@ func RedetectEbookTypes() int {
 		_ = store.UpdateComicPageCount(c.ID, imgCount)
 		pageFixed++
 	}
+	err = tx.Commit()
 	if pageFixed > 0 {
 		log.Printf("[redetect] Updated page count for %d ebook comic(s)", pageFixed)
 	}
@@ -1390,7 +1422,6 @@ func SyncLibraryByID(libraryID string) (int, error) {
 		return 0, fmt.Errorf("failed to query existing comics: %w", err)
 	}
 
-
 	fileMap := make(map[string]diskFile, len(allFiles))
 	for _, f := range allFiles {
 		fileMap[f.ID] = f
@@ -1414,7 +1445,7 @@ func SyncLibraryByID(libraryID string) (int, error) {
 		rootPathSet[filepath.Clean(rp)] = true
 	}
 
-	var toAdd []struct{
+	var toAdd []struct {
 		ID       string
 		Filename string
 		Title    string
@@ -1431,7 +1462,7 @@ func SyncLibraryByID(libraryID string) (int, error) {
 				}
 			} else {
 				// 文件不存在，需要新增
-				toAdd = append(toAdd, struct{
+				toAdd = append(toAdd, struct {
 					ID       string
 					Filename string
 					Title    string
@@ -1477,7 +1508,6 @@ func SyncLibraryByID(libraryID string) (int, error) {
 
 	return totalAdded, nil
 }
-
 
 func CleanupInvalidComics() (int, error) {
 	allComics, err := store.GetAllComicIDsAndFilenames()
@@ -1555,11 +1585,3 @@ func CleanupInvalidComics() (int, error) {
 	log.Printf("[cleanup] Removed %d expired comics (missing for > %v)", len(expiredIDs), missingGracePeriod)
 	return len(expiredIDs), nil
 }
-
-
-
-
-
-
-
-
