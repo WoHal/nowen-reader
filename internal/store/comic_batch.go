@@ -431,7 +431,76 @@ type ComicIDFilename struct {
 	Title    string
 }
 
+// ForEachComicIDFilename 流式遍历所有漫画的ID和文件名，每批调用回调函数。
+// 分批大小由 batchSize 控制（默认500），避免一次性将所有记录加载到内存。
+// 适用于超大型书库（10万+条记录）的扫描清理场景。
+func ForEachComicIDFilename(batchSize int, fn func(batch []ComicIDFilename) error) error {
+	if batchSize <= 0 {
+		batchSize = 500
+	}
+	rows, err := db.Query(`SELECT "id", "filename", COALESCE("title", '') FROM "Comic" ORDER BY "id"`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	batch := make([]ComicIDFilename, 0, batchSize)
+	for rows.Next() {
+		var c ComicIDFilename
+		if rows.Scan(&c.ID, &c.Filename, &c.Title) == nil {
+			batch = append(batch, c)
+			if len(batch) >= batchSize {
+				if err := fn(batch); err != nil {
+					return err
+				}
+				batch = batch[:0] // 复用底层数组，减少 GC 压力
+			}
+		}
+	}
+	if len(batch) > 0 {
+		if err := fn(batch); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+// GetAllComicIDsByLibraryIDStreaming 流式返回指定书库下的所有漫画ID。
+// 每批最多返回 batchSize 条记录，通过回调函数处理。
+func GetAllComicIDsByLibraryIDStreaming(libraryID string, batchSize int, fn func(ids []string) error) error {
+	if batchSize <= 0 {
+		batchSize = 500
+	}
+	rows, err := db.Query(`SELECT "id" FROM "Comic" WHERE "libraryId" = ? ORDER BY "id"`, libraryID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	batch := make([]string, 0, batchSize)
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			batch = append(batch, id)
+			if len(batch) >= batchSize {
+				if err := fn(batch); err != nil {
+					return err
+				}
+				batch = batch[:0]
+			}
+		}
+	}
+	if len(batch) > 0 {
+		if err := fn(batch); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
 // GetAllComicIDsAndFilenames 返回所有漫画的ID、文件名和标题。
+// 注意：此函数一次性加载所有记录到内存。对于超大型书库（10万+条记录），
+// 请使用 ForEachComicIDFilename 流式处理以避免内存峰值。
 func GetAllComicIDsAndFilenames() ([]ComicIDFilename, error) {
 	rows, err := db.Query(`SELECT "id", "filename", COALESCE("title", '') FROM "Comic"`)
 	if err != nil {

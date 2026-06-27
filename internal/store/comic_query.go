@@ -284,11 +284,19 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 	}
 
 	totalPages := 1
-	if pageSize > 0 && total > 0 {
-		totalPages = (total + pageSize - 1) / pageSize
-	}
+	// 当未指定 pageSize（<=0）时，限制最大返回数量为 5000，避免超大型书库一次性加载
+	// 全部记录导致内存暴涨（1.8TB 书库可能有数十万条记录）。
+	const maxUnpagedSize = 5000
 	if pageSize <= 0 {
-		pageSize = total
+		if total > maxUnpagedSize {
+			pageSize = maxUnpagedSize
+		} else {
+			pageSize = total
+		}
+		totalPages = 1
+	}
+	if pageSize > 0 && total > 0 && totalPages == 1 {
+		totalPages = (total + pageSize - 1) / pageSize
 	}
 
 	// Main query — 带 UserID 时优先返回 UserComicState 的字段（COALESCE 回退到 Comic 全局值）

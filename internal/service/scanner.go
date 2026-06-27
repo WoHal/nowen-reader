@@ -583,29 +583,28 @@ func fullSync() {
 		Val any
 	}
 
-	updates := map[int]map[string][]*updateItem{}
+	// 使用锁保护的共享切片，避免原来的 "闭包捕获切片值副本 + append 丢失" bug
+	var comicPageCountUpdates []*updateItem
+	var comicTypeUpdates []*updateItem
+	var updatesMu sync.Mutex
 
 	// 启动 worker
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		updates[w] = map[string][]*updateItem{
-			"comicPageCount": make([]*updateItem, 0),
-			"comicType":      make([]*updateItem, 0),
-		}
 
-		go func(i int) {
-			comicPageCountList := updates[i]["comicPageCount"]
-			comicTypeList := updates[i]["comicType"]
+		go func() {
 			defer wg.Done()
 			for item := range jobs {
 				func() {
 					defer func() {
 						if r := recover(); r != nil {
 							log.Printf("[full-sync] PANIC processing %s: %v", item.Filename, r)
-							comicPageCountList = append(comicPageCountList, &updateItem{
+							updatesMu.Lock()
+							comicPageCountUpdates = append(comicPageCountUpdates, &updateItem{
 								ID:  item.ID,
 								Val: -1,
 							})
+							updatesMu.Unlock()
 						}
 					}()
 					// For ebook archives already marked as comic in DB, count images instead of chapters
@@ -626,17 +625,21 @@ func fullSync() {
 
 					if countErr != nil || pageCount <= 0 {
 						log.Printf("[full-sync] Failed to parse %s: %v", item.Filename, countErr)
-						comicPageCountList = append(comicPageCountList, &updateItem{
+						updatesMu.Lock()
+						comicPageCountUpdates = append(comicPageCountUpdates, &updateItem{
 							ID:  item.ID,
 							Val: -1,
 						})
+						updatesMu.Unlock()
 						return
 					}
 
-					comicPageCountList = append(comicPageCountList, &updateItem{
+					updatesMu.Lock()
+					comicPageCountUpdates = append(comicPageCountUpdates, &updateItem{
 						ID:  item.ID,
 						Val: pageCount,
 					})
+					updatesMu.Unlock()
 
 					mu.Lock()
 					processed++
@@ -649,46 +652,49 @@ func fullSync() {
 						if archiveType == archive.TypeEpub {
 							if archive.IsImageHeavyEpub(item.Path) {
 								log.Printf("[full-sync] Detected image-heavy EPUB, marking as comic: %s", item.Filename)
-								comicTypeList = append(comicTypeList, &updateItem{
+								updatesMu.Lock()
+								comicTypeUpdates = append(comicTypeUpdates, &updateItem{
 									ID:  item.ID,
 									Val: "comic",
 								})
+								updatesMu.Unlock()
 								// Recalculate page count: ebook page count is chapters,
 								// but comic mode needs image count
 								if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
-									comicPageCountList = append(comicPageCountList, &updateItem{
+									updatesMu.Lock()
+									comicPageCountUpdates = append(comicPageCountUpdates, &updateItem{
 										ID:  item.ID,
 										Val: imgCount,
 									})
+									updatesMu.Unlock()
 								}
 							}
 						} else if archiveType == archive.TypeMobi || archiveType == archive.TypeAzw3 {
 							// mobi/azw3 使用纯 Go 解析器直接检测内容类型（无需 Calibre）
 							if archive.IsMobiImageHeavy(item.Path) {
 								log.Printf("[full-sync] Detected image-heavy %s, marking as comic: %s", archiveType, item.Filename)
-								comicTypeList = append(comicTypeList, &updateItem{
+								updatesMu.Lock()
+								comicTypeUpdates = append(comicTypeUpdates, &updateItem{
 									ID:  item.ID,
 									Val: "comic",
 								})
+								updatesMu.Unlock()
 								// Recalculate page count: ebook page count is chapters,
 								// but comic mode needs image count
 								if imgCount, err := GetArchivePageCount(item.Path, true); err == nil && imgCount > 0 {
-									comicPageCountList = append(comicPageCountList, &updateItem{
+									updatesMu.Lock()
+									comicPageCountUpdates = append(comicPageCountUpdates, &updateItem{
 										ID:  item.ID,
 										Val: imgCount,
 									})
+									updatesMu.Unlock()
 								}
 							}
 						}
 					}
 				}()
 			}
-
-			if err != nil {
-				log.Printf("[full-sync] Transaction Failed: %v", err)
-			}
-
-		}(w)
+		}()
 	}
 
 	// 分发任务
@@ -718,18 +724,28 @@ func fullSync() {
 	close(jobs)
 	wg.Wait()
 
-	for _, update := range updates {
+	// 批量写入 pageCount 更新
+	if len(comicPageCountUpdates) > 0 {
 		store.WithTransaction(func(tx *sql.Tx) {
-			for _, updateItem := range update["comicPageCount"] {
-				store.UpdateComicPageCount(tx, updateItem.ID, updateItem.Val.(int))
-			}
-		})
-		store.WithTransaction(func(tx *sql.Tx) {
-			for _, updateItem := range update["comicType"] {
-				store.UpdateComicPageCount(tx, updateItem.ID, updateItem.Val.(int))
+			for _, item := range comicPageCountUpdates {
+				store.UpdateComicPageCount(tx, item.ID, item.Val.(int))
 			}
 		})
 	}
+	// 批量写入 type 更新（修复：原来是调用了 UpdateComicPageCount 而非 UpdateComicType，这是一个 bug）
+	if len(comicTypeUpdates) > 0 {
+		store.WithTransaction(func(tx *sql.Tx) {
+			for _, item := range comicTypeUpdates {
+				if typeStr, ok := item.Val.(string); ok {
+					store.UpdateComicType(tx, item.ID, typeStr)
+				}
+			}
+		})
+	}
+
+	// 释放更新切片内存
+	comicPageCountUpdates = nil
+	comicTypeUpdates = nil
 
 	if processed > 0 {
 		log.Printf("[full-sync] Processed %d/%d archives (workers: %d)", processed, len(comics), numWorkers)
@@ -779,16 +795,15 @@ func md5Sync() {
 		Val any
 	}
 
-	updates := map[int][]*updateItem{}
+	// 使用锁保护的共享切片，避免闭包捕获切片值副本导致的 bug
+	var md5Updates []*updateItem
+	var md5Mu sync.Mutex
 
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		updates[w] = []*updateItem{}
 
-		go func(i int) {
+		go func() {
 			defer wg.Done()
-
-			comicMD5List := updates[i]
 			for item := range jobs {
 				func() {
 					defer func() {
@@ -815,19 +830,19 @@ func md5Sync() {
 					f.Close()
 					hash := fmt.Sprintf("%x", h.Sum(nil))
 
-					comicMD5List = append(comicMD5List, &updateItem{
+					md5Mu.Lock()
+					md5Updates = append(md5Updates, &updateItem{
 						ID:  item.ID,
 						Val: hash,
 					})
+					md5Mu.Unlock()
+
 					mu.Lock()
 					processed++
 					mu.Unlock()
 				}()
 			}
-			if err != nil {
-				log.Printf("[md5-sync] Transaction Failed: %v", err)
-			}
-		}(w)
+		}()
 	}
 
 	for _, c := range comics {
@@ -863,13 +878,15 @@ func md5Sync() {
 	close(jobs)
 	wg.Wait()
 
-	for _, row := range updates {
+	// 批量写入 MD5 更新
+	if len(md5Updates) > 0 {
 		store.WithTransaction(func(tx *sql.Tx) {
-			for _, item := range row {
+			for _, item := range md5Updates {
 				store.UpdateComicMD5Hash(tx, item.ID, item.Val.(string))
 			}
 		})
 	}
+	md5Updates = nil
 
 	if processed > 0 {
 		log.Printf("[md5-sync] Computed MD5 for %d/%d files (workers: %d)", processed, len(comics), numWorkers)
@@ -1572,55 +1589,75 @@ func SyncLibraryByID(libraryID string) (int, error) {
 	return totalAdded, nil
 }
 
+// CleanupInvalidComics 流式检查数据库中所有漫画记录，标记并清理磁盘上文件已不存在的记录。
+// 改为流式分批处理，避免一次性加载所有漫画记录到内存（对 1.8TB 书库尤为重要）。
 func CleanupInvalidComics() (int, error) {
-	allComics, err := store.GetAllComicIDsAndFilenames()
+	allDirs := config.GetAllScanDirs()
+	var nowMissingIDs []string
+	var reappearedIDs []string
+	const cleanupBatchSize = 2000 // 每批处理 2000 条记录
+
+	// 流式遍历漫画记录，分批检查文件存在性
+	err := store.ForEachComicIDFilename(cleanupBatchSize, func(batch []store.ComicIDFilename) error {
+		for _, c := range batch {
+			found := false
+			for _, dir := range allDirs {
+				if strings.HasSuffix(c.Filename, "/") {
+					fp := filepath.Join(dir, strings.TrimSuffix(c.Filename, "/"))
+					if info, err := os.Stat(fp); err == nil && info.IsDir() {
+						found = true
+						break
+					}
+				} else {
+					fp := filepath.Join(dir, c.Filename)
+					if _, err := os.Stat(fp); err == nil {
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				nowMissingIDs = append(nowMissingIDs, c.ID)
+			} else {
+				reappearedIDs = append(reappearedIDs, c.ID)
+			}
+		}
+
+		// 每批处理完后立即写入数据库，避免 nowMissingIDs/reappearedIDs 堆积在内存中
+		if len(reappearedIDs) >= cleanupBatchSize {
+			if err := store.UnmarkComicsAsMissing(reappearedIDs); err != nil {
+				log.Printf("[cleanup] Failed to unmark reappeared comics: %v", err)
+			}
+			reappearedIDs = reappearedIDs[:0]
+		}
+		if len(nowMissingIDs) >= cleanupBatchSize {
+			if err := store.MarkComicsAsMissing(nowMissingIDs); err != nil {
+				log.Printf("[cleanup] Failed to mark missing comics: %v", err)
+				return err
+			}
+			nowMissingIDs = nowMissingIDs[:0]
+		}
+		return nil
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	allDirs := config.GetAllScanDirs()
-	var nowMissingIDs []string
-	var reappearedIDs []string
-
-	for _, c := range allComics {
-		found := false
-		for _, dir := range allDirs {
-			// image folder comic: filename ends with "/"
-			if strings.HasSuffix(c.Filename, "/") {
-				fp := filepath.Join(dir, strings.TrimSuffix(c.Filename, "/"))
-				if info, err := os.Stat(fp); err == nil && info.IsDir() {
-					found = true
-					break
-				}
-			} else {
-				fp := filepath.Join(dir, c.Filename)
-				if _, err := os.Stat(fp); err == nil {
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
-			nowMissingIDs = append(nowMissingIDs, c.ID)
-		} else {
-			reappearedIDs = append(reappearedIDs, c.ID)
-		}
-	}
-
-	// Reappeared comics: clear missingSince
+	// 处理剩余的 reappearedIDs
 	if len(reappearedIDs) > 0 {
 		if err := store.UnmarkComicsAsMissing(reappearedIDs); err != nil {
 			log.Printf("[cleanup] Failed to unmark reappeared comics: %v", err)
 		}
 	}
 
-	// Mark newly missing comics with a timestamp
+	// 处理剩余的 nowMissingIDs
+	totalMissing := len(nowMissingIDs)
 	if len(nowMissingIDs) > 0 {
 		if err := store.MarkComicsAsMissing(nowMissingIDs); err != nil {
 			log.Printf("[cleanup] Failed to mark missing comics: %v", err)
 			return 0, err
 		}
-		log.Printf("[cleanup] Marked %d comics as missing (grace period: %v)", len(nowMissingIDs), missingGracePeriod)
+		log.Printf("[cleanup] Marked %d comics as missing (grace period: %v)", totalMissing, missingGracePeriod)
 	}
 
 	// Only delete comics that have been missing longer than the grace period
@@ -1631,7 +1668,7 @@ func CleanupInvalidComics() (int, error) {
 	}
 
 	if len(expiredIDs) == 0 {
-		return 0, nil
+		return totalMissing, nil
 	}
 
 	for i := 0; i < len(expiredIDs); i += dbBatchSize {
@@ -1646,5 +1683,5 @@ func CleanupInvalidComics() (int, error) {
 	}
 
 	log.Printf("[cleanup] Removed %d expired comics (missing for > %v)", len(expiredIDs), missingGracePeriod)
-	return len(expiredIDs), nil
+	return totalMissing, nil
 }
