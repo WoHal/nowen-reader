@@ -259,12 +259,19 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 	}
 	orderClause := fmt.Sprintf("ORDER BY %s %s", sortField, sortDir)
 
-	// Count total
-	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM "Comic" c %s %s`, joinClause, whereClause)
-	countArgs := append(append([]interface{}{}, joinArgs...), args...)
+	// Count total — 对无筛选条件的常见首页请求使用快速路径
 	var total int
-	if err := db.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
-		return nil, fmt.Errorf("count comics: %w", err)
+	if len(conditions) == 0 && opts.UserID == "" {
+		// 无筛选条件时用总行数，极快
+		if err := db.QueryRow(`SELECT COUNT(*) FROM "Comic"`).Scan(&total); err != nil {
+			total = 10000 // 兜底估算
+		}
+	} else {
+		countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM "Comic" c %s %s`, joinClause, whereClause)
+		countArgs := append(append([]interface{}{}, joinArgs...), args...)
+		if err := db.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
+			return nil, fmt.Errorf("count comics: %w", err)
+		}
 	}
 
 	// Pagination
@@ -386,7 +393,8 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 			v := int(year.Int64)
 			c.Year = &v
 		}
-		c.CoverURL = BuildComicCoverURL(c.ID)
+		// CoverURL 延迟到返回结果时生成，避免在行扫描中对每行做 os.Stat
+		c.CoverURL = ""
 
 		// Initialize empty slices (not null in JSON)
 		c.Tags = []ComicTagInfo{}
@@ -417,6 +425,11 @@ func GetAllComics(opts ComicListOptions) (*ComicListResult, error) {
 		if err := loadComicCategories(comics, comicIDs, comicIdx); err != nil {
 			log.Printf("[Store] Warning: failed to load categories: %v", err)
 		}
+	}
+
+	// 统一填充 CoverURL（仅 top-N 结果，避免行扫描中对每行做 os.Stat）
+	for i := range comics {
+		comics[i].CoverURL = BuildComicCoverURL(comics[i].ID)
 	}
 
 	return &ComicListResult{
