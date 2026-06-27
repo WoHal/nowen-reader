@@ -61,6 +61,8 @@ export default function CollectionsPage() {
   const [groups, setGroups] = useState<ComicGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [totalGroups, setTotalGroups] = useState(0);
+  const [serverTotalPages, setServerTotalPages] = useState(1);
 
   // 视图与筛选
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -200,13 +202,22 @@ export default function CollectionsPage() {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const data = await fetchGroups(contentFilter);
-      setGroups(data);
+      const result = await fetchGroups({
+        contentType: contentFilter,
+        search: searchQuery || undefined,
+        sortBy: sortField,
+        sortOrder: sortOrder,
+        page: currentPage,
+        pageSize: COLLECTIONS_PAGE_SIZE,
+      });
+      setGroups(result.groups);
+      setTotalGroups(result.total);
+      setServerTotalPages(result.totalPages);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [contentFilter]);
+  }, [contentFilter, searchQuery, sortField, sortOrder, currentPage]);
 
   useEffect(() => {
     loadGroups();
@@ -240,45 +251,9 @@ export default function CollectionsPage() {
     window.history.replaceState(null, "", newUrl);
   }, [currentPage]);
 
-  // ── 过滤 + 排序 ──
-  const filteredAndSorted = useMemo(() => {
-    let result = [...groups];
-
-    // 搜索过滤
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((g) => g.name.toLowerCase().includes(q));
-    }
-
-    // 排序
-    result.sort((a, b) => {
-      let cmp = 0;
-      switch (sortField) {
-        case "name":
-          cmp = a.name.localeCompare(b.name, "zh-CN");
-          break;
-        case "comicCount":
-          cmp = a.comicCount - b.comicCount;
-          break;
-        case "updatedAt":
-          cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        case "createdAt":
-          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-      }
-      return sortOrder === "asc" ? cmp : -cmp;
-    });
-
-    return result;
-  }, [groups, searchQuery, sortField, sortOrder]);
-
-  // ── 分页计算 ──
-  const collectionsTotalPages = Math.max(1, Math.ceil(filteredAndSorted.length / COLLECTIONS_PAGE_SIZE));
-  const pagedCollections = useMemo(() => {
-    const start = (currentPage - 1) * COLLECTIONS_PAGE_SIZE;
-    return filteredAndSorted.slice(start, start + COLLECTIONS_PAGE_SIZE);
-  }, [filteredAndSorted, currentPage, COLLECTIONS_PAGE_SIZE]);
+  // ── 过滤 + 排序 + 分页已在服务端完成，groups 直接是当前页数据 ──
+  const pagedCollections = groups;
+  const collectionsTotalPages = serverTotalPages;
 
   // 搜索/排序/筛选变化时重置到第1页（使用受保护的 setter，在挂载保护期内不会重置页码）
   const filterKeyRef = useRef(
@@ -286,14 +261,12 @@ export default function CollectionsPage() {
   );
   useEffect(() => {
     const newKey = JSON.stringify([searchQuery, sortField, sortOrder, contentFilter]);
-    if (filterKeyRef.current === newKey) return; // 值没变（含首次挂载），不重置
+    if (filterKeyRef.current === newKey) return;
     filterKeyRef.current = newKey;
     safeSetCurrentPage(1);
   }, [searchQuery, sortField, sortOrder, contentFilter, safeSetCurrentPage]);
 
-  // 确保当前页码不超出范围（比如删除后总页数减少）
-  // 注意：数据加载中时跳过检查，避免 groups 为空数组时 totalPages=1 导致误重置已从 sessionStorage 恢复的页码
-  // 同时在挂载保护期内也跳过检查
+  // 确保当前页码不超出范围
   useEffect(() => {
     if (!loading && !pageResetGuardRef.current && currentPage > collectionsTotalPages) {
       setCurrentPage(collectionsTotalPages);
@@ -356,12 +329,12 @@ export default function CollectionsPage() {
   }, []);
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.size === filteredAndSorted.length) {
+    if (selectedIds.size === pagedCollections.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredAndSorted.map((g) => g.id)));
+      setSelectedIds(new Set(pagedCollections.map((g) => g.id)));
     }
-  }, [selectedIds.size, filteredAndSorted]);
+  }, [selectedIds.size, pagedCollections]);
 
   const exitBatchMode = useCallback(() => {
     setBatchMode(false);
@@ -444,7 +417,7 @@ export default function CollectionsPage() {
                 {tCollections.title || "合集管理"}
               </h1>
               <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent flex-shrink-0">
-                {filteredAndSorted.length}
+                {pagedCollections.length}
               </span>
             </div>
 
@@ -506,12 +479,12 @@ export default function CollectionsPage() {
                 onClick={toggleSelectAll}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground hover:bg-card transition-colors"
               >
-                {selectedIds.size === filteredAndSorted.length && filteredAndSorted.length > 0 ? (
+                {selectedIds.size === pagedCollections.length && pagedCollections.length > 0 ? (
                   <CheckCheck className="h-3.5 w-3.5 text-accent" />
                 ) : (
                   <Square className="h-3.5 w-3.5" />
                 )}
-                {selectedIds.size === filteredAndSorted.length && filteredAndSorted.length > 0
+                {selectedIds.size === pagedCollections.length && pagedCollections.length > 0
                   ? (tCollections.deselectAll || "取消全选")
                   : (tCollections.selectAll || "全选")}
               </button>
@@ -764,7 +737,7 @@ export default function CollectionsPage() {
             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-accent" />
             <p className="text-sm text-muted">{tCollections.loading || "加载中..."}</p>
           </div>
-        ) : filteredAndSorted.length === 0 ? (
+        ) : pagedCollections.length === 0 ? (
           /* 空状态 */
           <div className="flex flex-col items-center justify-center py-24">
             <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-card">
@@ -966,7 +939,7 @@ export default function CollectionsPage() {
 
             {/* 总数信息 */}
             <span className="ml-2 text-xs text-muted hidden sm:inline">
-              {(tCollections.totalCollections || "共 {count} 个合集").replace("{count}", String(filteredAndSorted.length))}
+              {(tCollections.totalCollections || "共 {count} 个合集").replace("{count}", String(pagedCollections.length))}
             </span>
           </div>
         )}

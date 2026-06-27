@@ -227,6 +227,10 @@ export default function Home() {
     }
     return "asc";
   });
+  // 合集视图专用排序（与漫画视图的 sortBy/sortOrder 独立）
+  const [groupSortBy, setGroupSortBy] = useState<string>("sortOrder");
+  const [groupSortOrder, setGroupSortOrder] = useState<string>("asc");
+  const groupPageSize = 24; // 合集视图每页数量
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("homeFilter:category") || null;
@@ -252,6 +256,7 @@ export default function Home() {
 
   // Comic Groups (自定义合并合集)
   const [groups, setGroups] = useState<ComicGroup[]>([]);
+  const [groupTotalPages, setGroupTotalPages] = useState(1);
   const [groupedComicMap, setGroupedComicMap] = useState<Record<string, number[]>>({});
   const [showGroupView, setShowGroupView] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -442,37 +447,37 @@ export default function Home() {
   // 加载合集数据
   const loadGroups = useCallback(async () => {
     const [grps, gmap] = await Promise.all([
-      fetchGroups(undefined, selectedCategory || undefined, selectedTags.length > 0 ? selectedTags : undefined, favoritesOnly || undefined, selectedLibraryIds.length > 0 ? selectedLibraryIds : undefined),
+      fetchGroups({
+        category: selectedCategory || undefined,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        favoritesOnly: favoritesOnly || undefined,
+        libraryIds: selectedLibraryIds.length > 0 ? selectedLibraryIds : undefined,
+        search: debouncedSearch || undefined,
+        sortBy: groupSortBy,
+        sortOrder: groupSortOrder,
+        page: groupPage,
+        pageSize: groupPageSize,
+      }),
       fetchGroupedComicMap(),
     ]);
-    setGroups(grps);
+    setGroups(grps.groups);
+    setGroupTotalPages(grps.totalPages);
     setGroupedComicMap(gmap);
     // 合集数据变化后刷新系列级分类统计
     if (showGroupView) {
       refetchGroupCategories();
     }
-  }, [selectedCategory, selectedTags, favoritesOnly, selectedLibraryIds, showGroupView, refetchGroupCategories]);
+  }, [selectedCategory, selectedTags, favoritesOnly, selectedLibraryIds, showGroupView, refetchGroupCategories, debouncedSearch, groupSortBy, groupSortOrder, groupPage, groupPageSize]);
 
-  // 搜索过滤合集（前端过滤，匹配名称、作者、描述、标签；隐藏空合集）
-  const filteredGroups = useMemo(() => {
-    const nonEmpty = groups.filter((g) => (g.comicCount ?? 0) > 0);
-    if (!debouncedSearch) return nonEmpty;
-    const q = debouncedSearch.toLowerCase();
-    return nonEmpty.filter((g) =>
-      (g.name?.toLowerCase().includes(q)) ||
-      (g.author?.toLowerCase().includes(q)) ||
-      (g.description?.toLowerCase().includes(q)) ||
-      (g.tags?.toLowerCase().includes(q)) ||
-      (g.publisher?.toLowerCase().includes(q))
-    );
-  }, [groups, debouncedSearch]);
+  // 搜索/排序/分页已在服务端完成，groups 直接是当前页的结果
+  const filteredGroups = useMemo(() => groups, [groups]);
 
   // 合集视图分页计算
-  const groupTotalPages = Math.max(1, Math.ceil(filteredGroups.length / GROUP_PAGE_SIZE));
+  // groupTotalPages 由服务端返回，使用 state 存储
   const pagedGroups = useMemo(() => {
-    const start = (groupPage - 1) * GROUP_PAGE_SIZE;
-    return filteredGroups.slice(start, start + GROUP_PAGE_SIZE);
-  }, [filteredGroups, groupPage, GROUP_PAGE_SIZE]);
+    // 服务端已分页，filteredGroups 就是当前页数据
+    return filteredGroups;
+  }, [filteredGroups, groupPage]);
 
   useEffect(() => {
     loadGroups();

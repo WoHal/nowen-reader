@@ -30,8 +30,8 @@ export default function AddToGroupDialog({
 
   const loadGroups = useCallback(async () => {
     setLoading(true);
-    const data = await fetchGroups(contentType);
-    setGroups(data);
+    const result = await fetchGroups({ contentType, pageSize: 0 }); // 不分页，取全量（用于弹窗内查看）
+    setGroups(result.groups);
     setLoading(false);
   }, [contentType]);
 

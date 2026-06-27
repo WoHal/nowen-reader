@@ -9,20 +9,54 @@ import type { ComicGroup, ComicGroupDetail, AutoDetectGroup } from "@/hooks/useC
 // 分组 CRUD
 // ============================================================
 
-/** 获取所有分组（支持按内容类型、分类、标签、书库过滤） */
-export async function fetchGroups(contentType?: string, category?: string, tags?: string[], favoritesOnly?: boolean, libraryIds?: string[]): Promise<ComicGroup[]> {
+/** 分组列表分页查询参数 */
+export interface GroupListParams {
+  contentType?: string;
+  category?: string;
+  tags?: string[];
+  favoritesOnly?: boolean;
+  libraryIds?: string[];
+  search?: string;
+  sortBy?: string;       // "name" | "comicCount" | "updatedAt" | "createdAt" | "sortOrder"
+  sortOrder?: string;    // "asc" | "desc"
+  page?: number;
+  pageSize?: number;
+}
+
+/** 分组列表查询结果（含分页信息） */
+export interface GroupListResult {
+  groups: ComicGroup[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/** 获取分组列表（支持服务端分页、搜索、排序） */
+export async function fetchGroups(params?: GroupListParams): Promise<GroupListResult> {
   try {
-    const params = new URLSearchParams();
-    if (contentType) params.set("contentType", contentType);
-    if (category) params.set("category", category);
-    if (tags && tags.length > 0) params.set("tags", tags.join(","));
-    if (favoritesOnly) params.set("favoritesOnly", "true");
-    if (libraryIds && libraryIds.length > 0) params.set("libraryIds", libraryIds.join(","));
-    const url = params.toString() ? `/api/groups?${params}` : "/api/groups";
+    const searchParams = new URLSearchParams();
+    if (params?.contentType) searchParams.set("contentType", params.contentType);
+    if (params?.category) searchParams.set("category", params.category);
+    if (params?.tags && params.tags.length > 0) searchParams.set("tags", params.tags.join(","));
+    if (params?.favoritesOnly) searchParams.set("favoritesOnly", "true");
+    if (params?.libraryIds && params.libraryIds.length > 0) searchParams.set("libraryIds", params.libraryIds.join(","));
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+    if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.pageSize) searchParams.set("pageSize", String(params.pageSize));
+    const url = searchParams.toString() ? `/api/groups?${searchParams}` : "/api/groups";
     const data: any = await apiClient.get(url);
-    return data.groups || [];
+    return {
+      groups: data.groups || [],
+      total: data.total || 0,
+      page: data.page || 1,
+      pageSize: data.pageSize || 24,
+      totalPages: data.totalPages || 1,
+    };
   } catch {
-    return [];
+    return { groups: [], total: 0, page: 1, pageSize: 24, totalPages: 1 };
   }
 }
 

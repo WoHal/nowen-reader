@@ -70,27 +70,46 @@ type GroupComicItem struct {
 
 // GroupListOptions 分组列表查询选项。
 type GroupListOptions struct {
-	UserID       string   // 用户ID过滤
-	ContentType  string   // 内容类型过滤: "comic" | "novel" | "" (全部)
-	Category     string   // 分类过滤（slug）
-	Tags         []string // 标签过滤（标签名列表，AND 逻辑）
-	FavoritesOnly bool   // 仅返回包含收藏漫画的分组
-	LibraryIDs   []string // 书库ID过滤：只返回包含这些书库中漫画的分组
+	UserID        string   // 用户ID过滤
+	ContentType   string   // 内容类型过滤: "comic" | "novel" | "" (全部)
+	Category      string   // 分类过滤（slug）
+	Tags          []string // 标签过滤（标签名列表，AND 逻辑）
+	FavoritesOnly bool     // 仅返回包含收藏漫画的分组
+	LibraryIDs    []string // 书库ID过滤：只返回包含这些书库中漫画的分组
+	Search        string   // 搜索关键词（按分组名称模糊匹配）
+	SortBy        string   // 排序字段: "name" | "comicCount" | "updatedAt" | "createdAt" | "sortOrder"
+	SortOrder     string   // 排序方向: "asc" | "desc"
+	Page          int      // 页码（1-based，<=0 时不分页）
+	PageSize      int      // 每页数量（<=0 时取默认值 24）
 }
 
 // GetAllGroups 获取所有分组（带漫画数量）。
 // 如果提供了 userID，只返回该用户的分组。
 // 如果提供了 contentType，只返回包含该类型漫画的分组。
 func GetAllGroups(userID ...string) ([]ComicGroupWithCount, error) {
-	return GetAllGroupsWithOptions(GroupListOptions{
+	result, err := GetAllGroupsWithOptions(GroupListOptions{
 		UserID: firstString(userID),
+		PageSize: 0, // 不分页，返回全部
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Groups, nil
 }
 
 // GetAllGroupsWithOptions 获取所有分组（带漫画数量），支持更多过滤选项。
 // 当指定 ContentType 时，只返回包含该类型漫画的分组，且 comicCount 只统计该类型的数量。
 // 当指定 LibraryIDs 时，只返回包含这些书库中漫画的分组（用于非管理员用户的书库权限过滤）。
-func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, error) {
+// GroupListResult 分组列表查询结果（含分页信息）。
+type GroupListResult struct {
+	Groups     []ComicGroupWithCount `json:"groups"`
+	Total      int                   `json:"total"`
+	Page       int                   `json:"page"`
+	PageSize   int                   `json:"pageSize"`
+	TotalPages int                   `json:"totalPages"`
+}
+
+func GetAllGroupsWithOptions(opts GroupListOptions) (*GroupListResult, error) {
 	var conditions []string
 	var args []interface{}
 	// contentType 过滤：返回包含指定类型漫画的分组，以及尚未添加任何漫画的空分组
@@ -169,6 +188,50 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 		whereClause = " WHERE " + strings.Join(conditions, " AND ")
 	}
 
+	// 搜索过滤：按分组名称模糊匹配
+	if opts.Search != "" {
+		searchCond := `g."name" LIKE ?`
+		if whereClause == "" {
+			whereClause = " WHERE " + searchCond
+		} else {
+			whereClause += " AND " + searchCond
+		}
+		args = append(args, "%"+opts.Search+"%")
+	}
+
+	// 排序：支持多种排序字段
+	sortField := `g."sortOrder"`
+	switch opts.SortBy {
+	case "name":
+		sortField = `g."name"`
+	case "comicCount":
+		sortField = `cc`
+	case "updatedAt":
+		sortField = `g."updatedAt"`
+	case "createdAt":
+		sortField = `g."createdAt"`
+	case "sortOrder":
+		sortField = `g."sortOrder"`
+	}
+	sortDir := "ASC"
+	if strings.ToLower(opts.SortOrder) == "desc" {
+		sortDir = "DESC"
+	}
+	// 注意：comicCount 排序使用别名 "cc"，需要在 SELECT 中也设置该别名
+	orderClause := fmt.Sprintf(`%s %s, g."name" ASC`, sortField, sortDir)
+
+	// 分页
+	page := opts.Page
+	pageSize := opts.PageSize
+	if pageSize <= 0 {
+		pageSize = 24 // 默认每页 24 条
+	}
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+	limitClause := fmt.Sprintf("LIMIT %d OFFSET %d", pageSize, offset)
+
 	// 当指定 contentType 时，JOIN 中也要按类型过滤，确保 comicCount 只统计该类型的漫画
 	joinClause := `LEFT JOIN "ComicGroupItem" gi ON gi."groupId" = g."id"`
 	if opts.ContentType == "comic" || opts.ContentType == "novel" {
@@ -177,12 +240,20 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 		args = append([]interface{}{opts.ContentType}, args...)
 	}
 
+	// 先查询总数（不带分页）
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (SELECT g."id" FROM "ComicGroup" g %s %s GROUP BY g."id")`, joinClause, whereClause)
+	var total int
+	if err := db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		return nil, fmt.Errorf("count groups: %w", err)
+	}
+	totalPages := (total + pageSize - 1) / pageSize
+
 	rows, err := db.Query(`
 		SELECT g."id", g."name", g."coverUrl", g."sortOrder",
 		       g."author", g."description", g."tags", g."year",
 		       g."publisher", g."language", g."genre", g."status",
 		       g."createdAt", g."updatedAt",
-		       COUNT(gi."comicId") as comicCount,
+		       COUNT(gi."comicId") as cc, COUNT(gi."comicId") as comicCount,
 		       COALESCE((
 		         SELECT CASE WHEN SUM(CASE WHEN c_ct."type" = 'novel' THEN 1 ELSE 0 END) > COUNT(*) / 2
 		                     THEN 'novel' ELSE 'comic' END
@@ -194,7 +265,8 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 		`+joinClause+`
 	`+whereClause+`
 		GROUP BY g."id"
-		ORDER BY g."sortOrder" ASC, g."name" ASC
+		ORDER BY `+orderClause+`
+		`+limitClause+`
 	`, args...)
 	if err != nil {
 		return nil, err
@@ -231,7 +303,13 @@ func GetAllGroupsWithOptions(opts GroupListOptions) ([]ComicGroupWithCount, erro
 	if groups == nil {
 		groups = []ComicGroupWithCount{}
 	}
-	return groups, nil
+	return &GroupListResult{
+		Groups:     groups,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 
 // GetGroupByID 获取单个分组详情（含漫画列表）。

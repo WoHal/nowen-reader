@@ -74,20 +74,46 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 			}
 		}
 	}
-	groups, err := store.GetAllGroupsWithOptions(store.GroupListOptions{
+
+	// 解析分页参数
+	page := 1
+	pageSize := 24
+	if p := c.Query("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	if ps := c.Query("pageSize"); ps != "" {
+		if v, err := strconv.Atoi(ps); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+
+	result, err := store.GetAllGroupsWithOptions(store.GroupListOptions{
 		UserID:        uid,
 		ContentType:   c.Query("contentType"),
 		Category:      c.Query("category"),
 		Tags:          tags,
 		FavoritesOnly: c.Query("favoritesOnly") == "true",
 		LibraryIDs:    libraryIDs,
+		Search:        c.Query("search"),
+		SortBy:        c.Query("sortBy"),
+		SortOrder:     c.Query("sortOrder"),
+		Page:          page,
+		PageSize:      pageSize,
 	})
 	if err != nil {
 		log.Printf("[API] ListGroups error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取分组列表失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"groups": groups})
+	c.JSON(http.StatusOK, gin.H{
+		"groups":     result.Groups,
+		"total":      result.Total,
+		"page":       result.Page,
+		"pageSize":   result.PageSize,
+		"totalPages": result.TotalPages,
+	})
 }
 
 // ============================================================

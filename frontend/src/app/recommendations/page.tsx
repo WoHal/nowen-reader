@@ -38,8 +38,9 @@ export default function RecommendationsPage() {
   useEffect(() => {
     Promise.all([
       fetchGroupedComicMap(),
-      fetchGroups(contentType || undefined),
-    ]).then(([comicMap, groups]) => {
+      fetchGroups({ contentType: contentType || undefined, pageSize: 0 }),
+    ]).then(([comicMap, groupResult]) => {
+      const groups = groupResult.groups;
       setGroupedComicMap(comicMap);
       const map: Record<number, ComicGroup> = {};
       for (const g of groups) map[g.id] = g;
