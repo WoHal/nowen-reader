@@ -118,13 +118,28 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 }
 
 // GetSimilarComics returns comics similar to a given comic.
+// 优化：使用 SQL 层预筛选（标签/类型/作者交集），只查询相关候选而非全库。
 func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]ScoredComic, error) {
 	target, err := store.GetComicByID(comicID)
 	if err != nil || target == nil {
 		return []ScoredComic{}, nil
 	}
 
-	allComics, err := store.GetAllComicsForRecommendation(libraryIDs...)
+	targetTagNames := make([]string, 0, len(target.Tags))
+	for _, t := range target.Tags {
+		targetTagNames = append(targetTagNames, t.Name)
+	}
+	targetGenreList := make([]string, 0)
+	for _, g := range strings.Split(target.Genre, ",") {
+		g = strings.TrimSpace(g)
+		if g != "" {
+			targetGenreList = append(targetGenreList, g)
+		}
+	}
+	targetAuthor := target.Author
+
+	// SQL 层预筛选候选漫画，大幅减少数据传输和内存占用
+	candidates, err := store.GetComicsForSimilarity(targetTagNames, targetGenreList, targetAuthor, comicID, libraryIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -134,11 +149,8 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		targetTags[t.Name] = true
 	}
 	targetGenres := map[string]bool{}
-	for _, g := range strings.Split(target.Genre, ",") {
-		g = strings.TrimSpace(g)
-		if g != "" {
-			targetGenres[g] = true
-		}
+	for _, g := range targetGenreList {
+		targetGenres[g] = true
 	}
 	targetCats := map[string]bool{}
 	for _, c := range target.Categories {
@@ -146,11 +158,7 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 	}
 
 	var scored []ScoredComic
-	for _, comic := range allComics {
-		if comic.ID == comicID {
-			continue
-		}
-
+	for _, comic := range candidates {
 		var score float64
 		var reasons []string
 
@@ -208,7 +216,7 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		}
 
 		// Same author
-		if comic.Author != "" && comic.Author == target.Author {
+		if comic.Author != "" && comic.Author == targetAuthor {
 			score += 20
 			reasons = append(reasons, "same_author")
 		}
@@ -237,7 +245,6 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		}
 	}
 
-	// 使用 sort.Slice 替代冒泡排序，O(n²) → O(n log n)
 	sort.Slice(scored, func(i, j int) bool {
 		return scored[i].Score > scored[j].Score
 	})
@@ -246,14 +253,12 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		scored = scored[:limit]
 	}
 
-	log.Printf("[SimilarComics] comicID=%s, allComics=%d, scored=%d",
-		comicID, len(allComics), len(scored))
+	log.Printf("[SimilarComics] comicID=%s, candidates=%d, scored=%d", comicID, len(candidates), len(scored))
 
-	// Fallback: when no similar comics found (e.g. target has no metadata),
-	// return random comics from the same library scope.
-	if len(scored) == 0 && len(allComics) > 1 {
+	// Fallback: when no similar comics found, return random comics from same library scope.
+	if len(scored) == 0 && len(candidates) > 1 {
 		var fallback []ScoredComic
-		for _, comic := range allComics {
+		for _, comic := range candidates {
 			if comic.ID == comicID {
 				continue
 			}
@@ -268,6 +273,37 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 				Filename: comic.Filename,
 				Tags:     comic.Tags,
 			})
+		}
+		// 如果 SQL 筛选的候选不够，回退到全量加载做兜底
+		if len(fallback) < limit {
+			allComics, err2 := store.GetAllComicsForRecommendation(libraryIDs...)
+			if err2 == nil && len(allComics) > len(fallback) {
+				for _, comic := range allComics {
+					if comic.ID == comicID {
+						continue
+					}
+					alreadyIn := false
+					for _, fb := range fallback {
+						if fb.ID == comic.ID {
+							alreadyIn = true
+							break
+						}
+					}
+					if !alreadyIn {
+						fallback = append(fallback, ScoredComic{
+							ID:       comic.ID,
+							Title:    comic.Title,
+							Score:    0,
+							Reasons:  []string{"recommended"},
+							CoverURL: store.BuildComicCoverURL(comic.ID),
+							Author:   comic.Author,
+							Genre:    comic.Genre,
+							Filename: comic.Filename,
+							Tags:     comic.Tags,
+						})
+					}
+				}
+			}
 		}
 		rand.Shuffle(len(fallback), func(i, j int) { fallback[i], fallback[j] = fallback[j], fallback[i] })
 		if limit > 0 && len(fallback) > limit {
@@ -299,9 +335,15 @@ func buildUserProfile(comics []store.RecommendationComic) userProfile {
 
 	var totalRating float64
 	var ratedCount int
+	now := time.Now()
 
 	for _, c := range comics {
-		engagement := calculateEngagement(c)
+		// 快速跳过无交互的漫画（没有阅读记录、没有评分、没有收藏）
+		if c.TotalReadTime == 0 && c.LastReadPage == 0 && c.Rating == nil && !c.IsFavorite {
+			continue
+		}
+
+		engagement := calculateEngagementFast(c, now)
 		if engagement <= 0 {
 			continue
 		}
@@ -335,6 +377,40 @@ func buildUserProfile(comics []store.RecommendationComic) userProfile {
 		p.avgRating = 3
 	}
 	return p
+}
+
+// calculateEngagementFast 同 calculateEngagement，但接收预计算的 now 时间避免重复调用 time.Now()。
+func calculateEngagementFast(c store.RecommendationComic, now time.Time) float64 {
+	var score float64
+
+	readTime := c.TotalReadTime
+	if readTime > 0 {
+		score += math.Min(float64(readTime)/600, 5)
+	}
+
+	if c.PageCount > 0 && c.LastReadPage > 0 {
+		progress := float64(c.LastReadPage) / float64(c.PageCount)
+		score += progress * 3
+	}
+
+	if c.Rating != nil {
+		score += (float64(*c.Rating) - 2.5) * 2
+	}
+
+	if c.IsFavorite {
+		score += 3
+	}
+
+	if c.LastReadAt != nil {
+		daysSince := now.Sub(*c.LastReadAt).Hours() / 24
+		if daysSince < 7 {
+			score += 2
+		} else if daysSince < 30 {
+			score += 1
+		}
+	}
+
+	return score
 }
 
 func calculateEngagement(c store.RecommendationComic) float64 {

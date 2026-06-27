@@ -724,133 +724,105 @@ type RecommendationComic struct {
 	IsFavorite    bool
 	Rating        *int
 	TotalReadTime int
-	Tags          []ComicTagInfo
-	Categories    []ComicCategoryInfo
+	Tags          []ComicTagInfo      // 仅 name 字段由 SQL 填充，推荐评分不需要 color
+	Categories    []ComicCategoryInfo // 仅 slug/name 字段有用
 }
 
-// GetAllComicsForRecommendation 返回所有漫画的推荐所需数据（分批加载标签/分类，避免 IN 参数超限）。
+// RecommendationComicTag 推荐所需的轻量标签（不含 color，减少数据传输）。
+type RecommendationComicTag struct {
+	Name string
+}
+
+// GetAllComicsForRecommendation 返回所有漫画的推荐所需数据。
+// 优化：标签通过单次 LEFT JOIN 加载（不再分 N 批查询），分类按需加载（仅 GetSimilarComics 使用）。
 func GetAllComicsForRecommendation(libraryIDs ...string) ([]RecommendationComic, error) {
+	whereClause := ""
 	var args []interface{}
-	for _, id := range libraryIDs { args = append(args, id) }
-	rows, err := db.Query(`
-		SELECT "id", "title", "author", "genre",
-		       "filename", "type", "pageCount", "lastReadPage", "lastReadAt", "isFavorite",
-		       "rating", "totalReadTime"
-		FROM "Comic"
-	` + func() string {
-		if len(libraryIDs) == 0 { return "" }
+	if len(libraryIDs) > 0 {
 		ph := make([]string, len(libraryIDs))
-		for i := range libraryIDs { ph[i] = "?" }
-		return fmt.Sprintf(` WHERE "libraryId" IN (%s)`, strings.Join(ph, ","))
-	}() + `
-	`, args...)
+		for i, id := range libraryIDs {
+			ph[i] = "?"
+			args = append(args, id)
+		}
+		whereClause = fmt.Sprintf(` WHERE c."libraryId" IN (%s)`, strings.Join(ph, ","))
+	}
+
+	// 单次查询：漫画数据 + 标签通过 LEFT JOIN 一次查出
+	query := fmt.Sprintf(`
+		SELECT c."id", c."title", c."author", c."genre",
+		       c."filename", c."type", c."pageCount", c."lastReadPage", c."lastReadAt", c."isFavorite",
+		       c."rating", c."totalReadTime",
+		       t."name"
+		FROM "Comic" c
+		LEFT JOIN "ComicTag" ct ON ct."comicId" = c."id"
+		LEFT JOIN "Tag" t ON t."id" = ct."tagId"
+		%s
+		ORDER BY c."id", t."name"
+	`, whereClause)
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var comics []RecommendationComic
+	// 流式聚合：同一漫画的多行（多个标签）合并为一条记录
+	comicMap := make(map[string]*RecommendationComic, 4096)
+	var comicOrder []string // 保持原始顺序
+
 	for rows.Next() {
-		var c RecommendationComic
+		var id, title, author, genre, filename, comicType string
+		var pageCount, lastReadPage int
 		var lastReadAt sql.NullTime
-		var rating sql.NullInt64
 		var isFav int
+		var rating sql.NullInt64
+		var totalReadTime int
+		var tagName sql.NullString
 
 		if err := rows.Scan(
-			&c.ID, &c.Title, &c.Author, &c.Genre,
-			&c.Filename, &c.Type, &c.PageCount, &c.LastReadPage, &lastReadAt, &isFav,
-			&rating, &c.TotalReadTime,
+			&id, &title, &author, &genre,
+			&filename, &comicType, &pageCount, &lastReadPage, &lastReadAt, &isFav,
+			&rating, &totalReadTime, &tagName,
 		); err != nil {
 			continue
 		}
-		c.IsFavorite = isFav != 0
-		if lastReadAt.Valid {
-			c.LastReadAt = &lastReadAt.Time
-		}
-		if rating.Valid {
-			v := int(rating.Int64)
-			c.Rating = &v
-		}
-		c.Tags = []ComicTagInfo{}
-		c.Categories = []ComicCategoryInfo{}
-		comics = append(comics, c)
-	}
 
-	if len(comics) == 0 {
-		return comics, nil
-	}
-
-	// 构建 ID 索引
-	ids := make([]string, len(comics))
-	idx := make(map[string]int, len(comics))
-	for i, c := range comics {
-		ids[i] = c.ID
-		idx[c.ID] = i
-	}
-
-	// 分批加载标签
-	for start := 0; start < len(ids); start += batchSize {
-		end := start + batchSize
-		if end > len(ids) {
-			end = len(ids)
-		}
-		batch := ids[start:end]
-		ph := make([]string, len(batch))
-		args := make([]interface{}, len(batch))
-		for i, id := range batch {
-			ph[i] = "?"
-			args[i] = id
-		}
-		tagQuery := fmt.Sprintf(`
-			SELECT ct."comicId", t."name", t."color"
-			FROM "ComicTag" ct JOIN "Tag" t ON ct."tagId" = t."id"
-			WHERE ct."comicId" IN (%s)
-		`, strings.Join(ph, ","))
-		tagRows, err := db.Query(tagQuery, args...)
-		if err == nil {
-			for tagRows.Next() {
-				var comicID, name, color string
-				if tagRows.Scan(&comicID, &name, &color) == nil {
-					if i, ok := idx[comicID]; ok {
-						comics[i].Tags = append(comics[i].Tags, ComicTagInfo{Name: name, Color: color})
-					}
-				}
+		c, exists := comicMap[id]
+		if !exists {
+			c = &RecommendationComic{
+				ID:           id,
+				Title:        title,
+				Author:       author,
+				Genre:        genre,
+				Filename:     filename,
+				Type:         comicType,
+				PageCount:    pageCount,
+				LastReadPage: lastReadPage,
+				Tags:         []ComicTagInfo{},
+				Categories:   []ComicCategoryInfo{},
 			}
-			tagRows.Close()
+			if lastReadAt.Valid {
+				c.LastReadAt = &lastReadAt.Time
+			}
+			c.IsFavorite = isFav != 0
+			if rating.Valid {
+				v := int(rating.Int64)
+				c.Rating = &v
+			}
+			c.TotalReadTime = totalReadTime
+			comicMap[id] = c
+			comicOrder = append(comicOrder, id)
+		}
+
+		if tagName.Valid && tagName.String != "" {
+			c.Tags = append(c.Tags, ComicTagInfo{Name: tagName.String})
 		}
 	}
 
-	// 分批加载分类
-	for start := 0; start < len(ids); start += batchSize {
-		end := start + batchSize
-		if end > len(ids) {
-			end = len(ids)
-		}
-		batch := ids[start:end]
-		ph := make([]string, len(batch))
-		args := make([]interface{}, len(batch))
-		for i, id := range batch {
-			ph[i] = "?"
-			args[i] = id
-		}
-		catQuery := fmt.Sprintf(`
-			SELECT cc."comicId", cat."id", cat."name", cat."slug", cat."icon"
-			FROM "ComicCategory" cc JOIN "Category" cat ON cc."categoryId" = cat."id"
-			WHERE cc."comicId" IN (%s)
-		`, strings.Join(ph, ","))
-		catRows, err := db.Query(catQuery, args...)
-		if err == nil {
-			for catRows.Next() {
-				var comicID string
-				var ci ComicCategoryInfo
-				if catRows.Scan(&comicID, &ci.ID, &ci.Name, &ci.Slug, &ci.Icon) == nil {
-					if i, ok := idx[comicID]; ok {
-						comics[i].Categories = append(comics[i].Categories, ci)
-					}
-				}
-			}
-			catRows.Close()
-		}
+	// 按原始顺序构建结果切片
+	comics := make([]RecommendationComic, 0, len(comicOrder))
+	for _, id := range comicOrder {
+		comics = append(comics, *comicMap[id])
 	}
 
 	return comics, nil
@@ -1056,6 +1028,168 @@ func GetAllComicsForSync() ([]SyncComic, error) {
 	return comics, nil
 }
 
+// GetComicsForSimilarity 返回与目标漫画可能相似的候选漫画（用于相似推荐）。
+// 优化：通过 tag/genre/author 在 SQL 层缩小候选范围，避免全量加载。
+// excludeID 是目标漫画自己的 ID，会被排除。
+func GetComicsForSimilarity(targetTags []string, targetGenres []string, targetAuthor string, excludeID string, libraryIDs ...string) ([]RecommendationComic, error) {
+	var conditions []string
+	var args []interface{}
+
+	// 排除自己
+	conditions = append(conditions, `c."id" != ?`)
+	args = append(args, excludeID)
+
+	// 书库过滤
+	if len(libraryIDs) > 0 {
+		ph := make([]string, len(libraryIDs))
+		for i, id := range libraryIDs {
+			ph[i] = "?"
+			args = append(args, id)
+		}
+		conditions = append(conditions, fmt.Sprintf(`c."libraryId" IN (%s)`, strings.Join(ph, ",")))
+	}
+
+	// 标签交集：至少有一个共同标签
+	if len(targetTags) > 0 {
+		tagPh := make([]string, len(targetTags))
+		for i, t := range targetTags {
+			tagPh[i] = "?"
+			args = append(args, t)
+		}
+		conditions = append(conditions, fmt.Sprintf(`c."id" IN (
+			SELECT DISTINCT ct2."comicId" FROM "ComicTag" ct2
+			JOIN "Tag" t2 ON t2."id" = ct2."tagId"
+			WHERE t2."name" IN (%s)
+		)`, strings.Join(tagPh, ",")))
+	}
+
+	// 类型交集：OR 条件扩大候选集
+	genreOr := []string{}
+	if len(targetGenres) > 0 {
+		for _, g := range targetGenres {
+			genreOr = append(genreOr, `c."genre" LIKE ?`)
+			args = append(args, "%"+g+"%")
+		}
+	}
+	// 同作者
+	if targetAuthor != "" {
+		genreOr = append(genreOr, `c."author" = ?`)
+		args = append(args, targetAuthor)
+	}
+	if len(genreOr) > 0 {
+		conditions = append(conditions, "("+strings.Join(genreOr, " OR ")+")")
+	}
+
+	whereClause := "WHERE " + strings.Join(conditions, " AND ")
+
+	query := fmt.Sprintf(`
+		SELECT c."id", c."title", c."author", c."genre",
+		       c."filename", c."type", c."pageCount", c."lastReadPage", c."lastReadAt", c."isFavorite",
+		       c."rating", c."totalReadTime",
+		       t."name",
+		       cat."name", cat."slug"
+		FROM "Comic" c
+		LEFT JOIN "ComicTag" ct ON ct."comicId" = c."id"
+		LEFT JOIN "Tag" t ON t."id" = ct."tagId"
+		LEFT JOIN "ComicCategory" cc2 ON cc2."comicId" = c."id"
+		LEFT JOIN "Category" cat ON cat."id" = cc2."categoryId"
+		%s
+		ORDER BY c."id", t."name", cat."name"
+	`, whereClause)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// 流式聚合：同一漫画的多行合并
+	comicMap := make(map[string]*RecommendationComic, 1024)
+	var comicOrder []string
+
+	for rows.Next() {
+		var id, title, author, genre, filename, comicType string
+		var pageCount, lastReadPage int
+		var lastReadAt sql.NullTime
+		var isFav int
+		var rating sql.NullInt64
+		var totalReadTime int
+		var tagName, catName, catSlug sql.NullString
+
+		if err := rows.Scan(
+			&id, &title, &author, &genre,
+			&filename, &comicType, &pageCount, &lastReadPage, &lastReadAt, &isFav,
+			&rating, &totalReadTime, &tagName, &catName, &catSlug,
+		); err != nil {
+			continue
+		}
+
+		c, exists := comicMap[id]
+		if !exists {
+			c = &RecommendationComic{
+				ID:           id,
+				Title:        title,
+				Author:       author,
+				Genre:        genre,
+				Filename:     filename,
+				Type:         comicType,
+				PageCount:    pageCount,
+				LastReadPage: lastReadPage,
+				Tags:         []ComicTagInfo{},
+				Categories:   []ComicCategoryInfo{},
+			}
+			if lastReadAt.Valid {
+				c.LastReadAt = &lastReadAt.Time
+			}
+			c.IsFavorite = isFav != 0
+			if rating.Valid {
+				v := int(rating.Int64)
+				c.Rating = &v
+			}
+			c.TotalReadTime = totalReadTime
+			comicMap[id] = c
+			comicOrder = append(comicOrder, id)
+		}
+
+		if tagName.Valid && tagName.String != "" {
+			// 去重标签
+			dup := false
+			for _, existing := range c.Tags {
+				if existing.Name == tagName.String {
+					dup = true
+					break
+				}
+			}
+			if !dup {
+				c.Tags = append(c.Tags, ComicTagInfo{Name: tagName.String})
+			}
+		}
+		if catName.Valid && catName.String != "" {
+			dup := false
+			for _, existing := range c.Categories {
+				if existing.Slug == catSlug.String {
+					dup = true
+					break
+				}
+			}
+			if !dup {
+				c.Categories = append(c.Categories, ComicCategoryInfo{
+					Name: catName.String,
+					Slug: catSlug.String,
+				})
+			}
+		}
+	}
+
+	comics := make([]RecommendationComic, 0, len(comicOrder))
+	for _, id := range comicOrder {
+		comics = append(comics, *comicMap[id])
+	}
+
+	return comics, nil
+}
+
+// GetSyncComic
 // GetSyncComic 获取同步漫画信息。
 func GetSyncComic(comicID string) (*SyncComic, error) {
 	var c SyncComic
