@@ -41,7 +41,7 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 
 	// 先按内容类型过滤候选集，再基于过滤后的内容构建用户画像
 	// 这样可以确保：1) 画像仅反映目标类型的用户偏好；2) 无匹配内容时直接返回空结果
-	var candidates []store.RecommendationComic
+	candidates := make([]store.RecommendationComic, 0, len(allComics))
 	for _, comic := range allComics {
 		// Legacy data may have empty type; treat empty as "comic" since most content is comics
 		if contentType == "novel" && comic.Type != "novel" {
@@ -75,7 +75,10 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 		rng = rand.New(rand.NewSource(seed))
 	}
 
-	var scored []ScoredComic
+	// 预分配切片，避免循环中多次扩容
+	scored := make([]ScoredComic, 0, len(candidates))
+	// 延迟生成 CoverURL：避免在评分循环中对每个候选做 os.Stat 调用
+	// CoverURL 只在最终排好序的 top-N 结果中填充
 	for _, comic := range candidates {
 
 		if excludeRead && comic.LastReadPage > 0 && comic.PageCount > 0 {
@@ -89,7 +92,7 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 
 		// 添加随机扰动（±20%），使刷新结果有变化
 		if rng != nil && score > 0 {
-			jitter := 0.8 + rng.Float64()*0.4 // 0.8 ~ 1.2
+			jitter := 0.8 + rng.Float64()*0.4
 			score *= jitter
 		}
 
@@ -98,7 +101,6 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 			Title:    comic.Title,
 			Score:    score,
 			Reasons:  reasons,
-			CoverURL: store.BuildComicCoverURL(comic.ID),
 			Author:   comic.Author,
 			Genre:    comic.Genre,
 			Filename: comic.Filename,
@@ -114,6 +116,12 @@ func GetRecommendations(limit int, excludeRead bool, contentType string, seed in
 	if limit > 0 && len(scored) > limit {
 		scored = scored[:limit]
 	}
+
+	// 仅为最终返回的 top-N 结果填充 CoverURL（延迟 os.Stat 调用）
+	for i := range scored {
+		scored[i].CoverURL = store.BuildComicCoverURL(scored[i].ID)
+	}
+
 	return scored, nil
 }
 
@@ -236,7 +244,6 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 				Title:    comic.Title,
 				Score:    score,
 				Reasons:  reasons,
-				CoverURL: store.BuildComicCoverURL(comic.ID),
 				Author:   comic.Author,
 				Genre:    comic.Genre,
 				Filename: comic.Filename,
@@ -253,6 +260,11 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		scored = scored[:limit]
 	}
 
+	// 仅为最终结果填充 CoverURL
+	for i := range scored {
+		scored[i].CoverURL = store.BuildComicCoverURL(scored[i].ID)
+	}
+
 	log.Printf("[SimilarComics] comicID=%s, candidates=%d, scored=%d", comicID, len(candidates), len(scored))
 
 	// Fallback: when no similar comics found, return random comics from same library scope.
@@ -267,7 +279,6 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 				Title:    comic.Title,
 				Score:    0,
 				Reasons:  []string{"recommended"},
-				CoverURL: store.BuildComicCoverURL(comic.ID),
 				Author:   comic.Author,
 				Genre:    comic.Genre,
 				Filename: comic.Filename,
@@ -295,7 +306,6 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 							Title:    comic.Title,
 							Score:    0,
 							Reasons:  []string{"recommended"},
-							CoverURL: store.BuildComicCoverURL(comic.ID),
 							Author:   comic.Author,
 							Genre:    comic.Genre,
 							Filename: comic.Filename,
@@ -308,6 +318,9 @@ func GetSimilarComics(comicID string, limit int, libraryIDs ...string) ([]Scored
 		rand.Shuffle(len(fallback), func(i, j int) { fallback[i], fallback[j] = fallback[j], fallback[i] })
 		if limit > 0 && len(fallback) > limit {
 			fallback = fallback[:limit]
+		}
+		for i := range fallback {
+			fallback[i].CoverURL = store.BuildComicCoverURL(fallback[i].ID)
 		}
 		log.Printf("[SimilarComics] fallback: returning %d comics", len(fallback))
 		return fallback, nil
