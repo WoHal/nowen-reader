@@ -5,6 +5,9 @@ import Link from "next/link";
 import { memo, useState } from "react";
 import { Comic } from "@/types/comic";
 import { BookOpen, Heart, Star, Info, GripVertical } from "lucide-react";
+import NSFWCoverGuard from "@/components/NSFWCoverGuard";
+import { usePrivacyMode } from "@/hooks/usePrivacyMode";
+import { isNSFW } from "@/lib/nsfw";
 import { useTranslation } from "@/lib/i18n";
 import type { ApiComicTag } from "@/hooks/useComicTypes";
 
@@ -144,6 +147,7 @@ const ComicCard = memo(function ComicCard({
     }
   }
   const t = useTranslation();
+  const { enabled: privacyEnabled, blurNSFW } = usePrivacyMode();
   const [coverLoaded, setCoverLoaded] = useState(false);
 
   // Detect landscape cover: aspect ratio > 1.3 means wide cover
@@ -247,7 +251,7 @@ const ComicCard = memo(function ComicCard({
             >
               {/* Thumbnail */}
               <div className="relative h-20 w-14 sm:h-16 sm:w-12 flex-shrink-0 overflow-hidden rounded-lg">
-                <Image src={comic.coverUrl} alt={comic.title} fill unoptimized={isReal} className="object-cover image-outline" sizes="56px" />
+                <NSFWCoverGuard src={comic.coverUrl} alt={comic.title} isNSFW={isNSFW(comic)} blurEnabled={privacyEnabled && blurNSFW} fill unoptimized={isReal} className="object-cover image-outline" sizes="56px" />
                 {comic.isFavorite && (
                   <div className="absolute top-0.5 right-0.5 z-10">
                     <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
@@ -367,7 +371,7 @@ const ComicCard = memo(function ComicCard({
             </div>
 
             <div className={`relative ${coverAspectClass} w-full overflow-hidden`}>
-              <Image src={comic.coverUrl} alt={comic.title} fill unoptimized={isReal} className={coverObjectFit} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" />
+              <NSFWCoverGuard src={comic.coverUrl} alt={comic.title} isNSFW={isNSFW(comic)} blurEnabled={privacyEnabled && blurNSFW} fill unoptimized={isReal} className={coverObjectFit} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw" />
               {comic.progress !== undefined && comic.progress > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
                   <div className="h-full bg-accent transition-all duration-300" style={{ width: `${comic.progress}%` }} />
@@ -405,16 +409,17 @@ const ComicCard = memo(function ComicCard({
                 {!coverLoaded && (
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-b from-muted/30 to-muted/10" />
                 )}
-                <Image
+                <NSFWCoverGuard
                   src={comic.coverUrl}
                   alt={comic.title}
+                  isNSFW={isNSFW(comic)}
+                  blurEnabled={privacyEnabled && blurNSFW}
                   fill
                   unoptimized={isReal}
                   className={`${coverObjectFit} image-outline transition-all duration-500 group-hover:scale-110 ${
                     coverLoaded ? "opacity-100" : "opacity-0"
                   }`}
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                  onLoad={() => setCoverLoaded(true)}
                 />
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

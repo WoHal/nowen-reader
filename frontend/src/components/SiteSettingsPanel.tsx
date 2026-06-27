@@ -6,8 +6,7 @@ import {
   Globe, Save, FolderOpen, Image, Languages, BookOpen,
   CheckCircle, Trash2, RefreshCw, Plus, X, Search, Sparkles,
   ImagePlus, AlertCircle, ChevronRight, ChevronUp, Folder,
-  Database, BookMarked,
-  Library
+  Database, BookMarked, Library, Eye
 } from "lucide-react";
 import { FolderBrowser } from "@/components/FolderBrowser";
 import { useTranslation } from "@/lib/i18n";
@@ -1180,6 +1179,9 @@ export function SiteSettingsPanel() {
       {/* Default Reading Mode */}
       <DefaultReadingModeSelect siteT={siteT} />
 
+      {/* Privacy Mode */}
+      <PrivacySettings />
+
       {/* Language */}
       <div className="space-y-3 rounded-xl bg-background p-4">
         <div className="flex items-center gap-2 text-xs font-medium text-foreground">
@@ -1222,6 +1224,79 @@ export function SiteSettingsPanel() {
       <p className="text-center text-[11px] text-muted">
         {siteT?.restartHint || "Some settings require a restart to take effect"}
       </p>
+    </div>
+  );
+}
+
+/**
+ * 隐私模式设置组件
+ * 使用 localStorage 保存用户偏好
+ */
+function PrivacySettings() {
+  const [enabled, setEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("privacy:enabled") === "true";
+  });
+  const [blurNSFW, setBlurNSFW] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const val = localStorage.getItem("privacy:blurNSFW");
+    return val === null ? true : val === "true";
+  });
+
+  const handleToggleEnabled = () => {
+    const next = !enabled;
+    setEnabled(next);
+    localStorage.setItem("privacy:enabled", String(next));
+  };
+
+  const handleToggleBlur = () => {
+    const next = !blurNSFW;
+    setBlurNSFW(next);
+    localStorage.setItem("privacy:blurNSFW", String(next));
+  };
+
+  return (
+    <div className="space-y-3 rounded-xl bg-background p-4">
+      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+        <Eye className="h-3.5 w-3.5 text-accent" />
+        隐私模式
+      </div>
+
+      {/* 开启隐私模式 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-foreground">隐私模式</p>
+          <p className="text-[11px] text-muted mt-0.5">开启后可模糊成人内容封面</p>
+        </div>
+        <button
+          onClick={handleToggleEnabled}
+          className={`relative h-6 w-11 rounded-full transition-colors ${enabled ? "bg-accent" : "bg-muted/30"}`}
+        >
+          <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? "left-[22px]" : "left-0.5"}`} />
+        </button>
+      </div>
+
+      {/* 模糊 NSFW 封面 */}
+      {enabled && (
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-foreground">模糊成人封面</p>
+            <p className="text-[11px] text-muted mt-0.5">含 R18/NSFW 标签的封面将被模糊</p>
+          </div>
+          <button
+            onClick={handleToggleBlur}
+            className={`relative h-6 w-11 rounded-full transition-colors ${blurNSFW ? "bg-accent" : "bg-muted/30"}`}
+          >
+            <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${blurNSFW ? "left-[22px]" : "left-0.5"}`} />
+          </button>
+        </div>
+      )}
+
+      {enabled && (
+        <p className="text-[10px] text-muted/60">
+          桌面端：hover 或点击可临时查看 | 移动端：点击可临时查看
+        </p>
+      )}
     </div>
   );
 }
