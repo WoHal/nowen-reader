@@ -9,7 +9,7 @@ on:
 
 env:
   BINARY_NAME: nowen-reader
-  DOCKER_IMAGE: cropflre/nowen-reader
+  DOCKER_IMAGE: wohal/nowen-reader
 
 jobs:
   test:

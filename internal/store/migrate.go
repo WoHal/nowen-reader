@@ -482,6 +482,7 @@ func RunMigrations() error {
 
 // RebuildFTSIndex 重建 FTS5 全文搜索索引。
 // 在 migration 8 首次应用后调用，或在数据迁移后手动调用。
+// 带 SQLITE_BUSY 重试：FTS 重建需要独占写锁，启动时可能与后台同步竞争。
 func RebuildFTSIndex() error {
 	// 检查 FTS 表是否存在
 	var name string
@@ -490,14 +491,38 @@ func RebuildFTSIndex() error {
 		return nil // FTS 表不存在，跳过
 	}
 
-	// 清空并重建 FTS 索引
-	_, err = db.Exec(`INSERT INTO "ComicFTS"("ComicFTS") VALUES('rebuild')`)
-	if err != nil {
+	// 清空并重建 FTS 索引（带重试）
+	const maxRetries = 3
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		_, err = db.Exec(`INSERT INTO "ComicFTS"("ComicFTS") VALUES('rebuild')`)
+		if err == nil {
+			log.Println("[FTS] Full-text search index rebuilt ✅")
+			return nil
+		}
+		// SQLITE_BUSY 时等待后重试
+		if isBusyError(err) {
+			backoff := time.Duration(attempt) * 3 * time.Second
+			log.Printf("[FTS] Database busy (attempt %d/%d), retrying in %v...", attempt, maxRetries, backoff)
+			time.Sleep(backoff)
+			continue
+		}
+		// 非 BUSY 错误直接返回
 		log.Printf("[FTS] Warning: failed to rebuild FTS index: %v", err)
 		return err
 	}
-	log.Println("[FTS] Full-text search index rebuilt ✅")
-	return nil
+	log.Printf("[FTS] Warning: failed to rebuild FTS index after %d retries", maxRetries)
+	return err
+}
+
+// isBusyError 判断错误是否为 SQLITE_BUSY / database is locked。
+func isBusyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "database is locked") ||
+		strings.Contains(msg, "SQLITE_BUSY") ||
+		strings.Contains(msg, "busy")
 }
 
 // splitSQL splits a multi-statement SQL string by semicolons,
