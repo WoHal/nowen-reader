@@ -381,12 +381,18 @@ func GetGroupByID(groupID int, contentType ...string) (*ComicGroupDetail, error)
 		); err != nil {
 			continue
 		}
-		item.CoverURL = BuildComicCoverURL(item.ComicID)
+		// CoverURL 延迟到返回前统一填充
+		item.CoverURL = ""
 		if lastReadAt.Valid {
 			s := lastReadAt.Time.UTC().Format(time.RFC3339)
 			item.LastReadAt = &s
 		}
 		g.Comics = append(g.Comics, item)
+	}
+
+	// 统一填充各卷的 CoverURL
+	for i := range g.Comics {
+		g.Comics[i].CoverURL = BuildComicCoverURL(g.Comics[i].ComicID)
 	}
 
 	// 封面 URL：有自定义封面时返回本地缓存路径，无封面时使用第一本漫画缩略图
