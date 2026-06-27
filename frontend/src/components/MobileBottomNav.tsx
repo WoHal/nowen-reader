@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useLocation } from "react-router-dom";
-import { BookMarked, Settings, BarChart3, Layers, Tag } from "lucide-react";
+import { LayoutDashboard, BookMarked, Settings, Layers, Tag } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
@@ -41,9 +41,15 @@ export default function MobileBottomNav() {
   const navItems = [
     {
       href: "/",
-      icon: BookMarked,
-      label: t.mobileNav?.library || "书库",
+      icon: LayoutDashboard,
+      label: "首页",
       active: pathname === "/",
+    },
+    {
+      href: "/books",
+      icon: BookMarked,
+      label: "书库",
+      active: pathname === "/books",
     },
     // 合集——仅管理员可见
     ...(isAdmin ? [{
@@ -51,20 +57,6 @@ export default function MobileBottomNav() {
       icon: Layers,
       label: (t as any).collections?.navTitle || "合集",
       active: pathname === "/collections",
-    }] : []),
-    // 标签管理——仅管理员可见
-    ...(isAdmin ? [{
-      href: "/tag-manager",
-      icon: Tag,
-      label: (t as any).tagManager?.navTitle || (t as any).tagManager?.title || "标签",
-      active: pathname === "/tag-manager",
-    }] : []),
-    // 统计——仅管理员可见
-    ...(isAdmin ? [{
-      href: "/settings?tab=stats",
-      icon: BarChart3,
-      label: t.mobileNav?.stats || "统计",
-      active: pathname === "/settings" && currentTab === "stats",
     }] : []),
     {
       href: "/settings",
@@ -104,11 +96,11 @@ export default function MobileBottomNav() {
   if (shouldHide) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-lg sm:hidden safe-bottom overflow-hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-surface/90 backdrop-blur-2xl sm:hidden safe-bottom overflow-hidden">
       <div ref={navRef} className="relative flex h-14 items-center justify-around px-2">
         {/* 滑动指示器 */}
         <div
-          className="nav-indicator absolute top-0 h-[2px] rounded-full bg-accent"
+          className="nav-indicator absolute top-0 h-[2px] rounded-full bg-gradient-to-r from-accent to-accent-purple"
           style={{
             transform: `translateX(${indicatorStyle.left}px)`,
             width: `${indicatorStyle.width}px`,

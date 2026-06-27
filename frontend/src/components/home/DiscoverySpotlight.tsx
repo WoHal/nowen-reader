@@ -135,7 +135,7 @@ export default function DiscoverySpotlight({ comics, contentType, totalItems, lo
   const randomComics = randomPool.sort(() => Math.random() - 0.5).slice(0, 4);
 
   return (
-    <section className="relative mb-6 overflow-hidden rounded-3xl border border-border/30 bg-card/70 backdrop-blur-xl shadow-lg">
+    <section className="relative mb-6 overflow-hidden rounded-3xl border border-white/[0.06] bg-card/50 backdrop-blur-xl shadow-lg">
       {/* Background: blurred cover */}
       {spotlight?.coverUrl && (
         <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">

@@ -69,7 +69,7 @@ export default function BatchToolbar({
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/95 px-3 sm:px-6 py-2 sm:py-3 backdrop-blur-xl safe-bottom animate-toolbar-in">
+      <div className="fixed bottom-14 sm:bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#070A0F]/95 px-3 sm:px-6 py-2 sm:py-3 backdrop-blur-2xl safe-bottom animate-toolbar-in">
         <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3">
             <CheckSquare className="h-4 w-4 text-accent" />

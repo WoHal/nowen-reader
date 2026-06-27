@@ -59,14 +59,14 @@ export default function Navbar({
   const { siteName, siteIcon, scraperEnabled } = useSiteSettings();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#070A0F]/80 backdrop-blur-2xl backdrop-saturate-200">
       <div className="mx-auto flex h-14 sm:h-16 max-w-[1760px] items-center justify-between px-6 sm:px-8 lg:px-12">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {siteIcon ? (
             <img src={`/api/site-settings/icon?t=${Date.now()}`} alt="Site Icon" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-contain" />
           ) : (
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-accent">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-accent shadow-lg shadow-accent/20">
               <BookMarked className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
             </div>
           )}
@@ -124,7 +124,7 @@ export default function Navbar({
           <button
             onClick={onUpload}
             disabled={uploading}
-            className="hidden sm:flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-xl bg-accent px-2.5 sm:px-4 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 disabled:opacity-50"
+            className="hidden sm:flex h-8 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-xl bg-accent px-2.5 sm:px-4 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/30 disabled:opacity-50"
           >
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

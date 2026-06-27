@@ -116,7 +116,7 @@ export function RecommendationStrip({ contentType }: { contentType?: string }) {
   // Loading state
   if (loading && recommendations.length === 0) {
     return (
-      <section className="mb-8 surface-card rounded-2xl p-4 sm:p-5">
+      <section className="mb-8 dashboard-glass rounded-2xl p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-amber-400" />
           <h2 className="text-sm font-semibold text-foreground">
@@ -134,7 +134,7 @@ export function RecommendationStrip({ contentType }: { contentType?: string }) {
   // Error state
   if (error && recommendations.length === 0) {
     return (
-      <section className="mb-8 surface-card rounded-2xl p-4 sm:p-5">
+      <section className="mb-8 dashboard-glass rounded-2xl p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-amber-400" />
           <h2 className="text-sm font-semibold text-foreground">
@@ -157,7 +157,7 @@ export function RecommendationStrip({ contentType }: { contentType?: string }) {
   // Empty state
   if (recommendations.length === 0) {
     return (
-      <section className="mb-8 surface-card rounded-2xl p-4 sm:p-5">
+      <section className="mb-8 dashboard-glass rounded-2xl p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-amber-400" />
           <h2 className="text-sm font-semibold text-foreground">
@@ -190,7 +190,7 @@ export function RecommendationStrip({ contentType }: { contentType?: string }) {
   };
 
   return (
-    <section className="mb-8 surface-card rounded-2xl p-4 sm:p-5">
+    <section className="mb-8 dashboard-glass rounded-2xl p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <button
           onClick={() => setCollapsed(!collapsed)}

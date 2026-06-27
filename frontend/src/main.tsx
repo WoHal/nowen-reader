@@ -21,6 +21,7 @@ import PageProgressBar from "@/components/PageProgressBar";
 // Pages — imported directly from original Next.js pages
 // The "use client" directive is harmless in Vite
 import Home from "@/app/page";
+const BooksPage = React.lazy(() => import("@/app/books/page"));
 const ComicDetail = React.lazy(() => import("@/app/comic/[id]/page"));
 const Reader = React.lazy(() => import("@/app/reader/[id]/page"));
 const NovelReader = React.lazy(() => import("@/app/novel/[id]/page"));
@@ -62,6 +63,7 @@ function AnimatedRoutes() {
     <div key={location.pathname} className="animate-page-enter overflow-x-hidden">
       <Routes location={location}>
         <Route path="/" element={<Home />} />
+        <Route path="/books" element={<BooksPage />} />
         <Route path="/comic/:id" element={<ComicDetail />} />
         <Route path="/reader/:id" element={<Reader />} />
         <Route path="/novel/:id" element={<NovelReader />} />
