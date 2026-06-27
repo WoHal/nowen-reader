@@ -538,19 +538,16 @@ export default function Home() {
   // 统一视图模式：默认视图下合集和漫画混合排序分页
   const isUnifiedView = !showGroupView;
 
-  // Fetch real comics from API
-  // 统一视图：获取全部漫画（客户端合并排序分页）
-  // 合集视图：排除已分组漫画 + 服务端分页
+  // 统一视图 = 纯漫画视图（服务端分页），不再 fetchAll 全量加载
+  // 合集视图 = 分组视图（已在 loadGroups 中服务端分页）
   const { comics: apiComics, setComics, loading, fetching, total: apiTotal, totalPages, refetch } = useComics({
-    fetchAll: isUnifiedView || undefined,
-    page: isUnifiedView ? undefined : currentPage,
-    pageSize: isUnifiedView ? undefined : pageSize,
+    page: currentPage,
+    pageSize: pageSize,
     search: debouncedSearch || undefined,
     tags: selectedTags.length > 0 ? selectedTags : undefined,
     favoritesOnly: favoritesOnly || undefined,
-    // 统一视图下客户端排序，不传排序参数；合集视图保持服务端排序
-    sortBy: isUnifiedView ? undefined : (sortBy || undefined),
-    sortOrder: isUnifiedView ? undefined : (sortOrder || undefined),
+    sortBy: sortBy || undefined,
+    sortOrder: sortOrder || undefined,
     category: selectedCategory || undefined,
     excludeGrouped: showGroupView || undefined,
     readingStatus: readingStatusFilter || undefined,
@@ -710,40 +707,16 @@ export default function Home() {
   }, [sortBy]);
 
   // 统一混合列表：合集和散本合并排序
-  const unifiedItems = useMemo(() => {
-    if (!isUnifiedView) return [];
-    // When filtering by reading status or favorites, only show comics, not groups
-    const groupItems: UnifiedItem[] = isFlatComicFiltering ? [] : filteredGroups.map(g => ({ type: 'group', data: g }));
-    const comicItems: UnifiedItem[] = looseComics.map(c => ({ type: 'comic', data: c }));
-    const all = [...groupItems, ...comicItems];
+  // 统一视图 = 纯漫画视图，直接使用 API 返回的 apiComics（已服务端分页）
+  // 不再需要 sortedComics 和客户端分页合并逻辑
 
-    const dir = sortOrder === 'desc' ? -1 : 1;
-    all.sort((a, b) => {
-      const keyA = getSortKey(a);
-      const keyB = getSortKey(b);
-      // null 值排到前面（ASC）或后面（DESC）
-      if (keyA === null && keyB === null) return 0;
-      if (keyA === null) return sortOrder === 'desc' ? 1 : -1;
-      if (keyB === null) return sortOrder === 'desc' ? -1 : 1;
-      if (keyA < keyB) return -1 * dir;
-      if (keyA > keyB) return 1 * dir;
-      return 0;
-    });
-    return all;
-  }, [isUnifiedView, filteredGroups, looseComics, getSortKey, sortOrder]);
-
-  // 统一视图客户端分页
-  const unifiedTotalPages = useMemo(() => Math.max(1, Math.ceil(unifiedItems.length / pageSize)), [unifiedItems.length, pageSize]);
-  const pagedUnifiedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return unifiedItems.slice(start, start + pageSize);
-  }, [unifiedItems, currentPage, pageSize]);
+  // 统一视图分页直接使用 API 返回值
 
   // 根据当前视图模式决定分页总页数
   const effectiveTotalPages = useMemo(() => {
     if (showGroupView) return groupTotalPages;
-    return unifiedTotalPages;
-  }, [showGroupView, groupTotalPages, unifiedTotalPages]);
+    return totalPages; // 统一视图：直接使用 API 返回的总页数
+  }, [showGroupView, groupTotalPages, totalPages]);
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -1560,7 +1533,7 @@ export default function Home() {
                   </p>
                 </div>
               )
-            ) : (pagedUnifiedItems.length > 0) ? (
+            ) : (sortedComics.length > 0) ? (
               <div
                 className={
                   viewMode === "grid"
@@ -1569,46 +1542,29 @@ export default function Home() {
                 }
               >
                 {/* 统一混合渲染：合集和散本按排序交替显示 */}
-                {pagedUnifiedItems.map((item, index) => (
-                  item.type === 'group' ? (
-                    <ScrollReveal key={`group-${item.data.id}`} disabled={index < 20} delay={index >= 20 ? (index - 20) % 6 * 50 : 0}>
-                    <GroupCard
-                      group={item.data}
-                      viewMode={viewMode}
-                      batchMode={batchMode}
-                      isSelected={selectedGroupIds.has(item.data.id)}
-                      onSelect={toggleGroupSelect}
-                      animationIndex={index < 20 ? index : undefined}
-                      isRemoving={removingGroupIds.has(item.data.id)}
-                      onContextMenu={(e, g) => {
-                        setGroupContextMenu({ x: e.clientX, y: e.clientY, group: g });
-                      }}
-                    />
-                    </ScrollReveal>
-                  ) : (
-                    <ScrollReveal key={item.data.id} disabled={index < 20} delay={index >= 20 ? (index - 20) % 6 * 50 : 0}>
+                {sortedComics.map((comic, index) => (
+                    <ScrollReveal key={comic.id} disabled={index < 20} delay={index >= 20 ? (index - 20) % 6 * 50 : 0}>
                     <ComicCard
-                      comic={item.data}
+                      comic={comic}
                       isReal={useRealData}
                       viewMode={viewMode}
                       batchMode={batchMode}
-                      isSelected={selectedIds.has(item.data.id)}
+                      isSelected={selectedIds.has(comic.id)}
                       onSelect={toggleSelect}
                       draggable={sortBy === "custom" && !batchMode}
                       onDragStart={handleDragStart}
                       onDragOver={handleDragOver}
                       onDragEnd={handleDragEnd}
-                      isDragOver={dragOverId === item.data.id}
-                      isDragging={dragId === item.data.id}
-                      tagData={item.data.tagData}
+                      isDragOver={dragOverId === comic.id}
+                      isDragging={dragId === comic.id}
+                      tagData={(comic as any).tagData}
                       animationIndex={index < 20 ? index : undefined}
-                      isRemoving={removingIds.has(item.data.id)}
+                      isRemoving={removingIds.has(comic.id)}
                       onContextMenu={(e, c) => {
                         setContextMenu({ x: e.clientX, y: e.clientY, comic: c });
                       }}
                     />
                     </ScrollReveal>
-                  )
                 ))}
               </div>
             ) : (
