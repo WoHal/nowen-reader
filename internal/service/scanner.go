@@ -1233,6 +1233,14 @@ func SyncComicsToDatabase() {
 		// 扫描期统一规则：当用户在 site-config.scanRules 启用了规则引擎，
 		// 在新增文件后自动执行（AI 智能识别 + 虚拟归类）。默认关闭，故零侵入。
 		RunScanRulesForNewlyAdded()
+
+		// 新增漫画后立即触发 pageCount 解析和 MD5 计算
+		go func() {
+			if !isReadingActive() {
+				fullSync()
+				md5Sync()
+			}
+		}()
 	}
 
 	// 重新检测已入库的 mobi/azw3 文件的内容类型（修正错误分类）
@@ -1401,34 +1409,18 @@ func StartBackgroundSync() {
 		}
 	}()
 
-	// Periodic full sync (process page counts)
+	// fullSync / md5Sync 不再使用独立定时器——它们只处理新增漫画的增量数据
+	// （pageCount 和 MD5），改为在 quickSync 发现新增文件后立即触发（见 SyncComicsToDatabase）。
+	// 启动时单独跑一次处理历史遗留。
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("[bg-sync] PANIC in periodic full sync: %v", r)
+				log.Printf("[bg-sync] PANIC in startup full sync: %v", r)
 			}
 		}()
-		// Wait a bit for initial quick sync to finish
-		time.Sleep(5 * time.Second)
-
-		ticker := time.NewTicker(getFullSyncInterval())
-		defer ticker.Stop()
-		for range ticker.C {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Printf("[bg-sync] PANIC during full sync tick: %v", r)
-					}
-				}()
-				// 有活跃阅读会话时跳过 fullSync，避免 IO 竞争
-				if isReadingActive() {
-					log.Println("[bg-sync] Skipped full sync: active reading session")
-					return
-				}
-				fullSync()
-				md5Sync() // 在 full sync 之后计算 MD5
-			}()
-		}
+		time.Sleep(10 * time.Second) // 等 quickSync 先完成初始扫描
+		fullSync()
+		md5Sync()
 	}()
 
 	log.Println("[bg-sync] Background sync scheduler started (fsnotify + polling fallback)")
