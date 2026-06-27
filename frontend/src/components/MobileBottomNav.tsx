@@ -96,7 +96,7 @@ export default function MobileBottomNav() {
   if (shouldHide) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#070A0F]/90 backdrop-blur-2xl sm:hidden safe-bottom overflow-hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-surface/90 backdrop-blur-2xl sm:hidden safe-bottom overflow-hidden">
       <div ref={navRef} className="relative flex h-14 items-center justify-around px-2">
         {/* 滑动指示器 */}
         <div

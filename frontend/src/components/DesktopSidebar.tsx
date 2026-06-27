@@ -45,7 +45,7 @@ export default function DesktopSidebar() {
   );
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 w-[220px] xl:w-[240px] flex-col border-r border-white/[0.06] bg-[#0B0F17]/85 backdrop-blur-2xl">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 w-[220px] xl:w-[240px] flex-col border-r border-border/50 bg-surface/85 backdrop-blur-2xl">
       {/* Logo 区 */}
       <div className="flex items-center gap-3 px-5 h-[72px] shrink-0">
         {siteIcon ? (
@@ -68,13 +68,13 @@ export default function DesktopSidebar() {
       </div>
 
       {/* 分割线 */}
-      <div className="mx-4 border-t border-white/[0.04]" />
+      <div className="mx-4 border-t border-border/30" />
 
       {/* 导航 */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
         {filteredItems.map((item, i) => {
           if ("divider" in item && item.divider) {
-            return <div key={`div-${i}`} className="my-3 mx-2 border-t border-white/[0.04]" />;
+            return <div key={`div-${i}`} className="my-3 mx-2 border-t border-border/30" />;
           }
           if (!("href" in item)) return null;
           const Icon = item.icon;
@@ -94,7 +94,7 @@ export default function DesktopSidebar() {
             >
               {/* 选中态背景 */}
               {isActive && (
-                <div className="absolute inset-0 rounded-xl bg-accent/[0.12] border border-accent/[0.15] shadow-sm shadow-accent/10" />
+                <div className="absolute inset-0 rounded-xl bg-accent/10 border border-accent/15 shadow-sm shadow-accent/5" />
               )}
               <Icon
                 className={`h-[18px] w-[18px] shrink-0 relative z-10 transition-colors ${
@@ -109,8 +109,8 @@ export default function DesktopSidebar() {
 
       {/* 用户卡片 */}
       {user && (
-        <div className="shrink-0 px-4 py-4 border-t border-white/[0.04]">
-          <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5">
+        <div className="shrink-0 px-4 py-4 border-t border-border/30">
+          <div className="flex items-center gap-3 rounded-xl bg-card/50 px-3 py-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-accent/30 to-accent-purple/30 text-accent text-xs font-bold border border-accent/20">
               {(user.nickname || user.username || "U")[0].toUpperCase()}
             </div>

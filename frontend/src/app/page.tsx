@@ -16,6 +16,9 @@ import DashboardTopBar from "@/components/DashboardTopBar";
 import { ContinueReading } from "@/components/ContinueReading";
 import ServerActivityPanel from "@/components/ServerActivityPanel";
 import UploadDialog from "@/components/UploadDialog";
+import NSFWCoverGuard from "@/components/NSFWCoverGuard";
+import { usePrivacyMode } from "@/hooks/usePrivacyMode";
+import { isNSFW } from "@/lib/nsfw";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { useComics, ApiComic } from "@/hooks/useComics";
@@ -28,6 +31,7 @@ import { calculateReadingProgress } from "@/lib/progress";
 export default function Home() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { enabled: privacyEnabled, blurNSFW } = usePrivacyMode();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scanningLibrary, setScanningLibrary] = useState(false);
@@ -52,18 +56,9 @@ export default function Home() {
   }, [refetch]);
 
   return (
-    <div className="min-h-screen bg-[#070A0F] overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--theme-background)" }}>
       {/* 背景氛围渐变 — 蓝紫光晕 */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          background: `
-            radial-gradient(ellipse 60% 50% at 25% 5%, rgba(59,130,246,0.14) 0%, transparent 100%),
-            radial-gradient(ellipse 50% 40% at 80% 12%, rgba(139,92,246,0.10) 0%, transparent 100%),
-            radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 100%)
-          `,
-        }}
-      />
+      <div className="dashboard-ambient-bg fixed inset-0 pointer-events-none z-0" />
 
       <DesktopSidebar />
 
@@ -128,10 +123,12 @@ export default function Home() {
 
                     return (
                       <Link key={comic.id} href={href} className="group block">
-                        <div className="relative aspect-[5/7] w-full overflow-hidden rounded-xl bg-card/50 backdrop-blur-sm border border-white/[0.05] cover-glow">
-                          <Image
+                        <div className="relative aspect-[5/7] w-full overflow-hidden rounded-xl bg-card/50 backdrop-blur-sm border border-border/30 cover-glow">
+                          <NSFWCoverGuard
                             src={comic.coverUrl}
                             alt={comic.title}
+                            isNSFW={isNSFW(comic)}
+                            blurEnabled={privacyEnabled && blurNSFW}
                             fill
                             unoptimized
                             className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -182,11 +179,11 @@ export default function Home() {
           </main>
 
           {/* ═══ 右侧面板 — 桌面端 ═══ */}
-          <aside className="hidden xl:block w-[300px] 2xl:w-[340px] shrink-0 border-l border-white/[0.04] bg-[#0B0F17]/40">
+          <aside className="hidden xl:block w-[300px] 2xl:w-[340px] shrink-0 border-l border-border/30 bg-surface/40">
             <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto py-6 px-4 space-y-4 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
               <ServerActivityPanel />
               <LibraryOverviewCard />
-              <RandomPickCard />
+              <RandomPickCard privacyEnabled={privacyEnabled} blurNSFW={blurNSFW} />
             </div>
           </aside>
         </div>
@@ -218,11 +215,11 @@ function LibraryOverviewCard() {
         <h3 className="text-sm font-semibold text-foreground">书库概览</h3>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-background/30 p-3 text-center border border-white/[0.04]">
+        <div className="rounded-lg bg-background/30 p-3 text-center border border-border/30">
           <p className="text-2xl font-bold text-foreground tabular-nums">{total || "—"}</p>
           <p className="text-[10px] text-muted mt-0.5">总内容</p>
         </div>
-        <div className="rounded-lg bg-background/30 p-3 text-center border border-white/[0.04]">
+        <div className="rounded-lg bg-background/30 p-3 text-center border border-border/30">
           <p className="text-2xl font-bold text-emerald-500 tabular-nums">—</p>
           <p className="text-[10px] text-muted mt-0.5">未读</p>
         </div>
@@ -239,7 +236,7 @@ function LibraryOverviewCard() {
 }
 
 /** 随机盲盒卡片 */
-function RandomPickCard() {
+function RandomPickCard({ privacyEnabled, blurNSFW }: { privacyEnabled: boolean; blurNSFW: boolean }) {
   const [comic, setComic] = useState<ApiComic | null>(null);
   const [key, setKey] = useState(0);
 
@@ -273,9 +270,18 @@ function RandomPickCard() {
           <Shuffle className="h-3 w-3" /> 换一个
         </button>
       </div>
-      <Link href={href} className="group flex items-center gap-3 rounded-xl bg-background/30 p-2.5 transition-all hover:bg-background/50 border border-white/[0.04]">
+      <Link href={href} className="group flex items-center gap-3 rounded-xl bg-background/30 p-2.5 transition-all hover:bg-background/50 border border-border/30">
         <div className="relative w-14 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-card">
-          <Image src={comic.coverUrl || ""} alt="" fill unoptimized className="object-cover" sizes="56px" />
+          <NSFWCoverGuard
+            src={comic.coverUrl || ""}
+            alt=""
+            isNSFW={isNSFW(comic)}
+            blurEnabled={privacyEnabled && blurNSFW}
+            fill
+            unoptimized
+            className="object-cover"
+            sizes="56px"
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground line-clamp-2">{comic.title}</p>

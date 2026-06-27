@@ -1101,7 +1101,7 @@ export default function BooksPage() {
   }, [dragId, dragOverId, sortedComics, refetch]);
 
   return (
-    <div className="min-h-screen bg-[#070A0F] overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--theme-background)" }}>
 
       <Navbar
         searchQuery={searchQuery}

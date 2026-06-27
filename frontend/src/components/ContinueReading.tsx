@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, ChevronRight, ChevronDown, ChevronUp, Clock, ChevronLeft } from "lucide-react";
+import NSFWCoverGuard from "@/components/NSFWCoverGuard";
+import { usePrivacyMode } from "@/hooks/usePrivacyMode";
+import { isNSFW } from "@/lib/nsfw";
 import { useTranslation } from "@/lib/i18n";
 import { calculateReadingProgress, isReadingFinished } from "@/lib/progress";
 import type { ApiComic } from "@/hooks/useComics";
@@ -70,6 +73,7 @@ function ReadingProgressRing({
  */
 export function ContinueReading({ contentType, showTitle = true }: { contentType?: string; showTitle?: boolean }) {
   const t = useTranslation();
+  const { enabled: privacyEnabled, blurNSFW } = usePrivacyMode();
   const [recentComics, setRecentComics] = useState<ApiComic[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -294,12 +298,14 @@ export function ContinueReading({ contentType, showTitle = true }: { contentType
                         className={`relative aspect-[5/7] w-full overflow-hidden rounded-2xl transition-all duration-500 ${
                           isActiveCard
                             ? "border-2 border-accent/30 cover-active-glow"
-                            : "border border-white/[0.06] bg-card/60 backdrop-blur-sm"
+                            : "border border-border/30 bg-card/60 backdrop-blur-sm"
                         }`}
                       >
-                        <Image
+                        <NSFWCoverGuard
                           src={comic.coverUrl}
                           alt={comic.title}
+                          isNSFW={isNSFW(comic)}
+                          blurEnabled={privacyEnabled && blurNSFW}
                           fill
                           unoptimized
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -381,10 +387,12 @@ export function ContinueReading({ contentType, showTitle = true }: { contentType
                 return (
                   <Link key={comic.id} href={href} className="group shrink-0 snap-center">
                     <div className="w-[140px] space-y-2">
-                      <div className="relative aspect-[5/7] w-full overflow-hidden rounded-2xl bg-card/60 backdrop-blur-sm border border-white/[0.05] cover-glow">
-                        <Image
+                      <div className="relative aspect-[5/7] w-full overflow-hidden rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 cover-glow">
+                        <NSFWCoverGuard
                           src={comic.coverUrl}
                           alt={comic.title}
+                          isNSFW={isNSFW(comic)}
+                          blurEnabled={privacyEnabled && blurNSFW}
                           fill
                           unoptimized
                           className="object-cover transition-transform duration-200 group-hover:scale-105"

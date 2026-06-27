@@ -58,7 +58,7 @@ export default function DashboardTopBar({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-6 lg:px-8 border-b border-white/[0.04] bg-[#070A0F]/60 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-6 lg:px-8 border-b border-border/50 bg-surface/60 backdrop-blur-xl">
       {/* 左侧：标题 */}
       <div className="flex items-center gap-3">
         {/* 移动端 Logo */}
@@ -81,7 +81,7 @@ export default function DashboardTopBar({
           <button
             onClick={onScanLibrary}
             disabled={scanning}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-white/[0.06] transition-all disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-card-hover transition-all disabled:opacity-50"
             title="扫描文库"
           >
             <RefreshCw className={`h-4 w-4 ${scanning ? "animate-spin" : ""}`} />
@@ -104,23 +104,23 @@ export default function DashboardTopBar({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-white/[0.06] transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-card-hover transition-all"
           >
             <MoreVertical className="h-4 w-4" />
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/[0.08] bg-[#0F172A]/95 backdrop-blur-xl shadow-2xl py-1.5 animate-modal-in">
+            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-elevated/95 backdrop-blur-xl shadow-2xl py-1.5 animate-modal-in">
               <button
                 onClick={() => { toggleTheme(); setMenuOpen(false); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-white/[0.06] transition-colors"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-card-hover transition-colors"
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 {theme === "dark" ? "浅色模式" : "深色模式"}
               </button>
               <button
                 onClick={() => { router.push("/settings"); setMenuOpen(false); }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-white/[0.06] transition-colors"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-card-hover transition-colors"
               >
                 <Settings className="h-4 w-4" />
                 设置

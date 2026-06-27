@@ -86,6 +86,43 @@ html.light {
   --shadow-cover-hover: 0 12px 36px rgba(0,0,0,0.12);
 }
 
+/* ── Dashboard 背景氛围渐变 ── */
+.dashboard-ambient-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 5%, rgba(59,130,246,0.14) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 40% at 80% 12%, rgba(139,92,246,0.10) 0%, transparent 100%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 100%);
+}
+
+html.light .dashboard-ambient-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 5%, rgba(59,130,246,0.10) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 40% at 80% 12%, rgba(139,92,246,0.07) 0%, transparent 100%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 100%);
+}
+
+/* ── Dashboard 玻璃面板 — 浅色模式适配 ── */
+html.light .dashboard-glass {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+/* ── Coverflow 活跃卡片 — 浅色模式 ── */
+html.light .cover-active-glow {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3),
+              0 0 25px -5px rgba(59, 130, 246, 0.2),
+              0 0 50px -10px rgba(139, 92, 246, 0.12);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+/* ── Cover 悬浮光效 — 浅色模式 ── */
+html.light .cover-glow:hover {
+  box-shadow: 0 0 15px -5px rgba(59, 130, 246, 0.12),
+              0 8px 25px -5px rgba(15, 23, 42, 0.10);
+}
+
 /* ── Font Smoothing (Principle #8) ── */
 html {
   -webkit-font-smoothing: antialiased;

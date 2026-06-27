@@ -140,7 +140,7 @@ export default function ServerActivityPanel() {
       {memHistory.length > 3 && (
         <div className="space-y-1">
           <span className="text-[10px] text-muted">内存趋势</span>
-          <div className="rounded-lg bg-background/30 px-2 py-1 border border-white/[0.04]">
+          <div className="rounded-lg bg-background/30 px-2 py-1 border border-border/30">
             <MiniChart data={memHistory} color="#8B5CF6" />
           </div>
         </div>
